@@ -1,0 +1,118 @@
+{
+  "project_name": "Example Cyber Noir Short Film",
+  "project_id": "PROJ_001",
+  "created_date": "2026-01-28",
+  "master_look_reference": "master_look.md",
+  "shots": [
+    {
+      "shot_id": "SHOT_001",
+      "shot_number": 1,
+      "description": "Hero enters rain-soaked warehouse, neon reflections on wet floor",
+      "scene": "SCENE_01_WAREHOUSE",
+      "duration_target": 8.0,
+      "status": "planning",
+      "workflow_phase": "pre_production",
+      "dependencies": [],
+      "reference_assets": [
+        {
+          "asset_id": "CHAR_SHEET_HERO",
+          "asset_type": "character_sheet",
+          "file_path": "assets/characters/hero_reference.png"
+        }
+      ],
+      "technical_specs": {
+        "image_model": "cinema_studio_v1.5",
+        "video_model": "veo_3.1",
+        "camera_body": "ARRI_ALEXA_35",
+        "lens_kit": "COOKE_S4",
+        "focal_length": "35mm",
+        "aperture": "f4",
+        "lighting_preset": "CYBERPUNK_NEON",
+        "upscale_method": "topaz_generative"
+      },
+      "prompts": {
+        "image_prompt": "A lone figure in a dark trench coat enters a vast, rain-soaked warehouse. Neon blue and magenta light from outside casts long shadows across the wet concrete floor. Volumetric fog fills the space. Shot on ARRI Alexa 35 with Cooke S4 35mm lens at f/4. Cinematic composition, film noir aesthetic, cyberpunk atmosphere.",
+        "video_prompt": "Slow dolly forward following the figure as they walk into the warehouse. Camera movement is smooth and deliberate. Maintain the moody lighting and atmospheric fog throughout.",
+        "camera_movement": "Slow dolly forward, 8 seconds"
+      },
+      "generations": [],
+      "total_cost": 0.0,
+      "notes": "Opening shot - sets the tone for the entire film. Critical to nail the lighting and atmosphere."
+    },
+    {
+      "shot_id": "SHOT_002",
+      "shot_number": 2,
+      "description": "Close-up of hero's face, neon light reflecting in their eyes",
+      "scene": "SCENE_01_WAREHOUSE",
+      "duration_target": 5.0,
+      "status": "planning",
+      "workflow_phase": "pre_production",
+      "dependencies": ["SHOT_001"],
+      "reference_assets": [
+        {
+          "asset_id": "CHAR_SHEET_HERO",
+          "asset_type": "character_sheet",
+          "file_path": "assets/characters/hero_reference.png"
+        },
+        {
+          "asset_id": "HERO_FRAME_001",
+          "asset_type": "hero_frame",
+          "file_path": "assets/shots/shot_001_hero_frame.png"
+        }
+      ],
+      "technical_specs": {
+        "image_model": "cinema_studio_v1.5",
+        "video_model": "kling_2.6",
+        "camera_body": "SONY_VENICE",
+        "lens_kit": "COOKE_S4",
+        "focal_length": "50mm",
+        "aperture": "f1.4",
+        "lighting_preset": "CYBERPUNK_NEON",
+        "upscale_method": "topaz_standard"
+      },
+      "prompts": {
+        "image_prompt": "Extreme close-up of a determined face, half in shadow. Neon blue light reflects in their eyes. Rain droplets on skin. Shot on Sony Venice with Cooke S4 50mm lens at f/1.4. Shallow depth of field, cinematic portrait, film noir lighting.",
+        "video_prompt": "Subtle camera push-in on the face. Eyes shift slightly, looking around the warehouse. Maintain shallow depth of field and neon reflections.",
+        "camera_movement": "Slow push-in, 5 seconds"
+      },
+      "generations": [],
+      "total_cost": 0.0,
+      "notes": "Character introduction - must maintain consistency with SHOT_001. Use same character reference."
+    },
+    {
+      "shot_id": "SHOT_003",
+      "shot_number": 3,
+      "description": "Wide shot of warehouse interior, revealing the scale and atmosphere",
+      "scene": "SCENE_01_WAREHOUSE",
+      "duration_target": 6.0,
+      "status": "planning",
+      "workflow_phase": "pre_production",
+      "dependencies": [],
+      "reference_assets": [
+        {
+          "asset_id": "LOCATION_REF_WAREHOUSE",
+          "asset_type": "location_reference",
+          "file_path": "assets/locations/warehouse_reference.png"
+        }
+      ],
+      "technical_specs": {
+        "image_model": "midjourney_v6.1",
+        "video_model": "runway_gen_4.5",
+        "camera_body": "RED_V_RAPTOR",
+        "lens_kit": "ZEISS_ULTRA_PRIME",
+        "focal_length": "24mm",
+        "aperture": "T4.0",
+        "lighting_preset": "VOLUMETRIC_FOG",
+        "upscale_method": "topaz_generative"
+      },
+      "prompts": {
+        "image_prompt": "Vast industrial warehouse interior, towering metal beams and catwalks. Heavy volumetric fog illuminated by shafts of neon light from high windows. Wet concrete floor reflects the colored light. Shot on RED V-Raptor with Zeiss Ultra Prime 24mm lens at T4.0. Wide angle, cinematic composition, cyberpunk industrial aesthetic. --ar 16:9 --style raw --v 6.1",
+        "video_prompt": "Slow crane shot rising up to reveal the full scale of the warehouse. Camera movement is smooth and majestic. Fog drifts through the light beams.",
+        "camera_movement": "Crane up, 6 seconds"
+      },
+      "generations": [],
+      "total_cost": 0.0,
+      "notes": "Establishing shot for the location. Can be generated independently of character shots."
+    }
+  ]
+}

@@ -1,0 +1,221 @@
+{
+  "cinema_studio_v1_5": {
+    "cameras": {
+      "ARRI_ALEXA_35": {
+        "type": "Digital",
+        "description": "Modern digital cinema standard with film-like color science",
+        "best_for": "High-end commercial, narrative features",
+        "sensor": "Super 35",
+        "dynamic_range": "17 stops",
+        "native_iso": 800,
+        "color_science": "REVEAL"
+      },
+      "ARRIFLEX_16SR": {
+        "type": "16mm Film",
+        "description": "Classic 16mm film aesthetic with grain and texture",
+        "best_for": "Indie films, documentaries, gritty realism"
+      },
+      "IMAX_FILM_CAMERA": {
+        "type": "Large Format Film",
+        "description": "Immersive, large-format film aesthetic with exceptional detail",
+        "best_for": "Epic landscapes, blockbuster sequences"
+      },
+      "RED_V_RAPTOR": {
+        "type": "Digital",
+        "description": "High-resolution digital with sharp, clean imagery",
+        "best_for": "Action, VFX-heavy shots, high-detail work",
+        "sensor": "VistaVision",
+        "resolution": "8K",
+        "mount": "RF"
+      },
+      "SONY_VENICE": {
+        "type": "Digital",
+        "description": "High-end digital clarity with exceptional dynamic range",
+        "best_for": "Commercial work, controlled lighting environments",
+        "sensor": "Full Frame",
+        "dual_base_iso": "800/3200"
+      },
+      "PANAVISION_MILLENNIUM_DXL2": {
+        "type": "Digital",
+        "description": "Premium digital cinema with rich color reproduction",
+        "best_for": "High-budget narrative, prestige projects"
+      }
+    },
+    "lenses": {
+      "ARRI_SIGNATURE_PRIME": {
+        "type": "Spherical",
+        "description": "Modern, sharp, clean rendering with smooth bokeh",
+        "best_for": "Contemporary narratives, commercial work"
+      },
+      "CANON_K35": {
+        "type": "Vintage Spherical",
+        "description": "Soft flares, warm rendering, vintage character",
+        "best_for": "Period pieces, nostalgic looks, 1970s-80s aesthetics"
+      },
+      "COOKE_S4": {
+        "type": "Spherical",
+        "description": "The famous 'Cooke Look' - soft, flattering, organic bokeh",
+        "best_for": "Portraits, intimate scenes, character-driven narratives",
+        "character": "Warm, gentle fall-off, smooth skin tones",
+        "max_aperture": "T2.0"
+      },
+      "HAWK_V_LITE": {
+        "type": "Anamorphic",
+        "description": "Horizontal blue flares, oval bokeh, classic widescreen feel",
+        "best_for": "Sci-fi, epic narratives, cinematic spectacle",
+        "character": "Anamorphic, 2x squeeze, horizontal blue flares",
+        "bokeh": "Oval"
+      },
+      "HELIOS": {
+        "type": "Vintage Soviet",
+        "description": "Swirly bokeh, unique character, vintage rendering",
+        "best_for": "Artistic projects, experimental work"
+      },
+      "JDC_XTAL_XPRESS": {
+        "type": "Anamorphic",
+        "description": "Modern anamorphic with controlled flares",
+        "best_for": "Contemporary anamorphic look, controlled environments"
+      },
+      "LAOWA_MACRO": {
+        "type": "Macro/Close-up",
+        "description": "Extreme close-up capability with sharp detail",
+        "best_for": "Product shots, nature macro, detail work"
+      },
+      "LENSBABY": {
+        "type": "Creative/Tilt-shift",
+        "description": "Selective focus, dreamy, artistic rendering",
+        "best_for": "Creative portraits, artistic sequences"
+      },
+      "PANAVISION_C_SERIES": {
+        "type": "Anamorphic",
+        "description": "Classic anamorphic with warm flares and character",
+        "best_for": "Classic Hollywood look, period anamorphic"
+      },
+      "PETZVAL": {
+        "type": "Vintage Swirl Bokeh",
+        "description": "Distinctive swirly bokeh effect, vintage character",
+        "best_for": "Artistic portraits, vintage aesthetics"
+      },
+      "ZEISS_ULTRA_PRIME": {
+        "type": "Spherical",
+        "description": "Clean, sharp, neutral rendering with minimal distortion",
+        "best_for": "Technical precision, VFX work, modern aesthetics",
+        "character": "Clinical, sharp, high contrast",
+        "max_aperture": "T1.9"
+      }
+    },
+    "focal_lengths": {
+      "8mm": {
+        "category": "Ultra-wide angle",
+        "use_for": "Immersive POV, expansive landscapes, dynamic action",
+        "perspective": "Extreme distortion, dramatic depth"
+      },
+      "14mm": {
+        "category": "Wide angle",
+        "use_for": "Environmental shots, establishing shots, interiors",
+        "perspective": "Wide field of view, moderate distortion"
+      },
+      "35mm": {
+        "category": "Standard/Normal",
+        "use_for": "Natural perspective, general coverage, versatile framing",
+        "perspective": "Similar to human vision, minimal distortion"
+      },
+      "50mm": {
+        "category": "Portrait/Standard",
+        "use_for": "Portraits, medium shots, natural compression",
+        "perspective": "Flattering for faces, slight background compression"
+      }
+    },
+    "apertures": {
+      "f1.4": {
+        "depth_of_field": "Very shallow",
+        "effect": "Maximum background blur",
+        "use_for": "Portraits, subject isolation, low-light situations"
+      },
+      "f4": {
+        "depth_of_field": "Moderate",
+        "effect": "Balanced background blur",
+        "use_for": "General coverage, balanced shots, versatile framing"
+      },
+      "f11": {
+        "depth_of_field": "Deep",
+        "effect": "Sharp foreground and background",
+        "use_for": "Landscapes, group shots, maximum sharpness throughout"
+      }
+    },
+    "genre_presets": {
+      "MODERN_DRAMA": {
+        "camera": "ARRI_ALEXA_35",
+        "lens": "ARRI_SIGNATURE_PRIME",
+        "focal_length": "35mm",
+        "aperture": "f4"
+      },
+      "VINTAGE_FILM": {
+        "camera": "ARRIFLEX_16SR",
+        "lens": "CANON_K35",
+        "focal_length": "35mm",
+        "aperture": "f4"
+      },
+      "EPIC_BLOCKBUSTER": {
+        "camera": "IMAX_FILM_CAMERA",
+        "lens": "HAWK_V_LITE",
+        "focal_length": "14mm",
+        "aperture": "f11"
+      },
+      "SCI_FI_SPECTACLE": {
+        "camera": "RED_V_RAPTOR",
+        "lens": "HAWK_V_LITE",
+        "focal_length": "14mm",
+        "aperture": "f4"
+      },
+      "INTIMATE_PORTRAIT": {
+        "camera": "SONY_VENICE",
+        "lens": "COOKE_S4",
+        "focal_length": "50mm",
+        "aperture": "f1.4"
+      },
+      "GRITTY_REALISM": {
+        "camera": "ARRIFLEX_16SR",
+        "lens": "HELIOS",
+        "focal_length": "35mm",
+        "aperture": "f4"
+      },
+      "COMMERCIAL_POLISH": {
+        "camera": "SONY_VENICE",
+        "lens": "ZEISS_ULTRA_PRIME",
+        "focal_length": "50mm",
+        "aperture": "f4"
+      },
+      "ARTISTIC_EXPERIMENTAL": {
+        "camera": "ARRIFLEX_16SR",
+        "lens": "PETZVAL",
+        "focal_length": "50mm",
+        "aperture": "f1.4"
+      }
+    }
+  },
+  "lighting_presets": {
+    "VOLUMETRIC_FOG": {
+      "source": "Backlit",
+      "intensity": "High",
+      "atmosphere": "Heavy Haze"
+    },
+    "GOLDEN_HOUR": {
+      "source": "Low-angle directional",
+      "temp": "3200K",
+      "shadows": "Elongated"
+    },
+    "CYBERPUNK_NEON": {
+      "source": "Multi-point cinematic",
+      "colors": ["Blue", "Magenta"],
+      "contrast": "High"
+    }
+  },
+  "technical_notes": {
+    "input_method": "UI-based dropdown selections (NOT JSON)",
+    "default_aspect_ratio": "21:9 CinemaScope",
+    "output_quality": "16-bit HD images, professional cinematic video",
+    "character_consistency": "Reference Anchor system locks facial geometry and wardrobe",
+    "video_model_selection": "Automatic (Cinema Studio selects best underlying model)"
+  }
+}

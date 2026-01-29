@@ -1,0 +1,258 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Shot List Schema",
+  "description": "Defines the structure for shot definitions in the Cine-AI production workflow",
+  "type": "object",
+  "properties": {
+    "project_name": {
+      "type": "string",
+      "description": "Name of the film/video project"
+    },
+    "project_id": {
+      "type": "string",
+      "description": "Unique identifier for the project"
+    },
+    "created_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the shot list was created (YYYY-MM-DD)"
+    },
+    "master_look_reference": {
+      "type": "string",
+      "description": "Path to master_look.md file defining visual style"
+    },
+    "shots": {
+      "type": "array",
+      "description": "Array of shot definitions",
+      "items": {
+        "type": "object",
+        "properties": {
+          "shot_id": {
+            "type": "string",
+            "description": "Unique shot identifier (e.g., SHOT_001)",
+            "pattern": "^SHOT_[0-9]{3}$"
+          },
+          "shot_number": {
+            "type": "integer",
+            "description": "Sequential shot number",
+            "minimum": 1
+          },
+          "description": {
+            "type": "string",
+            "description": "Brief description of the shot (e.g., 'Hero enters warehouse')"
+          },
+          "scene": {
+            "type": "string",
+            "description": "Scene identifier this shot belongs to"
+          },
+          "duration_target": {
+            "type": "number",
+            "description": "Target duration in seconds",
+            "minimum": 0
+          },
+          "status": {
+            "type": "string",
+            "enum": ["planning", "in_progress", "review", "complete", "locked"],
+            "description": "Current status of the shot"
+          },
+          "workflow_phase": {
+            "type": "string",
+            "enum": [
+              "pre_production",
+              "hero_frame_generation",
+              "upscaling",
+              "character_lock",
+              "video_generation",
+              "audio_design",
+              "vfx_compositing",
+              "post_production",
+              "delivery"
+            ],
+            "description": "Current workflow phase"
+          },
+          "dependencies": {
+            "type": "array",
+            "description": "Array of shot IDs this shot depends on",
+            "items": {
+              "type": "string",
+              "pattern": "^SHOT_[0-9]{3}$"
+            }
+          },
+          "reference_assets": {
+            "type": "array",
+            "description": "Reference images/videos used for this shot",
+            "items": {
+              "type": "object",
+              "properties": {
+                "asset_id": {
+                  "type": "string",
+                  "description": "Unique asset identifier"
+                },
+                "asset_type": {
+                  "type": "string",
+                  "enum": ["character_sheet", "hero_frame", "style_reference", "location_reference"],
+                  "description": "Type of reference asset"
+                },
+                "file_path": {
+                  "type": "string",
+                  "description": "Path to the asset file"
+                }
+              },
+              "required": ["asset_id", "asset_type", "file_path"]
+            }
+          },
+          "technical_specs": {
+            "type": "object",
+            "description": "Technical specifications for generation",
+            "properties": {
+              "image_model": {
+                "type": "string",
+                "enum": [
+                  "cinema_studio_v1.5",
+                  "nano_banana_pro",
+                  "midjourney_v6.1",
+                  "dalle3",
+                  "gpt_image_1.5",
+                  "imagen_3",
+                  "flux_pro"
+                ],
+                "description": "Image generation model to use"
+              },
+              "video_model": {
+                "type": "string",
+                "enum": [
+                  "cinema_studio_v1.5",
+                  "veo_3.1",
+                  "kling_2.6",
+                  "runway_gen_4.5",
+                  "seedance_1.5_pro"
+                ],
+                "description": "Video generation model to use"
+              },
+              "camera_body": {
+                "type": "string",
+                "description": "Camera body from cinematography_schemas.json"
+              },
+              "lens_kit": {
+                "type": "string",
+                "description": "Lens kit from cinematography_schemas.json"
+              },
+              "focal_length": {
+                "type": "string",
+                "description": "Focal length (e.g., '35mm', '85mm')"
+              },
+              "aperture": {
+                "type": "string",
+                "description": "Aperture (e.g., 'f/2.8', 'T2.0')"
+              },
+              "lighting_preset": {
+                "type": "string",
+                "description": "Lighting preset from cinematography_schemas.json"
+              },
+              "upscale_method": {
+                "type": "string",
+                "enum": ["topaz_standard", "topaz_generative", "none"],
+                "description": "Upscaling method to use"
+              }
+            }
+          },
+          "prompts": {
+            "type": "object",
+            "description": "Technical prompts for each generation phase",
+            "properties": {
+              "image_prompt": {
+                "type": "string",
+                "description": "Optimized prompt for image generation"
+              },
+              "video_prompt": {
+                "type": "string",
+                "description": "Optimized prompt for video generation"
+              },
+              "camera_movement": {
+                "type": "string",
+                "description": "Camera movement description (e.g., 'slow dolly in', 'static')"
+              }
+            }
+          },
+          "generations": {
+            "type": "array",
+            "description": "History of generation attempts",
+            "items": {
+              "type": "object",
+              "properties": {
+                "generation_id": {
+                  "type": "string",
+                  "description": "Unique generation identifier"
+                },
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When the generation was created"
+                },
+                "phase": {
+                  "type": "string",
+                  "enum": ["hero_frame", "upscale", "video", "audio", "vfx"],
+                  "description": "Which phase this generation belongs to"
+                },
+                "model_used": {
+                  "type": "string",
+                  "description": "AI model used for generation"
+                },
+                "output_file": {
+                  "type": "string",
+                  "description": "Path to generated file"
+                },
+                "cost": {
+                  "type": "number",
+                  "description": "Cost of this generation in USD",
+                  "minimum": 0
+                },
+                "quality_assessment": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["pass", "warning", "fail"],
+                      "description": "Quality assessment result"
+                    },
+                    "issues": {
+                      "type": "array",
+                      "description": "List of identified issues",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "analysis": {
+                      "type": "string",
+                      "description": "Expert analysis from Asset Producer skill"
+                    },
+                    "recommendation": {
+                      "type": "string",
+                      "description": "Recommendation (e.g., 'Proceed', 'Reshoot with adjustment')"
+                    }
+                  }
+                },
+                "architect_approval": {
+                  "type": "boolean",
+                  "description": "Whether Architect approved this generation"
+                }
+              },
+              "required": ["generation_id", "timestamp", "phase", "model_used"]
+            }
+          },
+          "total_cost": {
+            "type": "number",
+            "description": "Cumulative cost for this shot across all phases",
+            "minimum": 0
+          },
+          "notes": {
+            "type": "string",
+            "description": "Additional notes or comments"
+          }
+        },
+        "required": ["shot_id", "shot_number", "description", "status", "workflow_phase"]
+      }
+    }
+  },
+  "required": ["project_name", "project_id", "created_date", "shots"]
+}
