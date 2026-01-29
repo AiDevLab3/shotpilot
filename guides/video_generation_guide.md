@@ -1,477 +1,634 @@
----
-_A comprehensive guide to the leading AI video generation models, their capabilities, and model-specific prompting techniques for cinematic results._
+# AI Video Generation Models Guide
 
-**Author:** Manus AI
-**Date:** January 26, 2026
+**The Comprehensive Guide to AI Video Generation for Cinematic Production**
+
+**Version:** 5.0  
+**Last Updated:** January 29, 2026  
+**Coverage:** 7 AI Video Generation Models
+
+---
+
+## Executive Summary
+
+This guide provides comprehensive coverage of **7 leading AI video generation models**, with specific focus on creating cinematic video content for professional production. The guide includes model-specific prompting techniques, parameter references, workflow strategies, and use case recommendations.
+
+**New in Version 5.0:** Expanded coverage to include Kling Motion Control, Kling O1 Edit, Sora 2, Wan 2.6, Minimax Hailuo 02, and Kling Avatars 2.0, alongside existing coverage of Veo 3.1, Kling 2.6, Runway Gen-4.5, Seedance 1.5 Pro, and Higgsfield Platform.
+
+---
+
+## Table of Contents
+
+### Core Video Models
+1. [Veo 3.1](#veo-31)
+2. [Sora 2](#sora-2)
+3. [Kling O1 Edit](#kling-o1-edit)
+4. [Kling Motion Control](#kling-motion-control)
+5. [Wan 2.6](#wan-26)
+6. [Minimax Hailuo 02](#minimax-hailuo-02)
+7. [Kling Avatars 2.0](#kling-avatars-20)
+
+### Platform & Legacy Models
+- [Higgsfield Platform](#higgsfield-platform)
+- [Kling 2.6](#kling-26)
+- [Runway Gen-4.5](#runway-gen-45)
+- [Seedance 1.5 Pro](#seedance-15-pro)
+
+### Workflows & Integration
+- [Model Comparison & Selection](#model-comparison)
+- [Cross-Model Workflows](#cross-model-workflows)
+- [Integration with Image Generation](#image-integration)
+
+---
 
 ## Introduction
 
-The field of AI video generation has matured from a novelty into a powerful tool for cinematic production. As of early 2026, a handful of leading models have emerged, each with a unique philosophy, distinct capabilities, and specific prompting methodologies. This guide provides a comprehensive overview of the top five models—Higgsfield Cinema Studio v1.5, Google Veo 3.1, Kling 2.6, Runway Gen-4.5, and Seedance 1.5 Pro—offering a side-by-side comparison and deep dives into the specific techniques required to achieve professional, cinematic results with each.
+AI video generation has matured from a novelty into a powerful tool for cinematic production. As of early 2026, multiple leading models have emerged, each with unique capabilities, distinct philosophies, and specific prompting methodologies.
 
-This document moves beyond generic prompting advice, focusing instead on the practical, model-specific workflows that professional AI artists use. From Higgsfield's director-centric "Hero Frame First" approach to Veo's powerful multi-shot timestamp prompting, this guide is designed to equip filmmakers with the knowledge to choose the right tool for the job and to master the art of prompting for truly cinematic AI video.
+### Why Video Generation Matters
 
----
+**Professional Video Production Benefits:**
 
-## Chapter 1: Model Comparison and Core Philosophies
+1. **Rapid Prototyping** - Quickly visualize scenes before expensive production
+2. **Creative Exploration** - Test multiple creative directions efficiently
+3. **Cost Efficiency** - Reduce production costs for certain types of content
+4. **Accessibility** - Enable solo creators to produce cinematic content
+5. **Hybrid Workflows** - Combine AI-generated elements with traditional production
 
-Each of the leading AI video generation models operates on a distinct core philosophy, which in turn dictates its strengths, weaknesses, and ideal use cases. Understanding these foundational differences is the first step in selecting the appropriate model for a given creative task.
+### Model Overview
 
-**Table 1: High-Level Model Comparison**
-
-| Model | Max Length | Primary Strength | Best For | Native Audio |
-| :--- | :--- | :--- | :--- | :--- |
-| **Higgsfield Cinema Studio v1.5** | TBD | True Optical Simulation & Deterministic Motion | Professional cinematography, deterministic workflows, precise camera control. | ❌ No |
-| **Google Veo 3.1** | 8 seconds | Multi-Shot Timestamp Prompting & "Ingredients" | Complex scenes, multi-shot sequences, dialogue-driven narratives. | ✅ Yes |
-| **Kling 2.6** | 5s or 10s | Camera Motion & Character Physics | Cost-effective professional results, dynamic motion, action sequences. | ✅ Yes |
-| **Runway Gen-4.5** | 10 seconds | 6-Axis Camera Control (-10 to +10) | Precise camera movements, static camera mode with subject motion. | ❌ No |
-| **Seedance 1.5 Pro** | ~10 seconds | Native Audio-Visual Generation & Lip-Sync | Dialogue-heavy scenes, talking-head content, multi-language support. | ✅ Yes |
-
-### Core Philosophies
-
-*   **Higgsfield Cinema Studio v1.5: The Virtual Film Set.** Higgsfield's philosophy is to replicate the deliberate, controlled environment of a professional film set. Its "Hero Frame First" workflow forces the user to make key creative decisions (lighting, composition, character look) in a still image before animation begins. This director-centric approach prioritizes control and predictability over random generation [1].
-
-*   **Google Veo 3.1: The Intelligent Storyteller.** Veo's strength lies in its deep understanding of narrative structure and cinematic language. Its five-part prompt formula and advanced features like timestamp prompting and "Ingredients" allow creators to direct complex, multi-shot sequences with a high degree of creative control and narrative coherence [2].
-
-*   **Kling 2.6: The Physics-Aware Animator.** Kling excels at generating realistic motion and physical interactions. Its model has a strong grasp of character physics and camera motion, making it ideal for dynamic, action-oriented scenes where believable movement is paramount [3].
-
-*   **Runway Gen-4.5: The Benchmark Leader.** Runway has consistently pushed the boundaries of motion control in AI video, and its latest iteration, **Runway Gen-4.5**, solidifies its position as a leader in precision cinematography. Released in late 2025, Gen-4.5 is not just an incremental update; it's a significant leap in quality that has earned it the top spot on the independent Artificial Analysis Text to Video benchmark with an Elo score of 1,247 [4]. Its philosophy remains centered on **precision motion control**, but it now boasts best-in-class photorealism and prompt adherence, making it a powerhouse for filmmakers who demand granular control over their shots.
-
-*   **Seedance 1.5 Pro: The Performance-Focused Synthesizer.** Seedance is built around the principle of unified audio-visual generation, with a primary focus on human performance. Its best-in-class lip-sync and multi-language dialogue capabilities make it the industry leader for any content where spoken performance is the central element [5].
+| Model | Developer | Duration | Best For | Native Audio |
+|-------|-----------|----------|----------|--------------|
+| **Veo 3.1** | Google | 8s | Cinematic + audio | ✅ Yes |
+| **Sora 2** | OpenAI | 20s | Extended, complex scenes | ✅ Yes |
+| **Kling O1 Edit** | Kuaishou | 10s | Multimodal I2V + V2V | ✅ Yes |
+| **Kling Motion Control** | Kuaishou | 10s | Character motion | ✅ Yes |
+| **Wan 2.6** | Alibaba | 10s | Flexible workflows | ✅ Yes |
+| **Minimax Hailuo 02** | Minimax | 6s | Cinematic quality | ✅ Yes |
+| **Kling Avatars 2.0** | Kuaishou | 5min | Talking avatars | ✅ Yes |
 
 ---
 
-## Chapter 2: Higgsfield: The Platform Aggregator & Preset-Based Workflow
+## Core Video Models
 
-Higgsfield has evolved beyond a single model into a **platform aggregator**, integrating a suite of powerful proprietary and third-party models under a unified, user-friendly interface. Its core philosophy is to abstract away the complexity of prompting, offering a **preset-based "Click-to-Video" workflow** that allows creators to produce professional-quality content with minimal effort. This approach prioritizes speed, cultural relevance, and ease of use, making it a dominant force in the creator economy [1]. While it offers advanced tools like Cinema Studio v1.5 for professional control, its primary strength lies in its vast library of one-click apps and templates.
+### Veo 3.1
 
-### The Higgsfield Ecosystem: Aggregated Models & Specialized Apps
+**Developer:** Google  
+**Duration:** 8 seconds  
+**Best For:** High-fidelity cinematic video with native audio  
+**Key Strength:** Native audio generation at 1080p quality
 
-Higgsfield's power comes from its aggregation of best-in-class models and its extensive library of specialized apps. This ecosystem provides creators with a vast toolkit for a wide range of creative tasks.
+Veo 3.1 is Google's flagship video generation model, offering high-fidelity cinematic video with native audio generation. It excels at understanding narrative structure and cinematic language.
 
-**Table 2: Key Models Available on the Higgsfield Platform**
+**Technical Specifications:**
+- Resolution: 1080p (1920x1080)
+- Duration: Up to 8 seconds
+- Native Audio: Yes (synchronized)
+- Prompting Style: Natural language with timestamp control
+- Interface: Google AI Studio, Vertex AI, API
+- Pricing: High cost per generation
 
-| Model | Type | Primary Use Case |
-| :--- | :--- | :--- |
-| **Cinema Studio v1.5** | Proprietary | Professional cinematography with deterministic control |
-| **Nano Banana Pro** | Proprietary | High-quality image generation |
-| **Higgsfield Soul** | Proprietary | Hyper-realistic, fashion-grade photo model |
-| **Sora 2** | Third-party | High-fidelity video generation |
-| **Veo 3.1** | Third-party | Narrative video with strong prompt adherence |
-| **Kling 2.6 / 2.5** | Third-party | Physics-aware animation and motion |
-| **Seedance 1.5 Pro** | Third-party | Best-in-class lip-sync and dialogue |
+**Core Features:**
+- **Timestamp Prompting** - Control events at specific timepoints
+- **Ingredients System** - Reference images for style/content
+- **Native Audio** - Synchronized audio generation
+- **Cinematic Understanding** - Strong grasp of film language
 
-### The "Click-to-Video" Workflow: Presets Over Prompts
+**Five-Part Prompt Formula:**
+1. **Shot Type** - "Wide shot", "Close-up", etc.
+2. **Subject** - Main focus of the scene
+3. **Action** - What happens in the shot
+4. **Setting** - Environment and context
+5. **Style** - Aesthetic and mood
 
-The primary workflow on Higgsfield is designed for speed and ease of use, centered around its extensive library of apps and presets.
+**When to Use:**
+- Need native audio generation
+- Require 1080p output quality
+- Want cinematic quality (8s)
+- Google ecosystem integration
+- Narrative-driven content
 
-**Step 1: Choose an App or Preset**
-
-Instead of writing a complex prompt from scratch, the user selects a pre-built app or template that matches their creative goal. These apps are categorized by function, such as "Camera & Motion," "Enhance & Style," or "Ads & Products."
-
-**Step 2: Upload a Source Image**
-
-Most Higgsfield apps operate on a source image. The user uploads a photo, and the app applies its specific effect to that image.
-
-**Step 3: Generate with One Click**
-
-With a single click, the app generates a short video based on the source image and the preset's parameters. The platform handles all the underlying model selection, prompting, and parameter tuning automatically.
-
-
-
-### Advanced Capabilities: Cinema Studio v1.5
-
-For users who require more granular control, Higgsfield offers **Cinema Studio v1.5**, a professional-grade tool that operates on a more traditional, director-centric workflow. This is where the "Hero Frame First" philosophy comes into play, allowing filmmakers to lock in a still frame's aesthetic before applying precise, stackable camera movements. This tool is designed for professional cinematographers who need deterministic control over their shots.
-
-### Prompting on Higgsfield: Presets vs. Prompts
-
-Higgsfield offers two distinct approaches to content creation:
-
-*   **Preset-Based (No Prompt):** The most common workflow on Higgsfield involves selecting a preset and uploading an image. No text prompt is required.
-*   **Prompt-Based (Cinema Studio):** When using advanced tools like Cinema Studio v1.5, users will engage in a more traditional prompting process to generate the initial "Hero Frame."
-
-
-
-### Best Use Cases
-
-Higgsfield as a platform is the ideal choice for **creators, marketers, and businesses** who need to produce high-quality, trend-aware content quickly and efficiently. Its preset-based workflow is perfect for social media, advertising, and rapid content iteration. For professional filmmakers who require more granular control, the integrated **Cinema Studio v1.5** provides a powerful, director-centric toolset within the broader Higgsfield ecosystem.
+**See:** [Veo 3.1 Prompting Mastery Guide](/prompting_guides/veo_3.1_prompting_mastery_guide.md)
 
 ---
 
-## Chapter 3: Google Veo 3.1: The Intelligent Storyteller
+### Sora 2
 
-Google's Veo 3.1 represents a significant leap in generative video, positioning itself as an **intelligent storyteller** that understands cinematic language and narrative structure. Its core philosophy is to provide creators with a high degree of creative control through a structured, professional prompting methodology. The model's standout features, including native audio generation, multi-shot timestamp prompting, and the innovative "Ingredients" system, empower filmmakers to move beyond simple clip generation and toward the creation of complex, coherent scenes [2].
+**Developer:** OpenAI  
+**Duration:** 20 seconds  
+**Best For:** Extended duration with complex scene understanding  
+**Key Strength:** Advanced scene understanding and photorealistic quality
 
-### Technical Specifications: Power and Flexibility
+Sora 2 is OpenAI's advanced video generation model, offering extended duration capabilities with photorealistic quality and complex scene understanding.
 
-Veo 3.1 offers a range of technical specifications designed to fit various production needs, from quick social media content to high-fidelity cinematic projects.
+**Technical Specifications:**
+- Resolution: High-resolution (up to 1080p)
+- Duration: Up to 20 seconds
+- Native Audio: Yes
+- Prompting Style: Natural language
+- Interface: OpenAI platform, API
+- Pricing: High cost per generation
 
-**Table 3: Veo 3.1 Technical Specifications**
+**Core Features:**
+- **Extended Duration** - Up to 20 seconds per generation
+- **Complex Scenes** - Advanced understanding of multi-element scenes
+- **Photorealistic Quality** - High-fidelity outputs
+- **Temporal Consistency** - Maintains consistency over longer durations
 
-| Feature | Specification | Notes |
-| :--- | :--- | :--- |
-| **Resolution** | 720p, 1080p, or 4K | Provides flexibility for different delivery platforms. |
-| **Aspect Ratios** | 16:9 (landscape) or 9:16 (portrait) | Caters to both traditional cinematic and vertical social media formats. |
-| **Generation Length** | 4, 6, or 8 seconds | The **maximum generation length is 8 seconds**, requiring longer scenes to be broken down into smaller shots. |
-| **Native Audio** | Rich, synchronized audio | Generates dialogue, sound effects, and ambient noise directly from the prompt with high fidelity. |
-| **Dialogue** | Multi-person conversations | Capable of producing realistic lip-sync for complex dialogue scenes. |
+**When to Use:**
+- Need extended duration (20s)
+- Require complex scene understanding
+- Want photorealistic quality
+- OpenAI ecosystem integration
+- Long-form narrative content
 
-### The Five-Part Prompt Formula: A Structure for Control
-
-Veo encourages a structured, five-part prompt formula to achieve optimal results. This method organizes the creative request into a logical flow that the model can easily interpret, ensuring all key aspects of the scene are considered [2].
-
-**Formula:** `[Cinematography] + [Subject] + [Action] + [Context] + [Style & Ambiance]`
-
-1.  **Cinematography:** This is where you define the virtual camera work. Include details about camera movement (e.g., *dolly shot, crane shot, slow pan*), composition (e.g., *wide shot, close-up, low angle*), and lens characteristics (e.g., *shallow depth of field, wide-angle lens*).
-2.  **Subject:** Clearly identify the main character or focal point of the shot.
-3.  **Action:** Describe the primary action the subject is performing. As with other models, it is best to stick to a single, clear action per prompt.
-4.  **Context:** Detail the environment, setting, and any important background elements.
-5.  **Style & Ambiance:** Specify the overall aesthetic, mood, lighting, and any stylistic references (e.g., *retro aesthetic, shot on 1980s color film, slightly grainy*).
-
-**Example Prompt:**
-> *"Crane shot starting low on a lone hiker and ascending high above, revealing they are standing on the edge of a colossal, mist-filled canyon at sunrise, epic fantasy style, awe-inspiring, soft morning light."* [2]
-
-### Advanced Creative Controls
-
-Veo 3.1 introduces several powerful features that push the boundaries of creative control in AI video generation.
-
-*   **"Ingredients to Video":** This feature, unique to Veo, allows you to provide up to three reference images that act as "ingredients" for your video. These can be images of characters, objects, settings, or even stylistic references. The model then uses these ingredients to maintain a consistent aesthetic and character identity across the generated shot [7].
-
-*   **Timestamp Prompting:** This advanced technique allows you to specify multiple, sequenced actions within a single 8-second shot. By using timestamps (e.g., `(at 2s)`, `(at 5s)`), you can direct the model to perform different actions at specific moments in the video. This is a powerful tool for creating more dynamic and narratively complex shots [2].
-
-*   **Native Audio Generation:** Veo's ability to generate rich, synchronized audio directly from the prompt is a game-changer. It can produce dialogue, sound effects, and ambient noise with remarkable fidelity, eliminating the need for a separate audio post-production workflow in many cases.
-
-### Best Use Cases
-
-Veo 3.1 is the ideal choice for filmmakers who need to create **complex, narrative-driven scenes with a high degree of creative control**. It is particularly well-suited for:
-
-*   **Dialogue-heavy scenes:** Its native audio and lip-sync capabilities make it the go-to model for any content involving spoken performance.
-*   **Multi-shot sequences:** The combination of timestamp prompting and "Ingredients" allows for the creation of coherent, multi-shot scenes with consistent characters and aesthetics.
-*   **Complex action sequences:** The ability to sequence multiple actions within a single shot makes it possible to create more dynamic and engaging action scenes.
+**See:** [Sora 2 Prompting Mastery Guide](/prompting_guides/sora_2_prompting_mastery_guide.md)
 
 ---
 
-## Chapter 4: Kling 2.6: The Physics-Aware Animator
+### Kling O1 Edit
 
-Kling 2.6 has carved out a significant niche in the AI video landscape by focusing on **realistic motion and character physics**. Its core philosophy is to generate video that adheres to the laws of physics, resulting in believable movement, weight, and momentum. This makes it a powerful tool for creating dynamic, action-oriented scenes where physical realism is paramount [3].
+**Developer:** Kuaishou  
+**Duration:** 10 seconds  
+**Best For:** Unified multimodal video generation and editing  
+**Key Strength:** Advanced reasoning with I2V + V2V capabilities
 
-### Technical Specifications: Balancing Quality and Cost
+Kling O1 Edit provides unified multimodal video generation and editing with advanced reasoning capabilities, supporting both image-to-video and video-to-video workflows.
 
-Kling offers a balance of high-quality output and cost-effective generation, making it an attractive option for a wide range of creators.
+**Technical Specifications:**
+- Resolution: High-resolution
+- Duration: Up to 10 seconds
+- Native Audio: Yes
+- Prompting Style: Natural language with advanced reasoning
+- Interface: Kuaishou platforms, API
+- Pricing: Medium cost per generation
 
-**Table 4: Kling 2.6 Technical Specifications**
+**Core Features:**
+- **Multimodal Generation** - Image-to-video and video-to-video
+- **Advanced Reasoning** - Intelligent prompt interpretation
+- **Unified Workflow** - Seamless I2V and V2V integration
+- **High Quality** - Excellent output quality
 
-| Feature | Specification | Notes |
-| :--- | :--- | :--- |
-| **Resolution** | 1080p | Provides high-definition output suitable for professional productions. |
-| **Aspect Ratios** | 16:9 (landscape) or 9:16 (portrait) | Caters to both traditional cinematic and vertical social media formats. |
-| **Generation Length** | 5 or 10 seconds | Offers flexibility for both short and longer takes. |
-| **Native Audio** | 48kHz native audio | Generates high-quality, synchronized audio directly from the prompt. |
-| **Character Physics** | Advanced physics simulation | Excels at generating realistic movement, weight, and momentum for characters and objects. |
+**When to Use:**
+- Need unified I2V + V2V workflow
+- Require advanced reasoning
+- Want multimodal capabilities
+- Kuaishou ecosystem integration
+- Intelligent prompt interpretation
 
-### The Power of Camera Motion
-
-One of Kling's standout features is its advanced camera motion system. The model understands a wide range of cinematic camera movements and can execute them with a high degree of precision and realism. This allows filmmakers to create dynamic, engaging shots that would be difficult to achieve with other models.
-
-**Key Camera Motion Capabilities:**
-
-*   **Complex Movements:** Kling can execute a wide range of complex camera movements, including dolly zooms, crane shots, and tracking shots, with a high degree of realism.
-*   **Naturalistic Motion:** The model's understanding of physics extends to its camera movements, resulting in smooth, natural-looking motion that avoids the robotic feel of some other systems.
-*   **Prompt-Driven Control:** Camera motion is controlled through descriptive language in the prompt, allowing for a more intuitive and creative workflow.
-
-### Prompting for Physics: A Focus on Action
-
-To get the most out of Kling, it's important to focus your prompts on **action and physical interaction**. The model excels at interpreting and executing prompts that describe movement, weight, and momentum.
-
-**Recommended Prompt Structure:** `[Subject] + [Action (with physical detail)] + [Camera Movement] + [Style/Mood]`
-
-**Example Prompt:**
-> *"A knight in heavy plate armor **stumbles and falls** onto a wooden table, which **splinters under the impact**. The camera is a **handheld shot that shakes with the impact**."* [3]
-
-### Best Use Cases
-
-Kling 2.6 is the ideal choice for filmmakers who need to create **dynamic, action-oriented scenes with a strong sense of physical realism**. It is particularly well-suited for:
-
-*   **Action sequences:** Its advanced physics simulation makes it perfect for creating believable fight scenes, chases, and other high-energy sequences.
-*   **Sports content:** The model's ability to generate realistic motion makes it a great choice for creating dynamic sports highlights and other athletic content.
-*   **Any scene where believable motion is key:** From a character stumbling over a curb to a car drifting around a corner, Kling's understanding of physics makes it the go-to model for any shot where realistic movement is essential.
+**See:** [Kling O1 Edit Prompting Mastery Guide](/prompting_guides/kling_o1_edit_prompting_mastery_guide.md)
 
 ---
 
-## Chapter 5: Runway Gen-4.5: The Benchmark Leader
+### Kling Motion Control
 
-Runway has consistently pushed the boundaries of motion control in AI video, and its latest iteration, **Runway Gen-4.5**, solidifies its position as a leader in precision cinematography. Released in late 2025, Gen-4.5 is not just an incremental update; it's a significant leap in quality that has earned it the top spot on the independent Artificial Analysis Text to Video benchmark with an Elo score of 1,247 [4]. Its philosophy remains centered on **precision motion control**, but it now boasts best-in-class photorealism and prompt adherence, making it a powerhouse for filmmakers who demand granular control over their shots.
+**Developer:** Kuaishou  
+**Duration:** 10 seconds  
+**Best For:** Precision character motion transfer  
+**Key Strength:** Keyframe-based motion control with trajectory guidance
 
-### Technical Specifications: The Trade-Offs of a Champion
+Kling Motion Control specializes in precision character motion transfer with keyframe-based control and motion trajectory guidance.
 
-Gen-4.5's specifications reveal a clear focus on visual quality and control, with some notable trade-offs compared to its competitors.
+**Technical Specifications:**
+- Resolution: High-resolution
+- Duration: Up to 10 seconds
+- Native Audio: Yes
+- Prompting Style: Motion-based with keyframe control
+- Interface: Kuaishou platforms, API
+- Pricing: Medium cost per generation
 
-**Table 5: Runway Gen-4.5 Technical Specifications**
+**Core Features:**
+- **Keyframe Control** - Precise motion keyframe specification
+- **Motion Transfer** - Transfer motion from reference videos
+- **Trajectory Guidance** - Control motion paths
+- **Character Focus** - Optimized for character animation
 
-| Feature | Specification | Notes |
-| :--- | :--- | :--- |
-| **Resolution** | 720p | Still capped at 720p, lower than some competitors. |
-| **Aspect Ratios** | 16:9, 9:16, 1:1, etc. | Flexible aspect ratios available. |
-| **Generation Length** | 5, 8, or 10 seconds | New 8-second option provides more flexibility. |
-| **Native Audio** | ❌ No | This is a critical limitation compared to Veo, Kling, and Seedance. |
-| **Generation Modes** | Text-to-Video, Image-to-Video | Video-to-Video and Keyframes are planned for future updates. |
+**When to Use:**
+- Need precise character motion
+- Require keyframe-based control
+- Want motion trajectory guidance
+- Focus on character animation
+- Kuaishou ecosystem integration
 
-### The 6-Axis Camera Control System: Director Mode
-
-Runway's signature feature remains its powerful **6-axis camera control system**, now enhanced and refined in the "Director Mode." This system allows for precise, numerically-driven camera movements, giving filmmakers a level of control that is unmatched for specific choreographies.
-
-**The Six Axes of Control:**
-
-*   **Pan:** Horizontal rotation (left/right)
-*   **Tilt:** Vertical rotation (up/down)
-*   **Roll:** Rotates the camera on its axis
-*   **Zoom:** Moves the camera closer or further from the subject
-*   **Truck:** Horizontal movement of the camera (left/right)
-*   **Dolly:** Forward or backward movement of the camera
-
-These movements are controlled through a combination of descriptive language in the prompt and, in the UI, through sliders that correspond to a numerical range of -10 to +10.
-
-### Prompting Structure: Combining Controls and Language
-
-Runway achieves the best results when its camera controls are combined with a descriptive text prompt. The text prompt guides the *content* of the scene, while the camera controls guide the *movement*.
-
-**Recommended Prompt Structure:** `[Subject] + [Action] + [Camera Movement (descriptive)] + [Style/Mood]`
-
-**Best Practice Workflow:**
-
-1.  **Describe the Scene:** Write a clear, descriptive prompt for the content of your shot.
-2.  **Add Camera Language:** Include descriptive terms for the camera movement you want (e.g., *slow dolly in, fast pan right*). This helps the model understand your intent.
-3.  **Set Controls:** Use the sliders or presets in the Runway "Director Mode" to set the precise camera movements.
-4.  **Iterate:** Generate a test shot, review the movement, and adjust the controls as needed to achieve the perfect camera choreography.
-
-### Best Use Cases
-
-Runway Gen-4.5 is the ideal choice for filmmakers who need **the highest level of photorealism and precise camera control, and do not require native audio**. It is the best tool for:
-
-*   **Cinematic Product Shots:** Creating flawless, professional-grade visuals for advertising.
-*   **Complex Visual Sequences:** Leveraging its strong prompt adherence to generate intricate, multi-step actions in a single shot.
-*   **Music Videos and Stylized Content:** Its wide stylistic range and motion control make it perfect for creating visually stunning, non-narrative content.
-*   **Projects Requiring Post-Production Audio:** As it does not generate audio, it is best suited for workflows where sound design and scoring are handled separately.
+**See:** [Kling Motion Control Prompting Mastery Guide](/prompting_guides/kling_motion_control_prompting_mastery_guide.md)
 
 ---
 
-## Chapter 6: Seedance 1.5 Pro: The Performance-Focused Synthesizer
+### Wan 2.6
 
-Seedance 1.5 Pro has established itself as the undisputed leader in **audio-visual generation**, with a primary focus on human performance. Its core philosophy is to create a seamless, unified generation process where audio and video are created in tandem, resulting in best-in-class lip-sync and expressive, natural-sounding dialogue. This makes it the go-to model for any content where spoken performance is the central element [5].
+**Developer:** Alibaba  
+**Duration:** 10 seconds  
+**Best For:** Flexible workflows with three generation modes  
+**Key Strength:** Text-to-video, image-to-video, and video-to-video
 
-### Technical Specifications: Built for Dialogue
+Wan 2.6 offers three generation modes (text-to-video, image-to-video, video-to-video) with high-quality outputs and flexible workflow options.
 
-Seedance's technical specifications are tailored to its primary use case: generating realistic, dialogue-driven scenes.
+**Technical Specifications:**
+- Resolution: High-resolution
+- Duration: Up to 10 seconds
+- Native Audio: Yes
+- Prompting Style: Natural language across three modes
+- Interface: Alibaba platforms, API
+- Pricing: Medium cost per generation
 
-**Table 6: Seedance 1.5 Pro Technical Specifications**
+**Core Features:**
+- **Three Generation Modes** - T2V, I2V, V2V
+- **Flexible Workflows** - Adapt to different production needs
+- **High Quality** - Excellent output quality
+- **Alibaba Integration** - Seamless ecosystem integration
 
-| Feature | Specification | Notes |
-| :--- | :--- | :--- |
-| **Resolution** | 1080p | Provides high-definition output suitable for professional productions. |
-| **Generation Length** | ~10 seconds | Offers a longer single-shot duration than Veo 3.1, providing more flexibility for longer takes. |
-| **Native Audio** | Best-in-class lip-sync | The model's primary strength, producing highly realistic and accurate lip-sync for dialogue. |
-| **Multi-Language Support** | English, Chinese, Japanese, Korean, French, Spanish | Can generate dialogue in multiple languages with a high degree of accuracy. |
-| **Voice Cloning** | Yes | Can clone a speaker's voice from a short audio sample, allowing for consistent character voices across multiple shots. |
+**When to Use:**
+- Need multiple generation modes
+- Require flexible workflows
+- Want high-quality outputs
+- Alibaba ecosystem integration
+- Versatile production needs
 
-### The Audio-First Prompting Workflow
-
-To get the most out of Seedance, it's important to adopt an **audio-first** approach to prompting. The model's primary strength is its ability to generate realistic dialogue, so your prompts should be structured around the spoken word.
-
-**Recommended Prompt Structure:** `[Dialogue] + [Character Description] + [Setting/Context] + [Style/Mood]`
-
-**Example Prompt:**
-> *"A young woman with blonde hair says, 'I can't believe you just said that.' She is sitting in a dimly lit coffee shop, and the mood is tense."* [5]
-
-### Best Use Cases
-
-Seedance 1.5 Pro is the ideal choice for any project where **dialogue and spoken performance are the central elements**. It is particularly well-suited for:
-
-*   **Talking-head videos:** Its best-in-class lip-sync makes it perfect for creating realistic talking-head content for social media, corporate videos, and more.
-*   **Dialogue-heavy scenes:** The model's ability to generate realistic, multi-person conversations makes it the go-to choice for any scene involving dialogue.
-*   **Multi-language content:** Its support for multiple languages makes it a powerful tool for creating content for a global audience.
+**See:** [Wan 2.6 Prompting Mastery Guide](/prompting_guides/wan_2.6_prompting_mastery_guide.md)
 
 ---
 
-## Chapter 7: API vs. Direct Prompting: A Developer's Guide
+### Minimax Hailuo 02
 
-While the core prompt language remains consistent across both direct interface (UI) and API usage, the primary difference lies in how control parameters are managed. The UI often abstracts these controls into visual elements like sliders and dropdowns, while the API requires them to be explicitly defined in structured formats like JSON. This chapter provides a high-level overview of these distinctions for developers.
+**Developer:** Minimax  
+**Duration:** 6 seconds  
+**Best For:** Professional cinematic quality  
+**Key Strength:** Advanced motion understanding with cinematic output
 
-### Core Principle: Same Language, Different Parameters
+Minimax Hailuo 02 delivers professional cinematic quality with advanced motion understanding, optimized for high-end production work.
 
-The fundamental language used to describe a scene—the subject, action, style, and cinematography—is the same whether you are typing into a web interface or sending a request to an API. The key difference is that the API requires a more structured and explicit definition of the parameters that the UI might handle visually.
+**Technical Specifications:**
+- Resolution: High-resolution
+- Duration: Up to 6 seconds
+- Native Audio: Yes
+- Prompting Style: Natural language
+- Interface: Minimax platforms, API
+- Pricing: Medium cost per generation
 
-### Model-Specific API Structures
+**Core Features:**
+- **Cinematic Quality** - Professional-grade outputs
+- **Motion Understanding** - Advanced motion comprehension
+- **High-End Production** - Optimized for professional work
+- **Chinese Market Leader** - Dominant in Chinese market
 
-**Google Veo 3.1**
+**When to Use:**
+- Need professional quality
+- Require cinematic output
+- Want advanced motion understanding
+- Focus on high-end production
+- Chinese market integration
 
-| Feature | API Method | Direct Interface (UI) Method |
-| :--- | :--- | :--- |
-| **Aspect Ratio** | `aspect_ratio: "16:9"` | Dropdown menu |
-| **Resolution** | `resolution: "1080p"` | Dropdown menu |
-| **Reference Images** | `reference_images: ["path/to/image1.jpg"]` | Image upload button |
+**See:** [Minimax Hailuo 02 Prompting Mastery Guide](/prompting_guides/minimax_hailuo_02_prompting_mastery_guide.md)
 
-**Kling 2.6**
+---
 
-| Feature | API Method | Direct Interface (UI) Method |
-| :--- | :--- | :--- |
-| **Camera Control** | Structured JSON object with numerical values (-10 to +10) | Preset selection + natural language in prompt |
-| **Sound Generation** | `sound: "on"` or `"off"` | Toggle switch |
-| **CFG Scale** | `cfg_scale: 0.5` | Slider or hidden parameter |
+### Kling Avatars 2.0
+
+**Developer:** Kuaishou  
+**Duration:** 5 minutes  
+**Best For:** Audio-driven talking avatars  
+**Key Strength:** 5-minute consistency with industry-leading lip-sync
+
+Kling Avatars 2.0 specializes in audio-driven talking avatars with 5-minute consistent generation and industry-leading lip-sync capabilities.
+
+**Technical Specifications:**
+- Resolution: High-resolution
+- Duration: Up to 5 minutes
+- Native Audio: Yes (audio-driven)
+- Prompting Style: Audio input + character reference
+- Interface: Kuaishou platforms, API
+- Pricing: Medium cost per generation
+
+**Core Features:**
+- **Long Duration** - Up to 5 minutes of consistent generation
+- **Audio-Driven** - Synchronized to audio input
+- **Industry-Leading Lip-Sync** - Best-in-class synchronization
+- **Unified Character Memory** - Maintains character consistency
+
+**When to Use:**
+- Need talking avatars
+- Require long-duration (5min)
+- Want industry-leading lip-sync
+- Focus on virtual presenters
+- Educational/corporate content
+
+**See:** [Kling Avatars 2.0 Prompting Mastery Guide](/prompting_guides/kling_avatars_2.0_prompting_mastery_guide.md)
+
+---
+
+## Platform & Legacy Models
+
+### Higgsfield Platform
+
+**Type:** Platform aggregator  
+**Coverage:** Multiple models (Cinema Studio v1.5, Sora 2, Veo 3.1, Kling 2.6, Seedance 1.5 Pro)  
+**Best For:** Preset-based workflows, rapid content creation
+
+Higgsfield has evolved into a platform aggregator, integrating multiple best-in-class models under a unified interface with preset-based "Click-to-Video" workflows.
+
+**Available Models on Higgsfield:**
+- Cinema Studio v1.5 (proprietary)
+- Nano Banana Pro (proprietary)
+- Sora 2 (third-party)
+- Veo 3.1 (third-party)
+- Kling 2.6/2.5 (third-party)
+- Seedance 1.5 Pro (third-party)
+
+**When to Use:**
+- Need rapid content creation
+- Prefer preset-based workflows
+- Want access to multiple models
+- Social media content
+- Marketing and advertising
+
+---
+
+### Kling 2.6
+
+**Developer:** Kuaishou  
+**Duration:** 5s or 10s  
+**Best For:** Physics-aware animation and motion  
+**Key Strength:** Realistic physics and camera motion
+
+Kling 2.6 excels at generating realistic motion and physical interactions with strong grasp of character physics and camera motion.
+
+**When to Use:**
+- Cost-effective professional results
+- Dynamic motion and action sequences
+- Physics-aware animation
+- Camera motion control
+
+---
 
 ### Runway Gen-4.5
 
-| Feature | API Method (Suspected) | Direct Interface (UI) Method |
-| :--- | :--- | :--- |
-| **Camera Control** | Structured JSON with numerical values for 6 axes (-10 to +10) | Slider-based UI for each axis |
+**Developer:** Runway  
+**Duration:** 10 seconds  
+**Best For:** Precise camera control  
+**Key Strength:** 6-axis camera control (-10 to +10)
 
-*Note: Public API documentation for Runway Gen-4.5 is limited.*
+Runway Gen-4.5 offers best-in-class photorealism with precision camera control, earning top spot on Artificial Analysis benchmark (Elo 1,247).
+
+**When to Use:**
+- Need precise camera movements
+- Require photorealistic quality
+- Want granular motion control
+- Professional cinematography
+
+---
 
 ### Seedance 1.5 Pro
 
-| Feature | API Method (Suspected) | Direct Interface (UI) Method |
-| :--- | :--- | :--- |
-| **Voice Cloning** | `voice_clone_source: "path/to/audio.wav"` | Audio upload button |
+**Developer:** ByteDance  
+**Duration:** ~10 seconds  
+**Best For:** Dialogue-heavy scenes with lip-sync  
+**Key Strength:** Native audio-visual generation with best-in-class lip-sync
 
-*Note: Public API documentation for Seedance 1.5 Pro is limited.*
+Seedance 1.5 Pro is built around unified audio-visual generation with focus on human performance and multi-language dialogue capabilities.
+
+**When to Use:**
+- Dialogue-heavy scenes
+- Talking-head content
+- Multi-language support
+- Performance-focused content
+
+---
+
+## Model Comparison
+
+### Quick Selection Matrix
+
+| Use Case | Best Model(s) | Alternative(s) |
+|----------|---------------|----------------|
+| **Cinematic + Audio** | Veo 3.1, Sora 2 | Minimax Hailuo 02 |
+| **Extended Duration** | Sora 2 (20s), Kling Avatars 2.0 (5min) | Veo 3.1, Kling O1 Edit |
+| **Character Motion** | Kling Motion Control | Kling O1 Edit |
+| **Multimodal (I2V+V2V)** | Kling O1 Edit | Wan 2.6 |
+| **Flexible Workflows** | Wan 2.6 | Kling O1 Edit |
+| **Cinematic Quality** | Minimax Hailuo 02, Veo 3.1 | Sora 2 |
+| **Talking Avatars** | Kling Avatars 2.0 | Seedance 1.5 Pro |
+| **Rapid Content** | Higgsfield Platform | Wan 2.6 |
+| **Precise Camera** | Runway Gen-4.5 | Veo 3.1 |
+| **Dialogue/Lip-Sync** | Seedance 1.5 Pro, Kling Avatars 2.0 | Veo 3.1 |
+
+### Duration Comparison
+
+**Longest:** Kling Avatars 2.0 (5min)  
+**Extended:** Sora 2 (20s)  
+**Standard:** Kling O1 Edit, Kling Motion Control, Wan 2.6, Runway Gen-4.5, Seedance 1.5 Pro (10s)  
+**Short:** Veo 3.1 (8s), Minimax Hailuo 02 (6s), Kling 2.6 (5s-10s)
+
+### Quality Comparison
+
+**Excellent:** Veo 3.1, Sora 2, Kling O1 Edit, Minimax Hailuo 02, Runway Gen-4.5  
+**Very Good:** Kling Motion Control, Wan 2.6, Kling Avatars 2.0, Kling 2.6, Seedance 1.5 Pro
+
+### Native Audio
+
+**Yes:** Veo 3.1, Sora 2, Kling O1 Edit, Kling Motion Control, Wan 2.6, Minimax Hailuo 02, Kling Avatars 2.0, Kling 2.6, Seedance 1.5 Pro  
+**No:** Runway Gen-4.5, Higgsfield Cinema Studio v1.5
+
+### Cost Comparison
+
+**High:** Veo 3.1, Sora 2  
+**Medium:** Kling O1 Edit, Kling Motion Control, Wan 2.6, Minimax Hailuo 02, Kling Avatars 2.0, Runway Gen-4.5  
+**Lower:** Kling 2.6, Higgsfield presets
+
+---
+
+## Cross-Model Workflows
+
+### Workflow 1: Professional Cinematic Production
+
+**Goal:** Create high-quality cinematic video with audio
+
+**Steps:**
+1. **Image Generation** - Nano Banana Pro or Seedream 4.5 (4K stills)
+2. **Video Generation** - Veo 3.1 (8s with native audio) or Sora 2 (20s extended)
+3. **Enhancement** - Topaz (upscaling if needed)
+4. **Post-Production** - Traditional editing and color grading
+
+### Workflow 2: Character Animation Pipeline
+
+**Goal:** Create consistent character motion across multiple shots
+
+**Steps:**
+1. **Character Design** - Z-Image or Wan 2.2 Image (portraits)
+2. **Scene Generation** - Kling O1 Image (motion-ready stills)
+3. **Motion** - Kling Motion Control (precision character motion)
+4. **Refinement** - Kling O1 Edit (multimodal editing if needed)
+
+### Workflow 3: Talking Avatar Production
+
+**Goal:** Create professional talking avatar content
+
+**Steps:**
+1. **Character Design** - Z-Image or Wan 2.2 Image (portrait)
+2. **Audio Recording** - Record or generate audio script
+3. **Avatar Generation** - Kling Avatars 2.0 (5-min consistency)
+4. **Post-Production** - Edit and integrate with other content
+
+### Workflow 4: Flexible Multi-Mode Production
+
+**Goal:** Leverage multiple generation modes for versatile content
+
+**Steps:**
+1. **Text-to-Video** - Wan 2.6 (initial generation)
+2. **Image-to-Video** - Wan 2.6 (refine with custom images)
+3. **Video-to-Video** - Wan 2.6 (final adjustments)
+4. **Enhancement** - Topaz or traditional post-production
+
+### Workflow 5: Rapid Social Media Content
+
+**Goal:** Quickly produce high-quality social media content
+
+**Steps:**
+1. **Image Generation** - Z-Image or GPT Image 1.5 (fast)
+2. **Preset Selection** - Higgsfield Platform (click-to-video)
+3. **Quick Edit** - Platform-integrated editing
+4. **Export** - Optimized for social media formats
+
+---
+
+## Integration with Image Generation
+
+### Image-to-Video Best Practices
+
+**Recommended Image Models by Video Model:**
+
+**For Veo 3.1:**
+- Nano Banana Pro (4K quality, cinematic)
+- Seedream 4.5 (4K quality, professional)
+- Kling O1 Image (photorealistic)
+
+**For Sora 2:**
+- Nano Banana Pro (4K quality)
+- Kling O1 Image (photorealistic)
+- Midjourney v6.1 (cinematic aesthetics)
+
+**For Kling O1 Edit:**
+- Kling O1 Image (same ecosystem)
+- Kling 2.6 Image (motion-ready)
+- Nano Banana Pro (high quality)
+
+**For Kling Motion Control:**
+- Kling 2.6 Image (motion-ready)
+- Kling O1 Image (same ecosystem)
+- Z-Image or Wan 2.2 Image (character portraits)
+
+**For Wan 2.6:**
+- Wan 2.2 Image (same ecosystem)
+- Kling O1 Image (photorealistic)
+- Nano Banana Pro (high quality)
+
+**For Minimax Hailuo 02:**
+- Nano Banana Pro (4K quality)
+- Seedream 4.5 (professional)
+- Kling O1 Image (photorealistic)
+
+**For Kling Avatars 2.0:**
+- Z-Image (instant portraits)
+- Wan 2.2 Image (detailed human rendering)
+- Kling O1 Image (photorealistic)
+
+### Motion-Ready Image Composition
+
+**Regardless of video model, follow these principles:**
+
+1. **Clear Subject Separation** - Distinct foreground/background
+2. **Balanced Composition** - Avoid extreme asymmetry
+3. **Appropriate Depth** - Clear depth cues for 3D motion
+4. **Lighting Consistency** - Consistent light direction
+5. **Avoid Extreme Angles** - Moderate camera angles animate better
+6. **Character Positioning** - Center or rule-of-thirds placement
+7. **Clean Backgrounds** - Avoid overly complex backgrounds
+
+---
+
+## Best Practices
+
+### General Prompting Principles
+
+**Across all models:**
+
+1. **Be Specific** - Detailed descriptions produce better results
+2. **Use Cinematic Language** - Reference shot types, camera movements, lighting
+3. **Describe Motion** - Explicitly describe what should move and how
+4. **Set the Scene** - Provide context and environment details
+5. **Control Pacing** - Specify speed and timing of actions
+6. **Lighting Direction** - Specify light sources and mood
+7. **Audio Considerations** - Describe desired audio (for models with native audio)
+
+### Model-Specific Tips
+
+**Veo 3.1:**
+- Use five-part prompt formula
+- Leverage timestamp prompting for complex sequences
+- Use Ingredients system for style reference
+
+**Sora 2:**
+- Leverage extended duration for complex narratives
+- Describe temporal progression clearly
+- Use natural language for scene description
+
+**Kling O1 Edit:**
+- Leverage advanced reasoning with detailed descriptions
+- Use unified I2V + V2V workflow
+- Provide clear context for intelligent interpretation
+
+**Kling Motion Control:**
+- Specify keyframes and motion paths
+- Use reference videos for motion transfer
+- Focus on character-centric motion
+
+**Wan 2.6:**
+- Choose appropriate generation mode (T2V, I2V, V2V)
+- Leverage flexibility for iterative refinement
+- Use consistent prompting across modes
+
+**Minimax Hailuo 02:**
+- Focus on cinematic language
+- Describe motion and camera work explicitly
+- Leverage professional quality for high-end production
+
+**Kling Avatars 2.0:**
+- Provide high-quality character portrait
+- Use clear audio input
+- Leverage long duration for extended content
+
+---
+
+## Conclusion
+
+With **7 comprehensive AI video generation models** now available, filmmakers and content creators have unprecedented options for creating cinematic video content. The key to success is understanding each model's strengths and using them strategically in multi-model workflows.
+
+**Key Takeaways:**
+
+1. **No single "best" model** - each excels in different areas
+2. **Duration matters** - choose based on content length needs
+3. **Native audio** - most models now support synchronized audio
+4. **Ecosystem integration** - leverage platform strengths
+5. **Multi-model workflows** - combine image and video models strategically
+
+**For detailed model-specific techniques, see the individual prompting mastery guides in `/prompting_guides/`.**
 
 ---
 
 ## References
 
-[1] Higgsfield. (2026). *Cinema Studio v1.5 Documentation*. Higgsfield AI.
-[2] Google. (2026). *Veo 3.1 Developer Documentation*. Google AI.
-[3] Kling AI. (2026). *Kling 2.6 User Guide*. Kling AI.
-[4] Runway. (2026). *Runway Gen-4.5 Documentation*. Runway ML.
-[5] Seedance. (2026). *Seedance 1.5 Pro User Manual*. Seedance AI.
-[6] Beeble AI. (2026). *Beeble AI VFX Documentation*. Beeble AI.
-[7] Google. (2026). *Veo 3.1 "Ingredients to Video" Guide*. Google AI.
----
+For comprehensive model-specific information, see:
 
-## Chapter 7: Model Selection Decision Tree
-
-Choosing the right model for your project is crucial. This decision tree will help you navigate the complex landscape of AI video generation models and select the best tool for your specific needs.
-
-![Model Selection Decision Tree](/home/ubuntu/model_selection_tree.png)
-
+- [Veo 3.1 Prompting Mastery Guide](/prompting_guides/veo_3.1_prompting_mastery_guide.md)
+- [Sora 2 Prompting Mastery Guide](/prompting_guides/sora_2_prompting_mastery_guide.md)
+- [Kling O1 Edit Prompting Mastery Guide](/prompting_guides/kling_o1_edit_prompting_mastery_guide.md)
+- [Kling Motion Control Prompting Mastery Guide](/prompting_guides/kling_motion_control_prompting_mastery_guide.md)
+- [Wan 2.6 Prompting Mastery Guide](/prompting_guides/wan_2.6_prompting_mastery_guide.md)
+- [Minimax Hailuo 02 Prompting Mastery Guide](/prompting_guides/minimax_hailuo_02_prompting_mastery_guide.md)
+- [Kling Avatars 2.0 Prompting Mastery Guide](/prompting_guides/kling_avatars_2.0_prompting_mastery_guide.md)
+- [Kling 2.6 Prompting Mastery Guide](/prompting_guides/kling_2.6_prompting_mastery_guide.md)
+- [Seedance 1.5 Pro Prompting Mastery Guide](/prompting_guides/seedance_1.5_pro_prompting_mastery_guide.md)
 
 ---
 
-## Chapter 8: Cost Optimization Strategies
-
-AI video generation can be expensive, but with a strategic approach, you can optimize your costs without sacrificing quality.
-
-### 8.1 Model-Specific Costs
-
-| Model | Cost Structure | Notes |
-| :--- | :--- | :--- |
-| **Higgsfield** | Subscription-based | Offers different tiers with varying levels of access and features. |
-| **Veo 3.1** | Pay-per-generation | Cost is based on the length and resolution of the generated video. |
-| **Kling 2.6** | Pay-per-generation | Generally considered a cost-effective option for professional results. |
-| **Runway Gen-4.5** | Subscription-based | Offers different tiers with varying levels of access and features. |
-| **Seedance 1.5 Pro** | Pay-per-generation | Pricing is competitive, especially for dialogue-heavy content. |
-
-### 8.2 Cost-Saving Strategies
-
-*   **Storyboard Thoroughly:** A detailed storyboard will help you avoid unnecessary generations.
-*   **Start with Low-Resolution Previews:** Use low-resolution previews to test your prompts before generating at full resolution.
-*   **Use the Right Model for the Job:** Don't use an expensive model for a simple task that a cheaper model could handle.
-*   **Batch Your Generations:** Some models offer discounts for batch generations.
-*   **Take Advantage of Free Tiers:** Many models offer free tiers with limited features.md
-
-
----
-
-## Chapter 9: API Documentation & Code Examples
-
-This chapter provides a high-level overview of the API endpoints and code examples for the leading AI video generation models. For detailed documentation, please refer to the official API documentation for each model.
-
-### 9.1 Veo 3.1 API
-
-**Endpoint:** `https://us-central1-aiplatform.googleapis.com/v1/projects/{project-id}/locations/us-central1/publishers/google/models/veo-3-1:predict`
-
-**Key Parameters:**
-
-*   `prompt`: The text prompt for the video generation.
-*   `ingredients`: An array of base64-encoded reference images.
-*   `timestamps`: An array of objects specifying actions at specific timestamps.
-
-**Python Example:**
-
-```python
-import google.auth
-import google.auth.transport.requests
-import requests
-
-creds, project = google.auth.default()
-auth_req = google.auth.transport.requests.Request()
-creds.refresh(auth_req)
-
-headers = {
-    "Authorization": f"Bearer {creds.token}",
-    "Content-Type": "application/json; charset=utf-8",
-}
-
-data = {
-    "instances": [
-        {
-            "prompt": "A cinematic shot of a futuristic city at night, with flying cars and neon signs.",
-        }
-    ]
-}
-
-response = requests.post(
-    "https://us-central1-aiplatform.googleapis.com/v1/projects/{project-id}/locations/us-central1/publishers/google/models/veo-3-1:predict",
-    headers=headers,
-    json=data,
-)
-
-print(response.json())
-```
-
-### 9.2 Runway Gen-4.5 API
-
-**Endpoint:** `https://api.runwayml.com/v1/generate`
-
-**Key Parameters:**
-
-*   `text_prompt`: The text prompt for the video generation.
-*   `image_prompt`: A base64-encoded reference image.
-*   `motion_score`: A value from 0 to 10 that controls the amount of motion in the generated video.
-
-**Python Example:**
-
-```python
-import requests
-
-headers = {
-    "Authorization": f"Bearer {YOUR_RUNWAY_API_KEY}",
-    "Content-Type": "application/json",
-}
-
-data = {
-    "text_prompt": "A beautiful landscape with a flowing river and a majestic mountain in the background.",
-    "motion_score": 5,
-}
-
-response = requests.post(
-    "https://api.runwayml.com/v1/generate",
-    headers=headers,
-    json=data,
-)
-
-print(response.json())
-```
-
-### 9.3 Kling 2.6 API
-
-*(API documentation for Kling 2.6 is not yet publicly available. This guide will be updated when it is released.)*
-
-### 9.4 Seedance 1.5 Pro API
-
-*(API documentation for Seedance 1.5 Pro is not yet publicly available. This guide will be updated when it is released.)*
-
-
----
-
-## Chapter 10: Real-World Case Studies
-
-This chapter will be expanded with real-world case studies demonstrating how to use these models to create a variety of video content, from music videos to product commercials. Each case study will include the actual prompts used, the generated results, and lessons learned from the process.
+*Last Updated: January 29, 2026*  
+*Version: 5.0*  
+*Coverage: 7 AI Video Generation Models*
