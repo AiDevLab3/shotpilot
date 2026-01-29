@@ -23,8 +23,6 @@ cine-ai-knowledge-base/
 ├── MASTER_INDEX.md (Complete navigation - v2.0)
 ├── guides/ (21 comprehensive production guides)
 ├── prompting_guides/ (18 model-specific prompting mastery guides)
-├── research/ (17 research documents)
-├── reference_docs/ (42 reference materials)
 └── assets/ (13 visual aids including decision trees)
 ```
 
@@ -195,17 +193,6 @@ These contain **model-specific expert-level prompting techniques** and should be
 
 ---
 
-### Phase 7: Research & Reference Materials
-**Priority: LOW - Ingest Last (Optional)**
-
-**Research Documents (17 files):**
-- In-depth research notes on audio generation, character consistency, cross-model workflows, platform-specific features, prompt engineering, technical specifications
-
-**Reference Materials (42 files):**
-- Official documentation from all platforms, platform-specific guides, community tutorials, technical resources
-
-**Why Last:** Deep-dive reference materials for advanced use cases.
-
 ---
 
 ## Model Coverage Summary
@@ -287,7 +274,7 @@ These contain **model-specific expert-level prompting techniques** and should be
 
 **Total Lines:** ~23,000 lines of detailed content  
 **Estimated Word Count:** ~200,000+ words  
-**Repository Size:** 5.8MB (including research and reference materials)
+**Repository Size:** ~5.1MB
 
 ---
 
@@ -299,7 +286,6 @@ These contain **model-specific expert-level prompting techniques** and should be
 **Phase 4 (Video Generation):** ✅ Ready for Ingestion  
 **Phase 5 (Character & Consistency):** ✅ Ready for Ingestion  
 **Phase 6 (Production & Post):** ✅ Ready for Ingestion  
-**Phase 7 (Research & Reference):** ✅ Ready for Ingestion (Optional)
 
 ---
 

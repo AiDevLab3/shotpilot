@@ -141,20 +141,7 @@ Five comprehensive protocols for 18-model ecosystem:
 - Advanced prompt engineering
 - Video analysis and QC
 
-### Research Documentation (17 files)
-In-depth research notes on:
-- Audio generation capabilities
-- Character consistency techniques
-- Cross-model workflows
-- Platform-specific features
-- Prompt engineering strategies
-- Technical specifications
 
-### Reference Materials (40+ files)
-- Official documentation from all platforms
-- Platform-specific guides and tutorials
-- Community best practices
-- Technical resources and specifications
 
 ---
 
@@ -171,8 +158,7 @@ cine-ai-knowledge-base/
 │   ├── image_generation_guide.md
 │   ├── video_generation_guide.md
 │   └── [15+ additional production guides]
-├── research/                   # Deep-dive research notes
-├── reference_docs/             # Official documentation archive
+
 ├── assets/                     # Visual aids and diagrams
 │   ├── model_selection_tree_v2.mmd
 │   └── model_selection_tree_v2.png
@@ -343,7 +329,7 @@ This repository is designed for the Gemini/Antigravity ecosystem. Contributions,
 This knowledge base is designed for:
 - Professional AI filmmaking workflows
 - AI agent training and optimization (Gemini/Antigravity)
-- Educational and research purposes
+- Educational purposes
 - Creative and commercial projects
 
 ---

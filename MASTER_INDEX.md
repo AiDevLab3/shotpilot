@@ -14,8 +14,6 @@
 |----------|------------|----------|
 | **Prompting Mastery Guides** | 18 | `/prompting_guides/` |
 | **Production Guides** | 20+ | `/guides/` |
-| **Research Documents** | 17 | `/research/` |
-| **Reference Documentation** | 40+ | `/reference_docs/` |
 | **Assets & Visual Aids** | 13+ | `/assets/` |
 
 ---
@@ -236,150 +234,7 @@
 
 ---
 
-## III. Research Documents (`/research/`)
-
-### Deep-Dive Technical Research
-
-**Audio Generation Research**
-- File: `audio_generation_research.md`
-- Topics: ElevenLabs capabilities, native audio systems
-
-**Character Consistency Research**
-- File: `character_consistency_research.md`
-- Topics: Face models, reference systems, consistency techniques
-
-**Cross-Model Consistency Research**
-- File: `cross_model_consistency_research.md`
-- Topics: Maintaining consistency across different models
-
-**Higgsfield Platform Research**
-- File: `higgsfield_platform_research.md`
-- Topics: Platform capabilities, Cinema Studio, integration
-
-**Motion-Ready Research**
-- File: `motion_ready_research.md`
-- Topics: Image-First Workflow, composition for animation
-
-**Prompt Engineering Research**
-- File: `prompt_engineering_research.md`
-- Topics: Universal prompting techniques, optimization
-
-**Runway 4.5 Research**
-- File: `runway_45_research.md`
-- Topics: Gen-4.5 capabilities, camera control
-
-**Shot Planning Research**
-- File: `shot_planning_research.md`
-- Topics: Pre-production workflows, storyboarding
-
-**Spatial Anatomy Research**
-- File: `spatial_anatomy_research.md`
-- Topics: Fixing anatomical issues, spatial relationships
-
-**VFX Camera Motion Research**
-- File: `vfx_camera_motion_research.md`
-- Topics: Camera movement, motion control
-
-**VFX Comprehensive Research**
-- File: `vfx_comprehensive_research.md`
-- Topics: VFX techniques, compositing, Beeble AI
-
-**Video Analysis Research**
-- File: `video_analysis_research.md`
-- Topics: Quality control, frame analysis
-
-**Video Models Research**
-- File: `video_models_research.md`
-- Topics: Comparative analysis of video generation models
-
-**API vs Direct Prompting Research**
-- File: `api_vs_direct_prompting_research.md`
-- Topics: API workflows vs direct prompting
-
-**Model Research Notes**
-- File: `model_research_notes.md`
-- Topics: General model research findings
-
-**Research Notes**
-- File: `research_notes.md`
-- Topics: Miscellaneous research findings
-
-**Nano Banana Pro Editing Research Notes**
-- File: `Nano Banana Pro Editing Research Notes.md`
-- Topics: Nano Banana Pro editing capabilities
-
----
-
-## IV. Reference Documentation (`/reference_docs/`)
-
-### Official Platform Documentation
-
-**Midjourney**
-- `docs.midjourney.com_hc_en-us_articles_32859204029709-Parameter-List.md`
-
-**Flux (Black Forest Labs)**
-- `docs.bfl.ai_guides_prompting_summary.md`
-
-**OpenAI**
-- `developers.openai.com_cookbook_examples_multimodal_image-gen-1.5-prompting_guide_.md`
-- `openai.com_index_hello-gpt-4o_.md`
-
-**Google**
-- `ai.google.dev_gemini-api_docs_image-generation.md`
-- `cloud.google.com_blog_products_ai-machine-learning_ultimate-prompting-guide-for-veo-3-1.md`
-
-**Higgsfield**
-- `higgsfield.ai_nano-banana-2-intro.md`
-- `higgsfield.ai_nano-banana-pro-prompt-guide.md`
-- `higgsfield.ai_blog_cinema-studio-guide.md`
-- `higgsfield.ai_blog_Seedance-1.5-Pro-on-Higgsfield-A-Practical-Creator-Guide.md`
-- `higgsfield.ai_camera-controls.md`
-- `higgsfield.ai_kling-2.6-audio.md`
-
-**Runway**
-- `help.runwayml.com_hc_en-us_articles_39789879462419-Gen-4-Video-Prompting-Guide.md`
-- `help.runwayml.com_hc_en-us_articles_30586818553107-Gen-3-Alpha-Prompting-Guide.md`
-- `runwayml.com_research_introducing-runway-gen-4.5.md`
-
-**ByteDance (Seedance)**
-- `seed.bytedance.com_en_blog_sound-and-vision-all-in-one-take-the-official-release-of-seedance-1-5-pro.md`
-
-**Beeble AI**
-- `beeble.ai_.md`
-
----
-
-### Community & Tutorial Content
-
-**Medium Articles**
-- `medium.com__robertgo8_the-complete-guide-to-crafting-professional-midjourney-photography-prompts-e16.md`
-- `medium.com__parmarmilankumar_15-ai-prompts-to-master-professional-portrait-photography-1ccf19baa6cc.md`
-- `medium.com__aycaturan_ai-filmmaking-workflow-simulation-production-method-48781262f5eb.md`
-
-**Blog Posts**
-- `blog.ravi-mehta.com_p_better-image-generation-prompts.md`
-- `dev.to_googleai_nano-banana-pro-prompting-guide-strategies-1h9n.md`
-
-**Platform Tutorials**
-- `leonardo.ai_news_kling-ai-prompts_.md`
-- `www.atlabs.ai_blog_42-cinematic-ai-composition-prompts-guide.md`
-- `www.animationguides.com_guide-camera-angles-shots-ai_.md`
-- `www.humanacademy.ai_en_blog_lighting-images-ai.md`
-- `www.saastr.com_saastr-ai-app-of-the-week-higgsfield-the-video-ai-platform-thats-crushing-it-where-ev.md`
-- `www.eesel.ai_en_blog_runway-45.md`
-
-**Specialized Techniques**
-- `openart.ai_blog_post_midjourney-prompts-for-facial-expression.md`
-- `ageofllms.com_ai-howto-prompts_ai-fun_dof-techniques-ai-image-generation.md`
-- `sider.ai_blog_ai-image_fixing-distorted-hands-in-nano-banana-prompts-a-practical-guide.md`
-- `skywork.ai_blog_how-to-fix-soft-faces-hands-eyes-nano-banana-guide_.md`
-
-**Community Discussions**
-- `www.reddit.com_r_GeminiAI_comments_1pb7k13_nano_banana_pro_photo_quality_gets_worse_with_.md`
-
----
-
-## V. Assets & Visual Aids (`/assets/`)
+## III. Assets & Visual Aids (`/assets/`)
 
 **Decision Trees**
 - `model_selection_tree.mmd` - Original Mermaid diagram source
@@ -394,7 +249,7 @@
 
 ---
 
-## VI. Quick Reference by Use Case
+## IV. Quick Reference by Use Case
 
 ### For Filmmakers & Content Creators
 
@@ -443,8 +298,6 @@
 
 - **Total Prompting Mastery Guides:** 18 (11 image + 7 video)
 - **Total Production Guides:** 20+ comprehensive guides
-- **Total Research Files:** 17 deep-dive research documents
-- **Total Reference Docs:** 40+ official and community resources
 - **Total Assets:** 13+ visual aids and references
 - **Total Content:** ~1.5MB+ (including all documentation)
 - **Total Word Count:** ~250,000+ words of expert-level content
@@ -466,8 +319,6 @@
 - Initial comprehensive knowledge base
 - 4 foundation prompting guides
 - Production workflow guides
-- Research documentation
-- Reference materials
 
 ---
 
@@ -477,8 +328,6 @@
 1. Start with **MODEL_SELECTION_GUIDE.md** for choosing models
 2. Reference **prompting mastery guides** for model-specific techniques
 3. Consult **production guides** for workflow strategies
-4. Use **research docs** for deep technical understanding
-5. Check **reference docs** for official documentation
 6. View **assets** for visual decision trees
 
 ### For AI Agents (Gemini):
@@ -486,8 +335,6 @@
 2. Reference **MODEL_SELECTION_GUIDE.md** for intelligent model selection
 3. Apply **AI Agent Interaction Protocol** for decision-making frameworks
 4. Use **production guides** as workflow templates
-5. Cross-reference **research** for technical depth
-6. Validate against **reference docs** for accuracy
 
 ---
 
