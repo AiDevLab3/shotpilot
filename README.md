@@ -10,7 +10,14 @@ Total Content: ~900KB of comprehensive documentation
 
 ## Overview
 
-This repository contains expert-level prompting mastery guides for all major AI image and video generation models, designed for professional filmmakers, content creators, and AI enthusiasts. Each guide provides comprehensive strategies, technical specifications, prompt frameworks, and best practices for mastering each model.
+This repository contains expert-level prompting mastery guides for all major AI image and video generation models, designed for professional filmmakers, content creators, and AI agents. Each guide provides comprehensive strategies, technical specifications, prompt frameworks, and best practices for mastering each model.
+
+**Key Features:**
+- 🎯 **18 Comprehensive Prompting Guides** (11 image + 7 video models)
+- 🤖 **AI Agent Decision-Making Frameworks** for intelligent model selection
+- 🔄 **Multi-Model Workflow Strategies** for professional production
+- 📊 **Model Selection Guide** with visual decision trees
+- 🎬 **Production-Ready Workflows** for filmmakers and creators
 
 ---
 
@@ -49,33 +56,105 @@ This repository contains expert-level prompting mastery guides for all major AI 
 
 ---
 
-## 📖 Additional Resources
+## 🤖 AI Agent Resources
 
-### Production Guides (19 files)
-Comprehensive workflow guides covering:
-- Video generation workflows
-- Image generation techniques
-- Character consistency strategies
+### Core Decision-Making Frameworks
+
+**1. Model Selection Guide** (`guides/MODEL_SELECTION_GUIDE.md` - 19KB)
+Comprehensive decision framework for intelligent model selection:
+- Quick selection matrices for all use cases
+- Decision tree logic with visual diagrams
+- Budget, ecosystem, and use case recommendations
+- Multi-model workflow strategies
+- Platform ecosystem considerations
+
+**2. AI Agent Interaction Protocol** (`guides/AI Agent Interaction Protocol (Revised): A Flexible Guidance Framework.md` - 21KB)
+Five comprehensive protocols for 18-model ecosystem:
+- **Protocol 1:** Highest-Quality Source Principle
+- **Protocol 2:** Intelligent Model Selection
+- **Protocol 3:** Multi-Model Workflow Design
+- **Protocol 4:** Flexible Guidance Framework
+- **Protocol 5:** Ecosystem-Aware Decision Making
+
+**3. Visual Decision Trees** (`assets/model_selection_tree_v2.png`)
+- Visual flowchart for model selection
+- Budget-based recommendations
+- Ecosystem-based recommendations
+- Use case-based recommendations
+
+### Agent Usage Guidelines
+
+**For AI Agents (Gemini/Antigravity Ecosystem):**
+
+**Step 1: Ingest Knowledge Base**
+- Load all 18 prompting mastery guides for comprehensive model knowledge
+- Reference MODEL_SELECTION_GUIDE.md for decision-making logic
+- Study AI Agent Interaction Protocol for structured frameworks
+
+**Step 2: Apply Intelligent Model Selection**
+- Assess requirements (output type, use case, quality, duration, budget, ecosystem)
+- Apply selection logic from MODEL_SELECTION_GUIDE.md
+- Justify model choice with specific reasons
+
+**Step 3: Design Multi-Model Workflows**
+- Reference workflow categories in AI Agent Interaction Protocol
+- Design optimal model sequence for task
+- Provide transition strategies between models
+
+**Step 4: Generate Expert Prompts**
+- Reference specific model's prompting mastery guide
+- Apply model-specific techniques and frameworks
+- Provide complete, copy-paste-ready prompts
+
+**Step 5: Optimize and Iterate**
+- Follow highest-quality source principle
+- Use fallback strategies when needed
+- Cross-model translation for workflow changes
+
+---
+
+## 📖 Production Guides & Resources
+
+### Core Workflow Guides
+
+**Image Generation** (`guides/image_generation_guide.md` - 22KB)
+- Coverage: 11 image models (expanded from 5)
+- Foundation models, advanced models, specialized tools
+- Cross-model workflows and integration strategies
+
+**Video Generation** (`guides/video_generation_guide.md` - 22KB)
+- Coverage: 7 core video models
+- Platform integration and multi-model workflows
+- I2V best practices and motion-ready composition
+
+**Character Consistency** (`guides/character_consistency_guide.md` - 19KB)
+- Model-specific character reference systems
+- Consistency techniques across shots
+- Face models and unified workflows
+
+**Additional Production Guides (17+ files)**
 - Motion-ready workflows
 - Audio design integration
 - Shot planning and composition
 - VFX and post-production
 - Quality control and ethics
+- Advanced prompt engineering
+- Video analysis and QC
 
 ### Research Documentation (17 files)
 In-depth research notes on:
-- Audio generation
-- Character consistency
+- Audio generation capabilities
+- Character consistency techniques
 - Cross-model workflows
 - Platform-specific features
-- Prompt engineering
+- Prompt engineering strategies
 - Technical specifications
 
 ### Reference Materials (40+ files)
-- Official documentation
-- Platform-specific guides
-- Community tutorials
-- Technical resources
+- Official documentation from all platforms
+- Platform-specific guides and tutorials
+- Community best practices
+- Technical resources and specifications
 
 ---
 
@@ -87,9 +166,17 @@ cine-ai-knowledge-base/
 │   ├── [Image Models - 11 guides]
 │   └── [Video Models - 7 guides]
 ├── guides/                     # Production workflow guides
+│   ├── MODEL_SELECTION_GUIDE.md
+│   ├── AI Agent Interaction Protocol (Revised): A Flexible Guidance Framework.md
+│   ├── image_generation_guide.md
+│   ├── video_generation_guide.md
+│   └── [15+ additional production guides]
 ├── research/                   # Deep-dive research notes
 ├── reference_docs/             # Official documentation archive
 ├── assets/                     # Visual aids and diagrams
+│   ├── model_selection_tree_v2.mmd
+│   └── model_selection_tree_v2.png
+├── MASTER_INDEX.md             # Comprehensive navigation guide
 └── README.md                   # This file
 ```
 
@@ -99,17 +186,19 @@ cine-ai-knowledge-base/
 
 ### For Filmmakers and Creators
 
-1. **Choose Your Model**: Review the guide list to select the model that fits your needs
-2. **Read the Guide**: Start with the Executive Summary, then dive into specific sections
-3. **Apply Techniques**: Use the prompt frameworks and best practices
-4. **Iterate and Refine**: Use troubleshooting sections to optimize results
+1. **Choose Your Model**: Review [MODEL_SELECTION_GUIDE.md](guides/MODEL_SELECTION_GUIDE.md) or use the [visual decision tree](assets/model_selection_tree_v2.png)
+2. **Read the Guide**: Navigate to the specific model's prompting mastery guide in `/prompting_guides/`
+3. **Apply Techniques**: Use the prompt frameworks and best practices from the guide
+4. **Design Workflows**: Reference production guides for multi-model workflows
+5. **Iterate and Refine**: Use troubleshooting sections to optimize results
 
 ### For AI Agents (Gemini/Antigravity)
 
-1. **Ingest All Guides**: Load all 18 prompting guides for comprehensive model knowledge
-2. **Reference by Model**: When generating content, reference the specific model's guide
-3. **Apply Frameworks**: Use structured prompt frameworks for consistent results
-4. **Cross-Reference**: Compare models using competitive analysis sections
+1. **Ingest All Guides**: Load all 18 prompting guides + MODEL_SELECTION_GUIDE.md + AI Agent Interaction Protocol
+2. **Apply Selection Logic**: Use intelligent model selection framework for each task
+3. **Design Workflows**: Create multi-model workflows using ecosystem-aware decision making
+4. **Generate Prompts**: Reference specific model guides and provide complete, copy-paste-ready prompts
+5. **Optimize Results**: Follow highest-quality source principle and fallback strategies
 
 ---
 
@@ -132,6 +221,13 @@ cine-ai-knowledge-base/
 - Cinematic Generation: ~204KB (3 guides)
 - Specialized: ~120KB (2 guides)
 
+**Supporting Documentation**: ~100KB
+- MODEL_SELECTION_GUIDE.md: 19KB
+- AI Agent Interaction Protocol: 21KB
+- Image Generation Guide: 22KB
+- Video Generation Guide: 22KB
+- MASTER_INDEX.md: 19KB
+
 ---
 
 ## 🎬 Models Covered
@@ -143,7 +239,7 @@ cine-ai-knowledge-base/
 - **ByteDance**: Seedance 1.5 Pro, Seedream 4.5
 - **Black Forest Labs**: FLUX.2
 - **Zhipu AI**: Z-Image
-- **Alibaba**: Wan 2.2 Image, Wan 2.6
+- **Alibaba**: Wan 2.2 Image
 - **Specialized**: Reve (editing), Topaz (upscaling)
 
 ### Video Generation
@@ -178,6 +274,13 @@ cine-ai-knowledge-base/
 - Corporate training
 - Customer service content
 
+### AI Agent Workflows
+- Intelligent model selection
+- Multi-model production pipelines
+- Automated workflow optimization
+- Quality control and refinement
+- Cross-platform integration
+
 ---
 
 ## 📈 Version History
@@ -185,9 +288,16 @@ cine-ai-knowledge-base/
 ### Version 5.0 (January 29, 2026) - Current
 - ✅ Added 7 advanced image model guides (Phase 2)
 - ✅ Added 7 video model guides (Phase 4)
+- ✅ Created MODEL_SELECTION_GUIDE.md (19KB)
+- ✅ Updated AI Agent Interaction Protocol to v2.0 (21KB)
+- ✅ Updated image_generation_guide.md to v5.0 (22KB)
+- ✅ Updated video_generation_guide.md to v5.0 (22KB)
+- ✅ Updated MASTER_INDEX.md to v2.0 (19KB)
+- ✅ Created visual decision trees for model selection
+- ✅ Complete repository audit and integration
 - ✅ Total: 18 comprehensive prompting mastery guides
 - ✅ ~900KB of expert-level content
-- ✅ Complete coverage of major AI generation models
+- ✅ Enhanced agent decision-making frameworks
 
 ### Version 4.0 (January 27, 2026)
 - ✅ Added 4 foundation image model guides (Phase 1)
@@ -214,6 +324,12 @@ cine-ai-knowledge-base/
 2. **Reve** (image editing) and **Topaz** (upscaling/enhancement)
 3. Integrate multiple models into production workflows
 
+### AI Agent Path
+1. **Ingest**: All 18 prompting guides + MODEL_SELECTION_GUIDE.md
+2. **Study**: AI Agent Interaction Protocol v2.0 (5 protocols)
+3. **Apply**: Intelligent model selection and multi-model workflows
+4. **Optimize**: Ecosystem-aware decision making and fallback strategies
+
 ---
 
 ## 🤝 Contributing
@@ -235,11 +351,50 @@ This knowledge base is designed for:
 ## 🔗 Integration
 
 ### Gemini/Antigravity Ecosystem
+
 This repository is optimized for integration with the Gemini/Antigravity ecosystem:
-- Comprehensive model coverage for intelligent model selection
-- Structured prompt frameworks for consistent generation
-- Best practices for quality optimization
-- Troubleshooting guides for error handling
+
+**For Intelligent Model Selection:**
+- Comprehensive model coverage for all use cases
+- Structured decision-making frameworks
+- Visual decision trees for quick reference
+- Budget, ecosystem, and use case considerations
+
+**For Multi-Model Workflows:**
+- Cross-model workflow strategies
+- Ecosystem-aware decision making
+- Transition strategies between models
+- Fallback and optimization techniques
+
+**For Consistent Quality:**
+- Structured prompt frameworks for each model
+- Best practices and troubleshooting guides
+- Quality optimization strategies
+- Highest-quality source principle
+
+**For Agent Decision-Making:**
+- Five comprehensive protocols in AI Agent Interaction Protocol
+- Intelligent model selection logic
+- Multi-model workflow design frameworks
+- Practical examples and use cases
+
+---
+
+## 📚 Navigation
+
+**Start Here:**
+- [MASTER_INDEX.md](MASTER_INDEX.md) - Complete navigation for all content
+- [MODEL_SELECTION_GUIDE.md](guides/MODEL_SELECTION_GUIDE.md) - Model selection framework
+- [Visual Decision Tree](assets/model_selection_tree_v2.png) - Quick reference flowchart
+
+**For AI Agents:**
+- [AI Agent Interaction Protocol](guides/AI%20Agent%20Interaction%20Protocol%20(Revised):%20A%20Flexible%20Guidance%20Framework.md) - Decision-making frameworks
+- [Image Generation Guide](guides/image_generation_guide.md) - 11 image models overview
+- [Video Generation Guide](guides/video_generation_guide.md) - 7 video models overview
+
+**For Specific Models:**
+- Navigate to `/prompting_guides/` for individual model guides
+- Each guide includes: Executive Summary, Technical Specs, Prompt Frameworks, Best Practices, Troubleshooting
 
 ---
 
