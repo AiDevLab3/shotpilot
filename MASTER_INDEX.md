@@ -237,15 +237,8 @@
 ## III. Assets & Visual Aids (`/assets/`)
 
 **Decision Trees**
-- `model_selection_tree.mmd` - Original Mermaid diagram source
-- `model_selection_tree.png` (262KB) - Original model selection flowchart
-- `model_selection_tree_v2.mmd` **[NEW]** - Updated 18-model decision tree
-- `model_selection_tree_v2.png` **[NEW]** - Updated visual decision tree
-
-**Reference Materials**
-- `🎬STUDIOREALISMCHEATSHEET.txt` - Quick reference cheat sheet
-- `pasted_content.txt` - Additional reference content
-- Various screenshots and visual references
+- `model_selection_tree_v2.mmd` (4.4KB) - Model selection decision tree source (Mermaid)
+- `model_selection_tree_v2.png` (200KB) - Visual decision tree for all 18 models
 
 ---
 
