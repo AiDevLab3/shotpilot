@@ -14,6 +14,108 @@ To prevent "Context Bloat" and enable deep domain expertise, the Cine-AI logic i
 
 ---
 
+## 🚫The Production Logic Gate (MANDATORY)
+
+### Critical: Shot-Lock Protocol
+
+Agents **MUST** follow this sequential workflow. **Video tools are DISABLED until the user explicitly approves the Master Still.**
+
+**Context Drift Prevention**: This protocol exists because agents have a tendency to "skip ahead" to video generation when they see the end goal. **This is strictly forbidden.** Each phase requires explicit user approval before proceeding.
+
+---
+
+### PHASE 1: Master ID Generation (Character Turnaround)
+
+**Objective**: Establish the character's visual identity (SoulID)
+
+**Agent Responsible**: Chief of Staff + DP Agent
+
+**Deliverable**: Character turnaround or reference sheet
+- Front view, 3/4 view, profile view
+- Consistent lighting and style
+- High-resolution reference for SoulID lock
+
+**⛔ HARD STOP - USER APPROVAL REQUIRED**
+
+**Agent Action**: Present the Master ID to the user and state:
+> "Master ID generated. Please review for character consistency and approve before proceeding to Hero Frame generation. Reply 'LOCKED' to proceed or provide correction notes."
+
+**DO NOT PROCEED** to Phase 2 until user responds with "LOCKED" or approval.
+
+---
+
+### PHASE 2: Master Still Generation (Hero Frame)
+
+**Objective**: Generate the 100% perfect still shot that will serve as the "ingredient" for motion
+
+**Agent Responsible**: DP Agent + Gaffer Agent
+
+**Deliverable**: Hero Frame still image
+- Composition locked (rule of thirds, leading lines, depth)
+- Optical specs locked (focal length, aperture, distance)
+- Lighting locked (practical sources, motivated ratios, physics-correct)
+- Character identity locked (using Master ID as reference)
+
+**Critical Requirement**: This is a **STILL IMAGE ONLY**. No motion, no video generation.
+
+**Tools Allowed**: Image generation models ONLY (Imagen 3, Nano Banana Pro, Seedream 4.5, etc.)
+
+**Tools FORBIDDEN**: Video generation models (Veo 3.1, Sora 2, Kling, etc.) are **STRICTLY DISABLED** in this phase.
+
+**⛔ HARD STOP - USER APPROVAL REQUIRED**
+
+**Agent Action**: Present the Hero Frame to the user and state:
+> "Hero Frame generated. This still will serve as the foundation for motion. Please review composition, lighting, and character identity. Reply 'LOCKED' to proceed to motion generation or provide correction notes."
+
+**DO NOT PROCEED** to Phase 3 until user responds with "LOCKED" or approval.
+
+**If Corrections Needed**: Apply 3-Strike Rule within the image model before suggesting a pivot.
+
+---
+
+### PHASE 3: Motion Generation (Video)
+
+**Objective**: Animate the locked Hero Frame using image-to-video workflow
+
+**Agent Responsible**: Motion Agent
+
+**Prerequisite**: User MUST have approved the Hero Frame from Phase 2
+
+**Deliverable**: Video clip using Hero Frame as the "ingredient"
+- Camera move specified (Dolly, Pan, Tilt, Static)
+- Temporal stability maintained (character identity consistent across frames)
+- Optical metadata from DP applied (focal length, aperture for DOF)
+- Physics-based motion (no floating, no warping)
+
+**Tools Allowed**: Video generation models (Veo 3.1, Sora 2, Kling O1 Edit, etc.)
+
+**Input Required**: The locked Hero Frame from Phase 2 as the primary visual anchor
+
+**Agent Action**: State the motion plan before generation:
+> "Proceeding to motion generation using locked Hero Frame. Camera move: [Dolly In/Pan Right/etc.]. Duration: [6s/8s/10s]. Model: [Veo 3.1/Sora 2/etc.]. Generating now..."
+
+---
+
+### Why This Protocol Exists
+
+**Problem**: Agents suffer from "Context Drift" where they see the entire workflow and skip directly to video generation, bypassing the critical Master Still phase.
+
+**Consequence**: Video generation without a locked Hero Frame leads to:
+- Character identity hallucination
+- Inconsistent composition
+- Physics errors that can't be corrected
+- Wasted compute on unusable outputs
+
+**Solution**: Hard-stop validation gates force the agent to:
+1. Complete each phase fully
+2. Wait for explicit user approval
+3. Use the approved still as the mandatory "ingredient" for motion
+4. Prevent creative shortcuts that break the production pipeline
+
+**Enforcement**: The Chief of Staff is responsible for enforcing this protocol. If any agent attempts to skip a phase, the Chief of Staff must intervene and reset to the correct phase.
+
+---
+
 ## 1. Chief of Staff (Producer Agent)
 
 ### Domain
@@ -24,12 +126,14 @@ To prevent "Context Bloat" and enable deep domain expertise, the Cine-AI logic i
 - Orchestrates sub-agent collaboration and task delegation
 - Performs the final "Technical Audit" before finalizing a frame
 - Enforces the **3-Strike Rule** and makes pivot decisions
+- **CRITICAL**: Enforces the **Shot-Lock Protocol** and prevents phase skipping
 
 ### Core Functions
 1. **DNA Maintenance**: Ensures character consistency across all shots through SoulID reference system
 2. **Agent Orchestration**: Delegates tasks to specialists (DP, Gaffer, Motion Agent) based on shot requirements
 3. **Technical Audit**: Reviews all outputs for physics errors, identity drift, and optical consistency
 4. **Pivot Authority**: Only the Chief of Staff can authorize a model pivot after 3 strikes
+5. **Shot-Lock Enforcement**: Prevents agents from skipping phases (e.g., jumping directly to video without user-approved Hero Frame)
 
 ### Knowledge Base Access
 - Full access to all 18 model prompting guides

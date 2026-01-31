@@ -1,8 +1,9 @@
 # AI Agent Interaction Protocol: Flexible Guidance Framework for 18-Model Ecosystem
 
-**Version:** 2.0  
-**Last Updated:** January 29, 2026  
-**Coverage:** 18 AI Generation Models (11 Image + 7 Video)
+**Version:** 2.1  
+**Last Updated:** January 31, 2026  
+**Coverage:** 18 AI Generation Models (11 Image + 7 Video)  
+**Critical Update:** Protocol 0 (Shot-Lock Protocol) added to prevent Context Drift
 
 ---
 
@@ -10,7 +11,9 @@
 
 This protocol defines interaction frameworks for AI agents acting as "Chief Cinematographer" or "Creative Director" in a comprehensive 18-model ecosystem. The framework is designed to be flexible, prevent quality degradation from excessive iteration, and empower AI agents to provide intelligent, context-aware recommendations leveraging the full spectrum of available models.
 
-**New in Version 2.0:** Expanded to cover 18 models (11 image + 7 video), with enhanced model selection logic, cross-model workflow recommendations, and ecosystem-aware decision-making.
+**New in Version 2.1:** Added **Protocol 0 (Shot-Lock Protocol)** to prevent Context Drift. This mandatory protocol enforces sequential workflow with hard-stop validation gates, preventing agents from skipping the Master Still phase and jumping directly to video generation.
+
+**Previous Update (v2.0):** Expanded to cover 18 models (11 image + 7 video), with enhanced model selection logic, cross-model workflow recommendations, and ecosystem-aware decision-making.
 
 ---
 
@@ -39,7 +42,74 @@ The AI agent acts as an expert creative director, leveraging comprehensive knowl
 
 ---
 
-## 2. The Five Core Protocols
+## 2. The Six Core Protocols
+
+### Protocol 0: The Shot-Lock Protocol (MANDATORY)
+
+**Objective:** Prevent Context Drift by enforcing sequential workflow with hard-stop validation gates.
+
+**Critical Requirement:** This protocol supersedes all other protocols. Agents MUST follow the 3-phase workflow before applying any other protocols.
+
+**The Problem:**
+Agents suffer from "Context Drift" where they see the entire workflow and skip directly to video generation, bypassing the critical Master Still phase. This causes character hallucination, inconsistent composition, and physics errors.
+
+**The Solution:**
+Hard-stop validation gates that require explicit user approval before proceeding to the next phase.
+
+---
+
+#### The Three-Phase Workflow
+
+**PHASE 1: Master ID Generation (Character Turnaround)**
+- **Objective**: Establish character's visual identity (SoulID)
+- **Deliverable**: Character turnaround (Front, 3/4, Profile views)
+- **Tools Allowed**: Image models ONLY
+- **Tools FORBIDDEN**: Video models
+- **⛔ HARD STOP**: Present to user, wait for "LOCKED" approval
+- **DO NOT PROCEED** to Phase 2 without user approval
+
+**PHASE 2: Master Still Generation (Hero Frame)**
+- **Objective**: Generate the perfect still shot ("ingredient" for motion)
+- **Deliverable**: Hero Frame still image with locked composition, lighting, and character identity
+- **Tools Allowed**: Image models ONLY (Imagen 3, Nano Banana Pro, Seedream 4.5, etc.)
+- **Tools FORBIDDEN**: **Video models are STRICTLY DISABLED in this phase**
+- **Critical**: This is a STILL IMAGE ONLY. No motion, no video, no animation.
+- **⛔ HARD STOP**: Present to user, wait for "LOCKED" approval
+- **DO NOT PROCEED** to Phase 3 without user approval
+
+**PHASE 3: Motion Generation (Video)**
+- **Prerequisite**: User MUST have approved Hero Frame from Phase 2
+- **Objective**: Animate the locked Hero Frame using image-to-video workflow
+- **Deliverable**: Video clip using Hero Frame as primary visual anchor
+- **Tools Allowed**: Video models (Veo 3.1, Sora 2, Kling O1 Edit, etc.)
+- **Input Required**: The locked Hero Frame from Phase 2
+
+---
+
+#### Agent Implementation
+
+**On Task Start:**
+1. Identify the current phase (default: Phase 1)
+2. Do NOT skip ahead to Phase 2 or Phase 3
+3. Complete the current phase fully
+4. Present deliverable to user
+5. State: "Reply 'LOCKED' to proceed or provide correction notes."
+6. WAIT for user response (do NOT proceed automatically)
+7. Only after user approval: Advance to next phase
+
+**If Tempted to Skip Ahead:**
+1. STOP: Recognize this as Context Drift
+2. Reset: Return to the current phase
+3. Explain: "Video generation requires a user-approved Hero Frame to prevent character hallucination."
+4. Proceed correctly: Complete Phase 2, wait for approval, then proceed to Phase 3
+
+**Enforcement:**
+The Chief of Staff (Producer Agent) is responsible for enforcing this protocol. If any agent attempts to skip a phase, the Chief of Staff must intervene and reset to the correct phase.
+
+**Reference:**
+See [PRODUCTION_WORKFLOW.md](../PRODUCTION_WORKFLOW.md) for complete workflow documentation.
+
+---
 
 ### Protocol 1: The "Highest-Quality Source" Principle
 
