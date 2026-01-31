@@ -3,7 +3,7 @@
 **Project:** Cine-AI Knowledge Base - Antigravity Workspace  
 **Date:** January 31, 2026  
 **Status:** Complete - Ready for Full Ingestion  
-**Version:** 6.2 (18-Model Ecosystem + Agentic Film Crew + Structural Auditor)
+**Version:** 6.3 (18-Model Ecosystem + Agentic Film Crew + Holistic Image Auditor)
 
 ---
 
@@ -21,8 +21,8 @@ cine-ai-knowledge-base/
 ├── production_ledger.json (API cost tracking)
 ├── README.md (Main entry point - v6.0)
 ├── MASTER_INDEX.md (Complete navigation - v2.0)
-├── AGENTS.md (NEW - v1.2 - Agentic Film Crew + Structural Auditor)
-├── PRODUCTION_WORKFLOW.md (NEW - v1.1 - Shot-Lock Protocol + Structural Auditor Review)
+├── AGENTS.md (NEW - v2.0 - Agentic Film Crew with Holistic Image Auditor)
+├── PRODUCTION_WORKFLOW.md (NEW - v2.0 - Shot-Lock Protocol + Holistic Image Audit)
 ├── guides/ (21 comprehensive production guides)
 ├── prompting_guides/ (18 model-specific prompting mastery guides)
 └── assets/ (2 visual aids: decision tree v2)
@@ -35,10 +35,10 @@ cine-ai-knowledge-base/
 ### Core Documentation (2 files)
 These are the **primary entry points** and should be ingested first:
 
-1. **README.md** (v6.0) - Main repository overview with AI agent resources and One Roof vision
+1. **README.md** (v6.3) - Main repository overview with AI agent resources and One Roof vision
 2. **MASTER_INDEX.md** (v2.0) - Complete navigation for all content
-3. **AGENTS.md** (v1.2 - NEW) - Agentic Film Crew architecture with 5 specialist agents (Chief of Staff, DP, Gaffer, Structural Auditor, Motion Agent)
-4. **PRODUCTION_WORKFLOW.md** (v1.1 - NEW) - Shot-Lock Protocol with hard-stop validation gates and Structural Auditor Review
+3. **AGENTS.md** (v2.0 - NEW) - Agentic Film Crew architecture with 4 specialist agents (Chief of Staff, DP, Holistic Image Auditor, Motion Agent)
+4. **PRODUCTION_WORKFLOW.md** (v2.0 - NEW) - Shot-Lock Protocol with hard-stop validation gates and Holistic Image Audit
 
 ### Production Guides (21 files)
 These are the **core production workflows** and should be ingested as primary project logic:
@@ -310,6 +310,6 @@ These contain **model-specific expert-level prompting techniques** and should be
 
 **Status:** Workspace structure is complete. All 18 prompting mastery guides, updated core documentation, and decision-making frameworks are in place and ready for the Antigravity agent to ingest as primary project logic.
 
-**Version:** 5.0 (18-Model Ecosystem)  
-**Last Updated:** January 29, 2026  
+**Version:** 6.3 (18-Model Ecosystem + Agentic Film Crew + Holistic Image Auditor)  
+**Last Updated:** January 31, 2026  
 **Repository:** https://github.com/cramsey28/cine-ai-knowledge-base

@@ -2,7 +2,7 @@
 
 **The most comprehensive collection of AI filmmaking knowledge, powered by an Agentic Film Crew architecture**
 
-Version: 6.0 (January 2026)  
+Version: 6.3 (January 2026)  
 Total Guides: 18 Expert-Level Prompting Mastery Guides  
 Total Content: ~900KB + Agentic Film Crew System  
 **Current Milestone:** 🚀 MVP Technical Validation
@@ -21,13 +21,13 @@ Unlike storyboard platforms that automate the entire process into generic output
 An agent that asks clarifying questions and offers technical suggestions like a real Director of Photography.
 
 ✅ **Embedded Expert Brain**  
-A 250k-word knowledge base that powers a specialized film crew (DP, Gaffer, Motion Agent, Chief of Staff).
+A 250k-word knowledge base that powers a specialized film crew (Chief of Staff, DP, Holistic Image Auditor, Motion Agent).
 
 ✅ **The Analysis Loop**  
-Real-time feedback where agents analyze their own outputs for physics errors and provide corrective adjustments.
+Real-time feedback where agents analyze their own outputs across 6 dimensions and provide corrective adjustments.
 
-✅ **Physics-First Quality Control**  
-The Gaffer Agent audits every frame for unmotivated lighting, CGI artifacts, and physics violations.
+✅ **Holistic Image Analysis**  
+The Holistic Image Auditor evaluates every Hero Frame across physics, style, lighting, clarity, composition, and character identity.
 
 ✅ **Single-Model Exhaustion Protocol**  
 Agents prioritize consistency by exhausting the primary model (3-Strike Rule) before suggesting external pivots.
@@ -50,10 +50,10 @@ Cine-AI operates as a **specialized film production team**, not a single monolit
 - Designs composition, focal length, aperture, and optical specs
 - Generates "Hero Frame" stills
 
-**3. The Gaffer (Lighting Agent)**  
-- Physics-First auditor who hunts for unmotivated lighting
-- Provides negative constraints to force physics-correct renders
-- Leads Strike 2 and Strike 3 correction passes
+**3. Holistic Image Auditor**  
+- Comprehensive image analysis across 6 dimensions (physics, style, lighting, clarity, composition, character identity)
+- Provides detailed feedback and actionable suggestions
+- 3-tier recommendation framework (LOCK IT IN, REFINE, REGENERATE)
 
 **4. Motion Agent (Lead Editor)**  
 - Expert in video model syntax (Veo 3.1, Sora 2, etc.)
@@ -73,7 +73,7 @@ This repository contains expert-level prompting mastery guides for all major AI 
 - 🎬 **Agentic Film Crew System** (4 specialized AI agents)
 - 🤖 **AI Agent Decision-Making Frameworks** with 3-Strike Rule
 - 🔄 **Model Exhaustion Protocol** for maximum consistency
-- 📊 **Physics-First Quality Control** via Gaffer Agent
+- 📊 **Holistic Image Analysis** via 6-dimension audit framework
 - 🎥 **Production-Ready Workflows** for professional filmmaking
 
 ---

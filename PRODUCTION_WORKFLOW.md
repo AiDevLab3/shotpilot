@@ -1,6 +1,6 @@
 # Cine-AI Production Workflow: Shot-Lock Protocol
 
-**Version:** 1.0  
+**Version:** 2.0  
 **Last Updated:** January 31, 2026  
 **Purpose:** Define the mandatory sequential workflow with hard-stop validation gates to prevent Context Drift
 
@@ -89,8 +89,7 @@ Generate the 100% perfect still shot that will serve as the "ingredient" for mot
 
 ### Agents Responsible
 - **DP Agent**: Composition and optical design
-- **Gaffer Agent**: Lighting physics audit
-- **Structural Auditor**: Visual quality assurance and physical logic gate (peer-reviews DP's work before user presentation)
+- **Holistic Image Auditor**: Comprehensive image analysis across 6 dimensions (peer-reviews DP's work before user presentation)
 
 ### Deliverable
 Hero Frame still image with:
@@ -98,6 +97,8 @@ Hero Frame still image with:
 - **Optical specs locked**: Focal length (e.g., 35mm), aperture (e.g., f/4), distance (e.g., 8ft)
 - **Lighting locked**: Practical sources, motivated ratios, physics-correct (no blue glow, no CGI sheen)
 - **Character identity locked**: Using Master ID from Phase 1 as reference
+- **Style consistency maintained**: Aesthetic, tone, mood match project DNA
+- **Clarity optimized**: Sharpness, focus, depth of field
 
 ### Critical Requirement
 This is a **STILL IMAGE ONLY**. No motion. No video generation. No animation.
@@ -136,28 +137,46 @@ Composition:
 
 [Display Hero Frame still image]
 
-🔍 STRUCTURAL AUDITOR REVIEW (MANDATORY)
+🔍 HOLISTIC IMAGE AUDIT (MANDATORY)
 
-Before presenting to user, the Structural Auditor performs 5 Critical Checks:
+Before presenting to user, the Holistic Image Auditor performs comprehensive analysis across 6 dimensions:
 
-1. Portal Check: Doors/windows have visible frames, recessed into walls
-2. Grounding Audit: Character's feet touch floor, shadows align
-3. Scale Logic: Door handles at waist height, ceiling proportional
-4. Perspective Grid: All lines converge at same vanishing point(s)
-5. Reflective Parallax: Glass reflections show depth, not flat textures
+1. Physics: Lighting, shadows, perspective
+2. Style Consistency: Aesthetic, tone, mood
+3. Lighting & Atmosphere: Artistic intent, motivated sources
+4. Clarity: Sharpness, focus, depth of field
+5. Objects & Composition: Placement, scale, relationships
+6. Character Identity: Appearance, clothing, features
 
-STRUCTURAL AUDIT REPORT:
-[Auditor performs 5 checks and reports results]
+HOLISTIC AUDIT REPORT:
+[Auditor analyzes all 6 dimensions and provides one of three recommendations]
 
-If ANY check fails:
-  VERDICT: REJECTED
-  Reason: [Specific failure]
-  Corrective Action: [DP regenerates with enhanced prompt]
-  Strike: [X of 3]
+RECOMMENDATION: [LOCK IT IN / REFINE / REGENERATE]
 
-If ALL checks pass:
-  VERDICT: APPROVED
+Overall Quality: [0-100]/100
+
+Analysis Summary:
+- Physics: [0-10]/10
+- Style Consistency: [0-10]/10
+- Lighting & Atmosphere: [0-10]/10
+- Clarity: [0-10]/10
+- Objects & Composition: [0-10]/10
+- Character Identity: [0-10]/10
+
+[Specific Issues or Reasoning]
+
+[Suggested Prompt Adjustments or Action]
+
+---
+
+If LOCK IT IN (95-100%):
   Forwarding to Chief of Staff for final technical audit.
+  
+If REFINE (70-94%):
+  DP regenerates with specific targeted improvements (Strike 1/2/3).
+  
+If REGENERATE (0-69%):
+  DP regenerates with comprehensive prompt adjustment (Strike 1/2/3).
 
 ---
 
@@ -167,10 +186,11 @@ This Hero Frame will serve as the foundation for motion generation.
 
 Please review:
 - Composition and framing
-- Lighting physics (no unmotivated sources)
+- Lighting & atmosphere (motivated sources, artistic intent)
 - Character identity consistency with Master ID
-- Optical quality
-- **Structural integrity (5 checks passed)**
+- Style consistency with project DNA
+- Clarity and optical quality
+- **Holistic quality (6-dimension analysis completed)**
 
 Reply "LOCKED" to proceed to motion generation, or provide correction notes.
 ```
@@ -198,7 +218,7 @@ Apply the **3-Strike Rule** within the image model:
 
 **The Hero Frame is the mandatory "ingredient"** that anchors the video generation to your exact specifications.
 
-**The Structural Auditor adds a peer-review layer** that catches AI hallucination artifacts (floating objects, warped perspective, flat reflections) before they reach you. This "friction-based" workflow ensures that only geometrically and physically accurate Hero Frames are approved for motion generation.
+**The Holistic Image Auditor adds a comprehensive peer-review layer** that analyzes the entire image across 6 dimensions (physics, style, lighting, clarity, composition, character identity) before it reaches you. This "friction-based" workflow ensures that only high-quality, consistent Hero Frames are approved for motion generation, with detailed feedback and actionable suggestions for improvement.
 
 ---
 
