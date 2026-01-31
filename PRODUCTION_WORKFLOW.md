@@ -87,9 +87,10 @@ Reply "LOCKED" to proceed to Hero Frame generation, or provide correction notes.
 ### Objective
 Generate the 100% perfect still shot that will serve as the "ingredient" for motion generation.
 
-### Agent Responsible
+### Agents Responsible
 - **DP Agent**: Composition and optical design
 - **Gaffer Agent**: Lighting physics audit
+- **Structural Auditor**: Visual quality assurance and physical logic gate (peer-reviews DP's work before user presentation)
 
 ### Deliverable
 Hero Frame still image with:
@@ -135,6 +136,31 @@ Composition:
 
 [Display Hero Frame still image]
 
+🔍 STRUCTURAL AUDITOR REVIEW (MANDATORY)
+
+Before presenting to user, the Structural Auditor performs 5 Critical Checks:
+
+1. Portal Check: Doors/windows have visible frames, recessed into walls
+2. Grounding Audit: Character's feet touch floor, shadows align
+3. Scale Logic: Door handles at waist height, ceiling proportional
+4. Perspective Grid: All lines converge at same vanishing point(s)
+5. Reflective Parallax: Glass reflections show depth, not flat textures
+
+STRUCTURAL AUDIT REPORT:
+[Auditor performs 5 checks and reports results]
+
+If ANY check fails:
+  VERDICT: REJECTED
+  Reason: [Specific failure]
+  Corrective Action: [DP regenerates with enhanced prompt]
+  Strike: [X of 3]
+
+If ALL checks pass:
+  VERDICT: APPROVED
+  Forwarding to Chief of Staff for final technical audit.
+
+---
+
 ⛔ HARD STOP - USER APPROVAL REQUIRED
 
 This Hero Frame will serve as the foundation for motion generation.
@@ -144,6 +170,7 @@ Please review:
 - Lighting physics (no unmotivated sources)
 - Character identity consistency with Master ID
 - Optical quality
+- **Structural integrity (5 checks passed)**
 
 Reply "LOCKED" to proceed to motion generation, or provide correction notes.
 ```
@@ -170,6 +197,8 @@ Apply the **3-Strike Rule** within the image model:
 - Loss of the carefully crafted lighting and optical specs
 
 **The Hero Frame is the mandatory "ingredient"** that anchors the video generation to your exact specifications.
+
+**The Structural Auditor adds a peer-review layer** that catches AI hallucination artifacts (floating objects, warped perspective, flat reflections) before they reach you. This "friction-based" workflow ensures that only geometrically and physically accurate Hero Frames are approved for motion generation.
 
 ---
 

@@ -1,9 +1,9 @@
 # Antigravity Project Ingestion Manifest
 
 **Project:** Cine-AI Knowledge Base - Antigravity Workspace  
-**Date:** January 29, 2026  
+**Date:** January 31, 2026  
 **Status:** Complete - Ready for Full Ingestion  
-**Version:** 5.0 (18-Model Ecosystem)
+**Version:** 6.2 (18-Model Ecosystem + Agentic Film Crew + Structural Auditor)
 
 ---
 
@@ -19,11 +19,13 @@ cine-ai-knowledge-base/
 │   │   └── cinematography_schemas.json
 │   └── INGESTION_MANIFEST.md (this file)
 ├── production_ledger.json (API cost tracking)
-├── README.md (Main entry point - v5.0)
+├── README.md (Main entry point - v6.0)
 ├── MASTER_INDEX.md (Complete navigation - v2.0)
+├── AGENTS.md (NEW - v1.2 - Agentic Film Crew + Structural Auditor)
+├── PRODUCTION_WORKFLOW.md (NEW - v1.1 - Shot-Lock Protocol + Structural Auditor Review)
 ├── guides/ (21 comprehensive production guides)
 ├── prompting_guides/ (18 model-specific prompting mastery guides)
-└── assets/ (13 visual aids including decision trees)
+└── assets/ (2 visual aids: decision tree v2)
 ```
 
 ---
@@ -33,14 +35,16 @@ cine-ai-knowledge-base/
 ### Core Documentation (2 files)
 These are the **primary entry points** and should be ingested first:
 
-1. **README.md** (v5.0) - Main repository overview with AI agent resources
+1. **README.md** (v6.0) - Main repository overview with AI agent resources and One Roof vision
 2. **MASTER_INDEX.md** (v2.0) - Complete navigation for all content
+3. **AGENTS.md** (v1.2 - NEW) - Agentic Film Crew architecture with 5 specialist agents (Chief of Staff, DP, Gaffer, Structural Auditor, Motion Agent)
+4. **PRODUCTION_WORKFLOW.md** (v1.1 - NEW) - Shot-Lock Protocol with hard-stop validation gates and Structural Auditor Review
 
 ### Production Guides (21 files)
 These are the **core production workflows** and should be ingested as primary project logic:
 
-1. **MODEL_SELECTION_GUIDE.md** (NEW - 19KB) - Comprehensive decision framework for 18 models
-2. **AI Agent Interaction Protocol (Revised): A Flexible Guidance Framework.md** (v2.0 - 21KB) - 5 protocols for agent behavior
+1. **MODEL_SELECTION_GUIDE.md** (v2.0 - 19KB) - Comprehensive decision framework with Model Exhaustion protocol and 3-Strike Rule
+2. **AI Agent Interaction Protocol (Revised): A Flexible Guidance Framework.md** (v2.1 - 21KB) - 6 protocols including Protocol 0 (Shot-Lock Protocol)
 3. **image_generation_guide.md** (v5.0 - 22KB) - 11 image models coverage
 4. **video_generation_guide.md** (v5.0 - 22KB) - 7 video models coverage
 5. **character_consistency_guide.md** (19KB) - Character workflows

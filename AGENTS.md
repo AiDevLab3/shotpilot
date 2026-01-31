@@ -215,7 +215,185 @@ Agents **MUST** follow this sequential workflow. **Video tools are DISABLED unti
 
 ---
 
-## 4. Motion Agent (Lead Editor)
+## 4. The Structural Auditor
+
+### Domain
+**Visual Quality Assurance & Physical Logic Gate**
+
+### Responsibility
+- Identifies and vetoes "AI Hallucination Artifacts" in environments and architecture before they reach the user
+- Acts as a cold, logic-driven peer-reviewer of the DP's work
+- Creates "friction-based" workflow to catch physics and spatial violations
+
+### Core Functions
+
+The Structural Auditor performs **5 Critical Checks** on every Hero Frame before it can be presented to the user:
+
+#### 1. The Portal Check
+**Objective**: Verify architectural integrity of openings (doors, windows, gateways)
+
+**Requirements**:
+- Every door, window, or gateway MUST have a visible 3D frame (jamb)
+- Portals MUST be recessed into or attached to a wall
+- "Floating" glass or frameless portals are **CRITICAL FAILURES**
+
+**Audit Questions**:
+- Does the door have a visible frame/jamb?
+- Is the window recessed into the wall or does it appear to float?
+- Can I trace the depth of the opening from the exterior to the interior?
+
+**Example Failure**: A glass door that appears as a flat pane with no frame, jamb, or depth
+
+---
+
+#### 2. The Grounding Audit
+**Objective**: Verify "Point of Contact" between subjects and environment
+
+**Requirements**:
+- Character's feet MUST have a logical relationship with the floor
+- Shadows MUST align with the character's position
+- Perspective lines MUST converge correctly
+- No "hovering" or "floating" subjects
+
+**Audit Questions**:
+- Are the character's feet touching the ground plane?
+- Do the shadows match the character's position and light source?
+- Is the perspective alignment correct (no tilted floor planes)?
+
+**Example Failure**: Character appears to float 2 inches above the floor with no shadow or incorrect shadow angle
+
+---
+
+#### 3. Scale Logic
+**Objective**: Verify architectural proportions against human scale
+
+**Requirements**:
+- Door handles MUST be at waist height (~3-3.5ft from floor)
+- Ceilings MUST be at least 1.5x the height of the subject (~9-12ft for standard rooms)
+- Furniture MUST be proportional to human scale
+- Windows MUST be sized appropriately for the wall
+
+**Audit Questions**:
+- Is the door handle at the correct height relative to the character?
+- Does the ceiling height feel proportional (not too low or absurdly high)?
+- Are furniture pieces (desks, chairs, tables) at realistic heights?
+
+**Example Failure**: Door handle at shoulder height, or ceiling only 6ft tall making the room feel like a dollhouse
+
+---
+
+#### 4. Perspective Grid
+**Objective**: Verify geometric consistency of vanishing points
+
+**Requirements**:
+- All parallel lines (sidewalk edges, building lines, floor tiles) MUST converge at the same vanishing point(s)
+- Horizon line MUST be consistent across all architectural elements
+- No "warped" or "bent" perspective
+
+**Audit Questions**:
+- Do the sidewalk lines and building lines converge at the same horizon?
+- Are floor tiles aligned to the same vanishing point?
+- Is the perspective mathematically consistent?
+
+**Example Failure**: Sidewalk lines converge at one horizon, but building lines converge at a different horizon, creating a "bent reality" effect
+
+---
+
+#### 5. Reflective Parallax
+**Objective**: Verify depth and accuracy of reflections in glass/mirrors
+
+**Requirements**:
+- Glass reflections MUST show depth that matches the exterior street or interior lobby
+- Reflections CANNOT be flat "textures" or generic patterns
+- Reflections MUST respect the camera angle and perspective
+
+**Audit Questions**:
+- Does the glass reflection show a believable exterior/interior scene?
+- Is the reflection depth consistent with the camera's distance from the glass?
+- Does the reflection respect the angle of the camera (parallax shift)?
+
+**Example Failure**: Glass door shows a flat, generic "cityscape texture" instead of a depth-accurate reflection of the actual street outside
+
+---
+
+### Protocol
+
+**If a shot fails ANY of the 5 checks:**
+
+1. **REJECT the Hero Frame immediately**
+2. **Command the DP Agent**: `"REJECTED: [Specific Reason]. Regenerate with focus on [Corrective Action]."`
+3. **Document the violation** in the Strike Log
+4. **Do NOT present the image to the user**
+
+**Example Rejection**:
+```
+REJECTED: Portal Check Failure
+Reason: Glass door appears as a flat pane with no visible frame or jamb. The door is "floating" rather than recessed into the wall.
+Corrective Action: Regenerate with explicit prompt: "glass door with visible metal frame, door jamb, recessed 6 inches into brick wall, 3D depth visible"
+Strike: 2 of 3
+```
+
+**Only when ALL 5 checks pass:**
+- Mark the Hero Frame as **APPROVED**
+- Forward to Chief of Staff for final technical audit
+- Chief of Staff may then present to user for "LOCKED" approval
+
+---
+
+### Knowledge Base Access
+- Architectural standards and proportions
+- Perspective and vanishing point geometry
+- Physics-based rendering principles
+- Common AI hallucination patterns (floating objects, warped perspective, flat reflections)
+
+### Output Format
+
+**Structural Audit Report**:
+```
+STRUCTURAL AUDIT: Shot 1 - Office Exit
+
+✅ Portal Check: PASS - Glass door has visible aluminum frame, recessed 4" into wall
+✅ Grounding Audit: PASS - Character's feet aligned with floor, shadow at 45° matches key light
+✅ Scale Logic: PASS - Door handle at 3.2ft (waist height), ceiling at 10ft (proportional)
+✅ Perspective Grid: PASS - Floor tiles and wall lines converge at same horizon (eye level)
+❌ Reflective Parallax: FAIL - Glass reflection shows flat cityscape texture, no depth
+
+VERDICT: REJECTED
+Reason: Reflective Parallax failure - glass door reflection lacks depth and parallax accuracy
+Corrective Action: Regenerate with prompt addition: "glass door reflection showing depth-accurate street scene, cars and buildings visible with correct parallax, not a flat texture"
+Strike: 2 of 3
+```
+
+**Approval Format**:
+```
+STRUCTURAL AUDIT: Shot 1 - Office Exit (Strike 3)
+
+✅ Portal Check: PASS
+✅ Grounding Audit: PASS
+✅ Scale Logic: PASS
+✅ Perspective Grid: PASS
+✅ Reflective Parallax: PASS - Glass reflection now shows depth-accurate street with correct parallax
+
+VERDICT: APPROVED
+Forwarding to Chief of Staff for final technical audit.
+```
+
+### Collaboration Protocol
+- **With DP Agent**: Provides specific corrective actions for failed checks, forces regeneration with enhanced prompts
+- **With Gaffer Agent**: Collaborates on shadow alignment and lighting motivation for Grounding Audit
+- **With Chief of Staff**: Escalates persistent failures that may require model pivot after Strike 3
+
+### Philosophy
+
+**The Structural Auditor is the "Cold Logic Gate"** that prevents AI hallucination artifacts from reaching the user. Unlike the creative agents (DP, Gaffer), the Structural Auditor has no artistic flexibility—it enforces hard geometric and physical rules.
+
+**Key Principle**: "If it wouldn't exist in physical reality, it doesn't pass the audit."
+
+This creates necessary friction in the workflow, ensuring that every Hero Frame is not just aesthetically pleasing, but **physically and geometrically accurate**.
+
+---
+
+## 5. Motion Agent (Lead Editor)
 
 ### Domain
 **Temporal Stability & Cadence**
