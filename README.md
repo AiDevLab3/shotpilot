@@ -1,10 +1,66 @@
-# Cine-AI Knowledge Base: Complete AI Filmmaking System
+# Cine-AI: Professional AI Filmmaking OS
 
-**The most comprehensive collection of AI filmmaking knowledge, prompting guides, and production workflows**
+**The most comprehensive collection of AI filmmaking knowledge, powered by an Agentic Film Crew architecture**
 
-Version: 5.0 (January 2026)  
+Version: 6.0 (January 2026)  
 Total Guides: 18 Expert-Level Prompting Mastery Guides  
-Total Content: ~900KB of comprehensive documentation
+Total Content: ~900KB + Agentic Film Crew System  
+**Current Milestone:** 🚀 MVP Technical Validation
+
+---
+
+## 🚀 Current Production Status: MVP Technical Validation
+
+We are currently validating the **Agentic Film Crew** logic—a specialized AI agent system that collaborates like a real film production team.
+
+### The "One Roof" Advantage
+
+Unlike storyboard platforms that automate the entire process into generic outputs, Cine-AI provides:
+
+✅ **Natural Language Collaboration**  
+An agent that asks clarifying questions and offers technical suggestions like a real Director of Photography.
+
+✅ **Embedded Expert Brain**  
+A 250k-word knowledge base that powers a specialized film crew (DP, Gaffer, Motion Agent, Chief of Staff).
+
+✅ **The Analysis Loop**  
+Real-time feedback where agents analyze their own outputs for physics errors and provide corrective adjustments.
+
+✅ **Physics-First Quality Control**  
+The Gaffer Agent audits every frame for unmotivated lighting, CGI artifacts, and physics violations.
+
+✅ **Single-Model Exhaustion Protocol**  
+Agents prioritize consistency by exhausting the primary model (3-Strike Rule) before suggesting external pivots.
+
+---
+
+## 🎬 The Agentic Film Crew
+
+Cine-AI operates as a **specialized film production team**, not a single monolithic AI.
+
+### Meet the Crew
+
+**1. Chief of Staff (Producer Agent)**  
+- Maintains project DNA (character SoulID, style, narrative intent)
+- Orchestrates sub-agent collaboration
+- Enforces the 3-Strike Rule and makes pivot decisions
+
+**2. Director of Photography (DP Agent)**  
+- Expert in image model syntax (Imagen 3, Nano Banana Pro, etc.)
+- Designs composition, focal length, aperture, and optical specs
+- Generates "Hero Frame" stills
+
+**3. The Gaffer (Lighting Agent)**  
+- Physics-First auditor who hunts for unmotivated lighting
+- Provides negative constraints to force physics-correct renders
+- Leads Strike 2 and Strike 3 correction passes
+
+**4. Motion Agent (Lead Editor)**  
+- Expert in video model syntax (Veo 3.1, Sora 2, etc.)
+- Ensures 24fps motion cadence and physics-based camera moves
+- Receives optical metadata from DP for temporal consistency
+
+**→ See [AGENTS.md](AGENTS.md) for complete crew manifest and collaboration protocols**
 
 ---
 
@@ -14,10 +70,11 @@ This repository contains expert-level prompting mastery guides for all major AI 
 
 **Key Features:**
 - 🎯 **18 Comprehensive Prompting Guides** (11 image + 7 video models)
-- 🤖 **AI Agent Decision-Making Frameworks** for intelligent model selection
-- 🔄 **Multi-Model Workflow Strategies** for professional production
-- 📊 **Model Selection Guide** with visual decision trees
-- 🎬 **Production-Ready Workflows** for filmmakers and creators
+- 🎬 **Agentic Film Crew System** (4 specialized AI agents)
+- 🤖 **AI Agent Decision-Making Frameworks** with 3-Strike Rule
+- 🔄 **Model Exhaustion Protocol** for maximum consistency
+- 📊 **Physics-First Quality Control** via Gaffer Agent
+- 🎥 **Production-Ready Workflows** for professional filmmaking
 
 ---
 
@@ -60,15 +117,23 @@ This repository contains expert-level prompting mastery guides for all major AI 
 
 ### Core Decision-Making Frameworks
 
-**1. Model Selection Guide** (`guides/MODEL_SELECTION_GUIDE.md` - 19KB)
-Comprehensive decision framework for intelligent model selection:
-- Quick selection matrices for all use cases
-- Decision tree logic with visual diagrams
-- Budget, ecosystem, and use case recommendations
-- Multi-model workflow strategies
-- Platform ecosystem considerations
+**1. Agentic Film Crew Manifest** (`AGENTS.md` - NEW)
+Defines the specialized AI agent personas:
+- **Chief of Staff**: Project DNA, orchestration, pivot authority
+- **Director of Photography**: Composition, optics, Hero Frame generation
+- **The Gaffer**: Physics audits, lighting design, negative prompting
+- **Motion Agent**: Temporal stability, camera moves, video generation
+- **Production State Protocol**: Shared metadata and collaboration system
 
-**2. AI Agent Interaction Protocol** (`guides/AI Agent Interaction Protocol (Revised): A Flexible Guidance Framework.md` - 21KB)
+**2. Model Selection Guide** (`guides/MODEL_SELECTION_GUIDE.md` - Updated v2.0)
+Comprehensive decision framework with Model Exhaustion protocol:
+- **3-Strike Rule**: Exhaust primary model before pivoting
+- **90/10 Translation Layer**: Preserve success when pivoting
+- Quick selection matrices for all 18 models
+- Decision tree logic with visual diagrams
+- Single-model success standard
+
+**3. AI Agent Interaction Protocol** (`guides/AI Agent Interaction Protocol (Revised): A Flexible Guidance Framework.md` - 21KB)
 Five comprehensive protocols for 18-model ecosystem:
 - **Protocol 1:** Highest-Quality Source Principle
 - **Protocol 2:** Intelligent Model Selection
@@ -76,7 +141,7 @@ Five comprehensive protocols for 18-model ecosystem:
 - **Protocol 4:** Flexible Guidance Framework
 - **Protocol 5:** Ecosystem-Aware Decision Making
 
-**3. Visual Decision Trees** (`assets/model_selection_tree_v2.png`)
+**4. Visual Decision Trees** (`assets/model_selection_tree_v2.png`)
 - Visual flowchart for model selection
 - Budget-based recommendations
 - Ecosystem-based recommendations
