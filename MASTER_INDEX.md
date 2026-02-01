@@ -135,7 +135,7 @@
 
 **Image Generation** (22KB) **[UPDATED v5.0]**
 - File: `image_generation_guide.md`
-- Coverage: 10 image models (expanded from 5)
+- Coverage: 11 image models (expanded from 5)
 - Topics: Foundation models, advanced models, specialized tools, cross-model workflows
 
 **Video Generation** (22KB) **[UPDATED v5.0]**

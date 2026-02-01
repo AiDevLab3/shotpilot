@@ -47,7 +47,7 @@ These are the **core production workflows** and should be ingested as primary pr
 
 1. **MODEL_SELECTION_GUIDE.md** (NEW - 19KB) - Comprehensive decision framework for 18 models
 2. **AI Agent Interaction Protocol (Revised): A Flexible Guidance Framework.md** (v2.0 - 21KB) - 5 protocols for agent behavior
-3. **image_generation_guide.md** (v5.0 - 22KB) - 10 image models coverage
+3. **image_generation_guide.md** (v5.0 - 22KB) - 11 image models coverage
 4. **video_generation_guide.md** (v5.0 - 22KB) - 11 video models coverage
 5. **character_consistency_guide.md** (19KB) - Character workflows
 6. **The Chief Cinematographer AI: A Guide to Cross-Model Cinematic Consistency.md**
@@ -117,7 +117,7 @@ These contain **model-specific expert-level prompting techniques** and should be
 **Priority: HIGH - Ingest Second**
 
 1. `MODEL_SELECTION_GUIDE.md` - Quick selection matrices, decision trees, use case recommendations
-2. `image_generation_guide.md` (v5.0) - 10 image models overview
+2. `image_generation_guide.md` (v5.0) - 11 image models overview
 3. `video_generation_guide.md` (v5.0) - 11 video models overview
 4. `assets/model_selection_tree_v2.png` - Visual decision tree
 5. `assets/model_selection_tree_v2.mmd` - Decision tree source

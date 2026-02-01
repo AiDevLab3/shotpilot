@@ -245,7 +245,7 @@ cine-ai-knowledge-base/
 - **Total Prompting Guides**: 18 comprehensive guides
 - **Total Content**: ~900KB of expert-level documentation
 - **Total Lines**: ~23,000 lines of detailed content
-- **Coverage**: 10 image models + 11 video models
+- **Coverage**: 11 image models + 11 video models
 - **Estimated Word Count**: 250,000+ words
 - **Agents**: 5 specialized AI agents
 - **Workflow Phases**: 4 phases with hard-stop validation gates
