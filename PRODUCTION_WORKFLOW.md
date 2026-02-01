@@ -1,6 +1,6 @@
 # Cine-AI Production Workflow: Shot-Lock Protocol
 
-**Version:** 2.0  
+**Version:** 3.0  
 **Last Updated:** January 31, 2026  
 **Purpose:** Define the mandatory sequential workflow with hard-stop validation gates to prevent Context Drift
 
@@ -20,13 +20,169 @@ Agents have a documented tendency to "skip ahead" to video generation when they 
 
 ---
 
-## The Three-Phase Production Pipeline
+## The Four-Phase Production Pipeline
 
 ```
-PHASE 1: Master ID → ⛔ USER LOCK → PHASE 2: Master Still → ⛔ USER LOCK → PHASE 3: Motion
+PHASE 0: Pre-Production → ⛔ USER APPROVAL → PHASE 1: Master ID → ⛔ USER LOCK → PHASE 2: Master Still → ⛔ USER LOCK → PHASE 3: Motion
 ```
 
 **Rule**: Each phase must be completed and approved before the next phase can begin.
+
+---
+
+## PHASE 0: Pre-Production (Creative Development)
+
+### Objective
+Collaborate with the user to formulate a cohesive creative vision before production begins. Extract all relevant information needed for the production crew to succeed.
+
+### Agent Responsible
+- **Creative Director**: Vision formulation, script development, shot planning
+
+### Deliverables
+
+#### 1. Project DNA Document
+Defines the creative foundation for the entire project:
+- **Theme**: What the story is about
+- **Tone**: How it feels (dramatic, hopeful, melancholic, etc.)
+- **Mood**: Visual atmosphere (gritty, whimsical, cinematic, etc.)
+- **Visual Style**: Cinematic realism, cyberpunk, noir, etc.
+- **Color Palette**: Warm/cool, saturated/desaturated, specific colors
+- **Lighting Key**: Golden hour, harsh fluorescent, volumetric fog, neon, etc.
+- **Visual References**: Films, photographers, artists that inspire the vision
+- **Recommended Models**: Image and video models based on aesthetic goals
+
+#### 2. Script
+Scene-by-scene breakdown with:
+- **Scene descriptions**: Location, time of day, environment details
+- **Character actions**: What characters do and why
+- **Narrative beats**: Story progression and emotional moments
+- **Visual notes**: Lighting mood, key visual elements, emotional tone
+
+#### 3. Shot List
+Detailed breakdown of every shot:
+- **Shot number and description**
+- **Camera angle**: Low angle, eye level, high angle, bird's eye
+- **Camera movement**: Dolly, pan, tilt, static
+- **Composition notes**: Rule of thirds, leading lines, depth, symmetry
+- **Duration**: 6s, 8s, 10s
+- **Narrative purpose**: What this shot communicates
+
+#### 4. Style Guide
+Visual aesthetic documentation:
+- **Visual style definition**: Cinematic realism, stylized noir, etc.
+- **Lighting mood**: Golden hour sunset, harsh office fluorescent, etc.
+- **Character descriptions**: Physical appearance, clothing, SoulID foundation
+
+### Creative Director Process
+
+The Creative Director collaborates with the user through clarifying questions:
+
+**Vision Formulation Questions**:
+- "What's the emotional journey of this character?"
+- "Is this dramatic and melancholic, or hopeful and liberating?"
+- "What's the most important visual moment in this story?"
+- "What should the audience feel when they watch this?"
+
+**Style & Aesthetic Questions**:
+- "What visual style resonates with you? (e.g., cinematic realism, stylized noir, whimsical animation)"
+- "What time of day? What's the lighting like?"
+- "Are there any films, photographers, or artists whose work inspires this vision?"
+
+**Narrative Questions**:
+- "What happens in this story? Beginning, middle, end?"
+- "Who is this character? What motivates them?"
+- "What's the key conflict or transformation?"
+
+### Adaptive Workflow
+
+**If User Has a Script**:
+1. Review the script and extract Project DNA
+2. Ask clarifying questions about visual style and tone
+3. Create Shot List based on script
+4. Present complete pre-production package
+
+**If User Has a Vague Idea**:
+1. Collaborate to develop the concept through questions
+2. Build the script and shot list from scratch
+3. Iterate until user approves the vision
+4. Formalize into Project DNA and deliverables
+
+**If User Has Detailed Vision**:
+1. Validate and formalize it into Project DNA
+2. Fill in any gaps (shot list, technical specs)
+3. Ensure all agents have clear direction
+4. Present for approval
+
+### Agent Output Format
+```
+PHASE 0: PRE-PRODUCTION PACKAGE
+
+=== PROJECT DNA ===
+PROJECT: [Name]
+THEME: [What the story is about]
+TONE: [How it feels]
+MOOD: [Visual atmosphere]
+VISUAL STYLE: [Cinematic realism, cyberpunk, etc.]
+COLOR PALETTE: [Warm/cool, saturated/desaturated]
+LIGHTING KEY: [Golden hour, harsh fluorescent, etc.]
+
+VISUAL REFERENCES:
+- [Film/photographer/artist 1]
+- [Film/photographer/artist 2]
+
+RECOMMENDED MODELS:
+- Image: [Model name and why]
+- Video: [Model name and why]
+
+=== SCRIPT ===
+SCENE 1: [Location - Time of Day]
+[Detailed scene description with character actions and narrative beats]
+
+VISUAL NOTES:
+- Lighting: [Mood and sources]
+- Key Elements: [Important visual details]
+- Emotional Tone: [What the audience should feel]
+
+=== SHOT LIST ===
+SHOT 1: [Brief Description]
+- Camera Angle: [Low angle / Eye level / etc.]
+- Camera Movement: [Dolly in / Pan right / Static]
+- Composition: [Rule of thirds, leading lines, etc.]
+- Duration: [6s / 8s / 10s]
+- Narrative Purpose: [What this shot communicates]
+
+[Additional shots...]
+
+⛔ HARD STOP - USER APPROVAL REQUIRED
+
+Please review the complete pre-production package:
+- Does the Project DNA capture your vision?
+- Does the script tell the story you want to tell?
+- Does the shot list break down the narrative effectively?
+
+Reply "APPROVED" to proceed to production (Phase 1: Master ID Generation), or provide revision notes.
+```
+
+### User Action Required
+- Review the Project DNA, Script, and Shot List
+- Reply **"APPROVED"** to proceed to Phase 1
+- OR provide specific revision notes
+
+### Why This Phase Exists
+
+**Problem**: Jumping directly into production without a clear vision leads to:
+- Vague prompts that require multiple regenerations
+- Style inconsistency across shots
+- Character identity drift
+- Wasted compute on shots that don't match the vision
+
+**Solution**: Upfront investment in pre-production:
+- Establishes clear Project DNA that all agents reference
+- Prevents style drift and character inconsistency
+- Reduces strikes during production
+- Ensures all agents have the information they need to succeed
+
+### ⛔ DO NOT PROCEED to Phase 1 until user approval is received
 
 ---
 

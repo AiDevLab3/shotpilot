@@ -2,7 +2,7 @@
 
 **The most comprehensive collection of AI filmmaking knowledge, powered by an Agentic Film Crew architecture**
 
-Version: 6.3 (January 2026)  
+Version: 7.0 (January 2026)  
 Total Guides: 18 Expert-Level Prompting Mastery Guides  
 Total Content: ~900KB + Agentic Film Crew System  
 **Current Milestone:** 🚀 MVP Technical Validation
@@ -18,10 +18,10 @@ We are currently validating the **Agentic Film Crew** logic—a specialized AI a
 Unlike storyboard platforms that automate the entire process into generic outputs, Cine-AI provides:
 
 ✅ **Natural Language Collaboration**  
-An agent that asks clarifying questions and offers technical suggestions like a real Director of Photography.
+Agents that collaborate from pre-production through final delivery, asking clarifying questions and offering expert suggestions.
 
 ✅ **Embedded Expert Brain**  
-A 250k-word knowledge base that powers a specialized film crew (Chief of Staff, DP, Holistic Image Auditor, Motion Agent).
+A 250k-word knowledge base that powers a specialized film crew (Creative Director, Chief of Staff, DP, Holistic Image Auditor, Motion Agent).
 
 ✅ **The Analysis Loop**  
 Real-time feedback where agents analyze their own outputs across 6 dimensions and provide corrective adjustments.
@@ -40,22 +40,28 @@ Cine-AI operates as a **specialized film production team**, not a single monolit
 
 ### Meet the Crew
 
-**1. Chief of Staff (Producer Agent)**  
+**1. Creative Director**  
+- Collaborates with you to formulate a cohesive creative vision
+- Develops script and shot list through clarifying questions
+- Creates Project DNA (theme, style, tone, mood, visual references)
+- Adapts to your workflow (has script / vague idea / detailed vision)
+
+**2. Chief of Staff (Producer Agent)**  
 - Maintains project DNA (character SoulID, style, narrative intent)
 - Orchestrates sub-agent collaboration
-- Enforces the 3-Strike Rule and makes pivot decisions
+- Enforces protocols and makes pivot decisions
 
-**2. Director of Photography (DP Agent)**  
+**3. Director of Photography (DP Agent)**  
 - Expert in image model syntax (Imagen 3, Nano Banana Pro, etc.)
 - Designs composition, focal length, aperture, and optical specs
 - Generates "Hero Frame" stills
 
-**3. Holistic Image Auditor**  
+**4. Holistic Image Auditor**  
 - Comprehensive image analysis across 6 dimensions (physics, style, lighting, clarity, composition, character identity)
 - Provides detailed feedback and actionable suggestions
 - 3-tier recommendation framework (LOCK IT IN, REFINE, REGENERATE)
 
-**4. Motion Agent (Lead Editor)**  
+**5. Motion Agent (Lead Editor)**  
 - Expert in video model syntax (Veo 3.1, Sora 2, etc.)
 - Ensures 24fps motion cadence and physics-based camera moves
 - Receives optical metadata from DP for temporal consistency
@@ -70,7 +76,7 @@ This repository contains expert-level prompting mastery guides for all major AI 
 
 **Key Features:**
 - 🎯 **18 Comprehensive Prompting Guides** (11 image + 7 video models)
-- 🎬 **Agentic Film Crew System** (4 specialized AI agents)
+- 🎬 **Agentic Film Crew System** (5 specialized AI agents)
 - 🤖 **AI Agent Decision-Making Frameworks** with 3-Strike Rule
 - 🔄 **Model Exhaustion Protocol** for maximum consistency
 - 📊 **Holistic Image Analysis** via 6-dimension audit framework
@@ -117,11 +123,12 @@ This repository contains expert-level prompting mastery guides for all major AI 
 
 ### Core Decision-Making Frameworks
 
-**1. Agentic Film Crew Manifest** (`AGENTS.md` - NEW)
+**1. Agentic Film Crew Manifest** (`AGENTS.md` - v3.0)
 Defines the specialized AI agent personas:
-- **Chief of Staff**: Project DNA, orchestration, pivot authority
+- **Creative Director**: Vision formulation, script development, shot planning, Project DNA creation
+- **Chief of Staff**: Project DNA maintenance, orchestration, protocol enforcement
 - **Director of Photography**: Composition, optics, Hero Frame generation
-- **The Gaffer**: Physics audits, lighting design, negative prompting
+- **Holistic Image Auditor**: 6-dimension analysis, detailed feedback, 3-tier recommendations
 - **Motion Agent**: Temporal stability, camera moves, video generation
 - **Production State Protocol**: Shared metadata and collaboration system
 

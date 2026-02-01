@@ -3,7 +3,7 @@
 **Project:** Cine-AI Knowledge Base - Antigravity Workspace  
 **Date:** January 31, 2026  
 **Status:** Complete - Ready for Full Ingestion  
-**Version:** 6.3 (18-Model Ecosystem + Agentic Film Crew + Holistic Image Auditor)
+**Version:** 6.0 (18-Model Ecosystem + 5-Agent Film Crew)
 
 ---
 
@@ -19,13 +19,15 @@ cine-ai-knowledge-base/
 │   │   └── cinematography_schemas.json
 │   └── INGESTION_MANIFEST.md (this file)
 ├── production_ledger.json (API cost tracking)
-├── README.md (Main entry point - v6.0)
+├── README.md (Main entry point - v7.0)
 ├── MASTER_INDEX.md (Complete navigation - v2.0)
-├── AGENTS.md (NEW - v2.0 - Agentic Film Crew with Holistic Image Auditor)
-├── PRODUCTION_WORKFLOW.md (NEW - v2.0 - Shot-Lock Protocol + Holistic Image Audit)
+├── AGENTS.md (5-Agent Film Crew - v3.0)
+├── PRODUCTION_WORKFLOW.md (Shot-Lock Protocol - v3.0)
 ├── guides/ (21 comprehensive production guides)
 ├── prompting_guides/ (18 model-specific prompting mastery guides)
-└── assets/ (2 visual aids: decision tree v2)
+├── research/ (17 research documents)
+├── reference_docs/ (42 reference materials)
+└── assets/ (13 visual aids including decision trees)
 ```
 
 ---
@@ -35,16 +37,16 @@ cine-ai-knowledge-base/
 ### Core Documentation (2 files)
 These are the **primary entry points** and should be ingested first:
 
-1. **README.md** (v6.3) - Main repository overview with AI agent resources and One Roof vision
+1. **README.md** (v7.0) - Main repository overview with 5-agent film crew
 2. **MASTER_INDEX.md** (v2.0) - Complete navigation for all content
-3. **AGENTS.md** (v2.0 - NEW) - Agentic Film Crew architecture with 4 specialist agents (Chief of Staff, DP, Holistic Image Auditor, Motion Agent)
-4. **PRODUCTION_WORKFLOW.md** (v2.0 - NEW) - Shot-Lock Protocol with hard-stop validation gates and Holistic Image Audit
+3. **AGENTS.md** (v3.0) - 5-agent film crew architecture with Creative Director
+4. **PRODUCTION_WORKFLOW.md** (v3.0) - Shot-Lock Protocol with Phase 0 (Pre-Production)
 
 ### Production Guides (21 files)
 These are the **core production workflows** and should be ingested as primary project logic:
 
-1. **MODEL_SELECTION_GUIDE.md** (v2.0 - 19KB) - Comprehensive decision framework with Model Exhaustion protocol and 3-Strike Rule
-2. **AI Agent Interaction Protocol (Revised): A Flexible Guidance Framework.md** (v2.1 - 21KB) - 6 protocols including Protocol 0 (Shot-Lock Protocol)
+1. **MODEL_SELECTION_GUIDE.md** (NEW - 19KB) - Comprehensive decision framework for 18 models
+2. **AI Agent Interaction Protocol (Revised): A Flexible Guidance Framework.md** (v2.0 - 21KB) - 5 protocols for agent behavior
 3. **image_generation_guide.md** (v5.0 - 22KB) - 11 image models coverage
 4. **video_generation_guide.md** (v5.0 - 22KB) - 7 video models coverage
 5. **character_consistency_guide.md** (19KB) - Character workflows
@@ -99,11 +101,13 @@ These contain **model-specific expert-level prompting techniques** and should be
 ### Phase 1: Core System Logic & Navigation
 **Priority: CRITICAL - Ingest First**
 
-1. `README.md` (v5.0) - Main entry point with AI agent resources
+1. `README.md` (v7.0) - Main entry point with 5-agent film crew
 2. `MASTER_INDEX.md` (v2.0) - Complete navigation guide
-3. `MODEL_SELECTION_GUIDE.md` - Decision framework for 18 models
-4. `AI Agent Interaction Protocol (Revised)` (v2.0) - 5 protocols for agent behavior
-5. `cine_ai_system.md` - System architecture
+3. `AGENTS.md` (v3.0) - 5-agent film crew architecture
+4. `PRODUCTION_WORKFLOW.md` (v3.0) - Shot-Lock Protocol with Phase 0
+5. `MODEL_SELECTION_GUIDE.md` - Decision framework for 18 models
+6. `AI Agent Interaction Protocol (Revised)` (v2.0) - 5 protocols for agent behavior
+7. `cine_ai_system.md` - System architecture
 
 **Why First:** These establish the foundational knowledge for intelligent model selection and agent behavior.
 
@@ -197,6 +201,17 @@ These contain **model-specific expert-level prompting techniques** and should be
 
 ---
 
+### Phase 7: Research & Reference Materials
+**Priority: LOW - Ingest Last (Optional)**
+
+**Research Documents (17 files):**
+- In-depth research notes on audio generation, character consistency, cross-model workflows, platform-specific features, prompt engineering, technical specifications
+
+**Reference Materials (42 files):**
+- Official documentation from all platforms, platform-specific guides, community tutorials, technical resources
+
+**Why Last:** Deep-dive reference materials for advanced use cases.
+
 ---
 
 ## Model Coverage Summary
@@ -259,8 +274,10 @@ These contain **model-specific expert-level prompting techniques** and should be
 **✅ Updated Core Guides:**
 - image_generation_guide.md → v5.0 (11 models, 22KB)
 - video_generation_guide.md → v5.0 (7 models, 22KB)
-- README.md → v5.0 (enhanced AI agent resources)
+- README.md → v7.0 (5-agent film crew)
 - MASTER_INDEX.md → v2.0 (complete navigation)
+- AGENTS.md → v3.0 (Creative Director added)
+- PRODUCTION_WORKFLOW.md → v3.0 (Phase 0 Pre-Production added)
 
 **✅ Repository Cleanup:**
 - Removed redundant backup files
@@ -278,7 +295,7 @@ These contain **model-specific expert-level prompting techniques** and should be
 
 **Total Lines:** ~23,000 lines of detailed content  
 **Estimated Word Count:** ~200,000+ words  
-**Repository Size:** ~5.1MB
+**Repository Size:** 5.8MB (including research and reference materials)
 
 ---
 
@@ -290,6 +307,7 @@ These contain **model-specific expert-level prompting techniques** and should be
 **Phase 4 (Video Generation):** ✅ Ready for Ingestion  
 **Phase 5 (Character & Consistency):** ✅ Ready for Ingestion  
 **Phase 6 (Production & Post):** ✅ Ready for Ingestion  
+**Phase 7 (Research & Reference):** ✅ Ready for Ingestion (Optional)
 
 ---
 
@@ -310,6 +328,6 @@ These contain **model-specific expert-level prompting techniques** and should be
 
 **Status:** Workspace structure is complete. All 18 prompting mastery guides, updated core documentation, and decision-making frameworks are in place and ready for the Antigravity agent to ingest as primary project logic.
 
-**Version:** 6.3 (18-Model Ecosystem + Agentic Film Crew + Holistic Image Auditor)  
+**Version:** 6.0 (18-Model Ecosystem + 5-Agent Film Crew)  
 **Last Updated:** January 31, 2026  
 **Repository:** https://github.com/cramsey28/cine-ai-knowledge-base
