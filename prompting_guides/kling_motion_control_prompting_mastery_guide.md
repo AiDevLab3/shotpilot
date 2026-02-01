@@ -1,10 +1,12 @@
 # Kling Motion Control Prompting Mastery Guide
 
-**Model:** Kling 2.6 Motion Control  
+**Model:** Kling 2.6 - Motion Control Mode  
 **Developer:** Kuaishou Technology (Kling AI)  
 **Specialty:** Precision character motion transfer from reference videos  
 **Version:** 2.6  
-**Last Updated:** January 2026
+**Last Updated:** February 2026
+
+> **Note:** Motion Control is a specialized mode of Kling 2.6. For Text-to-Video and Image-to-Video modes, see the **[Kling 2.6 Prompting Mastery Guide](./kling_2.6_prompting_mastery_guide.md)**.
 
 ---
 
@@ -25,7 +27,7 @@
 
 ### What is Kling Motion Control?
 
-Kling Motion Control is a specialized multimodal AI model that extracts choreography from reference videos and applies it to static character images with frame-by-frame precision. Unlike traditional image-to-video generation that interprets motion from text prompts, Motion Control acts as a **digital puppeteer**, transferring exact movements, expressions, and pacing from a driving video to your chosen character while maintaining their visual identity.
+**Kling Motion Control** is a specialized mode within the Kling 2.6 video generation system that extracts choreography from reference videos and applies it to static character images with frame-by-frame precision. Unlike traditional image-to-video generation that interprets motion from text prompts, Motion Control acts as a **digital puppeteer**, transferring exact movements, expressions, and pacing from a driving video to your chosen character while maintaining their visual identity.
 
 ### Key Strengths
 
@@ -51,9 +53,12 @@ Kling Motion Control is a specialized multimodal AI model that extracts choreogr
 - Motion-driven storytelling with stable character identity
 
 **Consider alternatives when you need:**
-- General text-to-video generation (use Kling 2.6, Wan 2.6, Veo 3.1)
+- General text-to-video generation (use Kling 2.6 T2V mode, Wan 2.6, Veo 3.1)
+- Animating static images with text prompts (use Kling 2.6 I2V mode)
 - Video editing and style transfer (use Kling O1 Edit)
 - Longer-form narrative content (use Sora 2, Veo 3.1 with extensions)
+
+**See Also:** [Kling 2.6 Prompting Mastery Guide](./kling_2.6_prompting_mastery_guide.md) for T2V and I2V modes
 
 ---
 

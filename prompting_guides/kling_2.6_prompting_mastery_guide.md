@@ -1,7 +1,7 @@
 # Kling 2.6 Prompting Mastery Guide: Cinematic Video Generation with Native Audio
 
-**Version:** 1.0  
-**Date:** January 29, 2026  
+**Version:** 1.1  
+**Date:** February 1, 2026  
 **Author:** Cine-AI Knowledge Base Team
 
 ---
@@ -10,14 +10,15 @@
 
 1. [Introduction](#introduction)
 2. [Technical Specifications](#technical-specifications)
-3. [Core Prompting Framework](#core-prompting-framework)
-4. [Cinematic Camera Movement Mastery](#cinematic-camera-movement-mastery)
-5. [Native Audio Generation](#native-audio-generation)
-6. [Advanced Techniques](#advanced-techniques)
-7. [Best Practices](#best-practices)
-8. [Common Mistakes & Troubleshooting](#common-mistakes--troubleshooting)
-9. [Genre-Specific Examples](#genre-specific-examples)
-10. [Integration Workflows](#integration-workflows)
+3. [Generation Modes](#generation-modes)
+4. [Core Prompting Framework](#core-prompting-framework)
+5. [Cinematic Camera Movement Mastery](#cinematic-camera-movement-mastery)
+6. [Native Audio Generation](#native-audio-generation)
+7. [Advanced Techniques](#advanced-techniques)
+8. [Best Practices](#best-practices)
+9. [Common Mistakes & Troubleshooting](#common-mistakes--troubleshooting)
+10. [Genre-Specific Examples](#genre-specific-examples)
+11. [Integration Workflows](#integration-workflows)
 
 ---
 
@@ -30,6 +31,7 @@
 - **Native Audio Generation:** Dialogue, ambient sound, music, and sound effects generated simultaneously with video
 - **Best-in-Class Motion Understanding:** Superior character physics, camera motion, and environmental stability
 - **Cinematic Camera Control:** Professional camera movements with narrative intent
+- **Motion Control Mode:** Precision character motion transfer from reference videos (see separate guide)
 - **Start/End Frame Logic:** Define keyframes and let the model interpolate smoothly
 - **Multi-Reference Fusion:** Combine character photos, location references, style samples, and motion clips
 - **Cost-Effective:** Significantly cheaper than competing models while maintaining professional quality
@@ -59,7 +61,7 @@
 | **Resolution** | Native 720p-1080p (upscaling available) |
 | **Clip Lengths** | 5 seconds or 10 seconds |
 | **Audio** | Native dialogue, ambience, music, sound effects |
-| **Input Modes** | Text-to-video, Image-to-video, Multi-reference |
+| **Input Modes** | Text-to-video, Image-to-video, Motion Control, Multi-reference |
 | **Frame Control** | Start frame, End frame, Multiple keyframes |
 | **Camera Control** | Described movements (dolly, pan, tilt, tracking, etc.) |
 | **Lip-Sync** | Frame-accurate native lip-syncing |
@@ -80,6 +82,57 @@
 ❌ **Complex Hand Interactions** - Fine motor skills (typing, playing instruments) can be inconsistent  
 ❌ **Extreme Camera Angles** - Very low or very high angles may distort geometry  
 ❌ **Long-Form Continuity** - Best for 5-10 second clips; longer sequences require stitching  
+
+---
+
+## Generation Modes
+
+Kling 2.6 offers three primary generation modes, each optimized for different creative workflows:
+
+### 1. Text-to-Video (T2V)
+**Best For:** Creating videos from scratch using text descriptions
+
+**Workflow:** Text prompt → Video generation
+
+**Key Strength:** Full creative control over subject, action, context, and style through prompting
+
+**Covered In:** This guide (sections below)
+
+---
+
+### 2. Image-to-Video (I2V)
+**Best For:** Animating static images with motion and camera movement
+
+**Workflow:** Upload image + Motion-focused text prompt → Video generation
+
+**Key Strength:** Precise control over visual elements (already in image) + motion description
+
+**Covered In:** This guide (sections below)
+
+---
+
+### 3. Motion Control (V2V Motion Transfer)
+**Best For:** Transferring precise choreography from reference videos to character images
+
+**Workflow:** Upload character image + Upload motion reference video + Optional environment prompt → Video generation
+
+**Key Strength:** Frame-accurate motion transfer for dance, athletics, complex gestures
+
+**Unique Capabilities:**
+- **Precision Motion Transfer:** Extract exact choreography from reference videos
+- **Complex Choreography:** Dance routines, martial arts, athletic movements
+- **Hand & Finger Articulation:** Improved fine motor skills and object interactions
+- **Orientation Control:** Choose between following reference video perspective or maintaining character image framing
+- **Scene Flexibility:** Modify environment while preserving motion
+
+**Use Cases:**
+- Virtual influencer content with human-like motion
+- Product demonstrations requiring exact movements
+- Content localization (same motion, different characters)
+- Complex athletic or dance sequences
+- Motion-driven storytelling with stable character identity
+
+**Covered In:** See **[Kling Motion Control Prompting Mastery Guide](./kling_motion_control_prompting_mastery_guide.md)** for comprehensive documentation
 
 ---
 
@@ -824,6 +877,7 @@ Kling 2.6 represents a major leap forward in AI video generation by introducing 
 ---
 
 **Version History:**
+- v1.1 (February 1, 2026) - Added Generation Modes section with Motion Control reference
 - v1.0 (January 29, 2026) - Initial comprehensive guide
 
 **Sources:**

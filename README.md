@@ -2,9 +2,9 @@
 
 **The most comprehensive collection of AI filmmaking knowledge, powered by an Agentic Film Crew architecture**
 
-Version: 7.0 (January 2026)  
-Total Guides: 18 Expert-Level Prompting Mastery Guides  
-Total Content: ~900KB + Agentic Film Crew System  
+Version: 7.0 (February 2026)  
+Total Guides: 21 Expert-Level Prompting Mastery Guides  
+Total Content: ~1.1MB + Agentic Film Crew System  
 **Current Milestone:** 🚀 MVP Technical Validation
 
 ---
@@ -75,7 +75,7 @@ Cine-AI operates as a **specialized film production team**, not a single monolit
 This repository contains expert-level prompting mastery guides for all major AI image and video generation models, designed for professional filmmakers, content creators, and AI agents. Each guide provides comprehensive strategies, technical specifications, prompt frameworks, and best practices for mastering each model.
 
 **Key Features:**
-- 🎯 **18 Comprehensive Prompting Guides** (11 image + 7 video models)
+- 🎯 **21 Comprehensive Prompting Guides** (11 image + 10 video models)
 - 🎬 **Agentic Film Crew System** (5 specialized AI agents)
 - 🤖 **AI Agent Decision-Making Frameworks** with 3-Strike Rule
 - 🔄 **Model Exhaustion Protocol** for maximum consistency
@@ -84,7 +84,7 @@ This repository contains expert-level prompting mastery guides for all major AI 
 
 ---
 
-## 📚 Prompting Mastery Guides (18 Total)
+## 📚 Prompting Mastery Guides (21 Total)
 
 ### Image Generation Models (11 Guides)
 
@@ -105,17 +105,21 @@ This repository contains expert-level prompting mastery guides for all major AI 
 10. **Reve** (25KB) - Natural language image editing and transformation
 11. **Topaz** (35KB) - AI-powered upscaling and enhancement
 
-### Video Generation Models (7 Guides)
+### Video Generation Models (10 Guides)
 
-**Phase 4: Video Models (7 guides)**
+**Phase 4: Video Models (10 guides)**
 
-12. **Kling Motion Control** (38KB) - Precision character motion transfer
-13. **Kling O1 Edit** (52KB) - Unified multimodal video generation & editing
-14. **Veo 3.1** (64KB) - High-fidelity cinematic video with native audio
-15. **Sora 2** (73KB) - OpenAI's advanced video model with extended duration
-16. **Wan 2.6** (67KB) - Alibaba's video model with three generation modes
-17. **Minimax Hailuo 02** (56KB) - Cinematic AI video model
-18. **Kling Avatars 2.0** (64KB) - Audio-driven talking avatars with 5-minute consistency
+12. **Kling 2.6** (68KB) - Cinematic video with native audio (T2V, I2V, Motion Control)
+13. **Kling Motion Control** (38KB) - Precision character motion transfer (mode of Kling 2.6)
+14. **Kling O1 Edit** (52KB) - Unified multimodal video generation & editing
+15. **Veo 3.1** (64KB) - High-fidelity cinematic video with native audio
+16. **Sora 2** (73KB) - OpenAI's advanced video model with extended duration
+17. **Wan 2.6** (67KB) - Alibaba's video model with three generation modes
+18. **Minimax Hailuo 02** (56KB) - Cinematic AI video model
+19. **Kling Avatars 2.0** (64KB) - Audio-driven talking avatars with 5-minute consistency
+20. **Grok Imagine** (65KB) - Cinematic videos with synchronized audio (xAI)
+21. **Higgsfield DoP** (42KB) - VFX and camera control with 50+ presets
+22. **Runway Gen-4.5** (58KB) - #1 benchmark leader for photorealism
 
 ---
 
@@ -136,12 +140,12 @@ Defines the specialized AI agent personas:
 Comprehensive decision framework with Model Exhaustion protocol:
 - **3-Strike Rule**: Exhaust primary model before pivoting
 - **90/10 Translation Layer**: Preserve success when pivoting
-- Quick selection matrices for all 18 models
+- Quick selection matrices for all 21 models
 - Decision tree logic with visual diagrams
 - Single-model success standard
 
 **3. AI Agent Interaction Protocol** (`guides/AI Agent Interaction Protocol (Revised): A Flexible Guidance Framework.md` - 21KB)
-Five comprehensive protocols for 18-model ecosystem:
+Five comprehensive protocols for 21-model ecosystem:
 - **Protocol 1:** Highest-Quality Source Principle
 - **Protocol 2:** Intelligent Model Selection
 - **Protocol 3:** Multi-Model Workflow Design
