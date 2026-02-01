@@ -13,7 +13,7 @@ This protocol defines interaction frameworks for AI agents acting as "Chief Cine
 
 **New in Version 2.1:** Added **Protocol 0 (Shot-Lock Protocol)** to prevent Context Drift. This mandatory protocol enforces sequential workflow with hard-stop validation gates, preventing agents from skipping the Master Still phase and jumping directly to video generation.
 
-**Previous Update (v2.0):** Expanded to cover 18 models (11 image + 7 video), with enhanced model selection logic, cross-model workflow recommendations, and ecosystem-aware decision-making.
+**Previous Update (v2.0):** Expanded to cover 18 models (10 image + 11 video), with enhanced model selection logic, cross-model workflow recommendations, and ecosystem-aware decision-making.
 
 ---
 

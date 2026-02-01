@@ -75,7 +75,7 @@ Cine-AI operates as a **specialized film production team**, not a single monolit
 This repository contains expert-level prompting mastery guides for all major AI image and video generation models, designed for professional filmmakers, content creators, and AI agents. Each guide provides comprehensive strategies, technical specifications, prompt frameworks, and best practices for mastering each model.
 
 **Key Features:**
-- 🎯 **21 Comprehensive Prompting Guides** (11 image + 10 video models)
+- 🎯 **21 Comprehensive Prompting Guides** (10 image + 11 video models)
 - 🎬 **Agentic Film Crew System** (5 specialized AI agents)
 - 🤖 **AI Agent Decision-Making Frameworks** with 3-Strike Rule
 - 🔄 **Model Exhaustion Protocol** for maximum consistency
@@ -86,29 +86,29 @@ This repository contains expert-level prompting mastery guides for all major AI 
 
 ## 📚 Prompting Mastery Guides (21 Total)
 
-### Image Generation Models (11 Guides)
+### Image Generation Models (10 Guides)
 
-**Phase 1: Foundation Models (4 guides)**
+**Phase 1: Foundation Models (3 guides)**
 
 1. **Nano Banana Pro** (32KB) - Gemini 3.0 Pro Image model with best-in-class text rendering
 2. **GPT Image 1.5** (35KB) - OpenAI's image generation with natural language prompting
 3. **Kling 2.6 Image** (30KB) - Kuaishou's image-to-video foundation model
-4. **Seedance 1.5 Pro** (34KB) - ByteDance's unified image-video model
 
 **Phase 2: Advanced Models (7 guides)**
 
-5. **Seedream 4.5** (45KB) - Best-in-class text rendering and 4K generation
-6. **FLUX.2** (35KB) - JSON structured prompting with hex color control
-7. **Z-Image** (27KB) - Instant lifelike portraits with bilingual text
-8. **Kling O1 Image** (31KB) - Photorealistic generation with advanced reasoning
-9. **Wan 2.2 Image** (26KB) - Photorealistic with detailed human rendering
-10. **Reve** (25KB) - Natural language image editing and transformation
-11. **Topaz** (35KB) - AI-powered upscaling and enhancement
+4. **Seedream 4.5** (45KB) - Best-in-class text rendering and 4K generation
+5. **FLUX.2** (35KB) - JSON structured prompting with hex color control
+6. **Z-Image** (27KB) - Instant lifelike portraits with bilingual text
+7. **Kling O1 Image** (31KB) - Photorealistic generation with advanced reasoning
+8. **Wan 2.2 Image** (26KB) - Photorealistic with detailed human rendering
+9. **Reve** (25KB) - Natural language image editing and transformation
+10. **Topaz** (35KB) - AI-powered upscaling and enhancement
 
-### Video Generation Models (10 Guides)
+### Video Generation Models (11 Guides)
 
-**Phase 4: Video Models (10 guides)**
+**Phase 3: Video Models (11 guides)**
 
+11. **Seedance 1.5 Pro** (34KB) - ByteDance's unified video model with pro-grade audio-visual sync
 12. **Kling 2.6** (68KB) - Cinematic video with native audio (T2V, I2V, Motion Control)
 13. **Kling Motion Control** (38KB) - Precision character motion transfer (mode of Kling 2.6)
 14. **Kling O1 Edit** (52KB) - Unified multimodal video generation & editing
@@ -194,7 +194,7 @@ Five comprehensive protocols for 21-model ecosystem:
 ### Core Workflow Guides
 
 **Image Generation** (`guides/image_generation_guide.md` - 22KB)
-- Coverage: 11 image models (expanded from 5)
+- Coverage: 10 image models (expanded from 5)
 - Foundation models, advanced models, specialized tools
 - Cross-model workflows and integration strategies
 
@@ -269,7 +269,7 @@ cine-ai-knowledge-base/
 - **Total Prompting Guides**: 18 comprehensive guides
 - **Total Content**: ~900KB of expert-level documentation
 - **Total Lines**: ~23,000 lines of detailed content
-- **Coverage**: 11 image models + 7 video models
+- **Coverage**: 10 image models + 11 video models
 - **Estimated Word Count**: ~200,000+ words
 
 ### Content Breakdown
@@ -451,8 +451,8 @@ This repository is optimized for integration with the Gemini/Antigravity ecosyst
 
 **For AI Agents:**
 - [AI Agent Interaction Protocol](guides/AI%20Agent%20Interaction%20Protocol%20(Revised):%20A%20Flexible%20Guidance%20Framework.md) - Decision-making frameworks
-- [Image Generation Guide](guides/image_generation_guide.md) - 11 image models overview
-- [Video Generation Guide](guides/video_generation_guide.md) - 7 video models overview
+- [Image Generation Guide](guides/image_generation_guide.md) - 10 image models overview
+- [Video Generation Guide](guides/video_generation_guide.md) - 11 video models overview
 
 **For Specific Models:**
 - Navigate to `/prompting_guides/` for individual model guides

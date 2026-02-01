@@ -59,7 +59,7 @@ When a pivot becomes necessary, agents must **NOT simply copy-paste the prompt**
 
 ## Executive Summary
 
-This guide provides a comprehensive framework for selecting the optimal AI generation model based on your specific needs, constraints, and creative goals. With **11 image models** and **7 video models** now available, making the right choice requires understanding each model's strengths, limitations, and ideal use cases.
+This guide provides a comprehensive framework for selecting the optimal AI generation model based on your specific needs, constraints, and creative goals. With **10 image models** and **11 video models** now available, making the right choice requires understanding each model's strengths, limitations, and ideal use cases.
 
 **Key Principle**: Exhaust your primary model before pivoting. Consistency beats perfection.
 

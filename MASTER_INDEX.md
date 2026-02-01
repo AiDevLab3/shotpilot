@@ -135,12 +135,12 @@
 
 **Image Generation** (22KB) **[UPDATED v5.0]**
 - File: `image_generation_guide.md`
-- Coverage: 11 image models (expanded from 5)
+- Coverage: 10 image models (expanded from 5)
 - Topics: Foundation models, advanced models, specialized tools, cross-model workflows
 
 **Video Generation** (22KB) **[UPDATED v5.0]**
 - File: `video_generation_guide.md`
-- Coverage: 7 video models (expanded coverage)
+- Coverage: 11 video models (expanded coverage)
 - Topics: Core models, platform integration, multi-model workflows, I2V best practices
 
 **Character Consistency** (19KB)
@@ -289,7 +289,7 @@
 
 ## VII. Statistics
 
-- **Total Prompting Mastery Guides:** 18 (11 image + 7 video)
+- **Total Prompting Mastery Guides:** 18 (10 image + 11 video)
 - **Total Production Guides:** 20+ comprehensive guides
 - **Total Assets:** 13+ visual aids and references
 - **Total Content:** ~1.5MB+ (including all documentation)
@@ -300,7 +300,7 @@
 ## VIII. Version History
 
 ### Version 2.0 (January 29, 2026) - Current
-- ✅ Added 18 prompting mastery guides (11 image + 7 video)
+- ✅ Added 18 prompting mastery guides (10 image + 11 video)
 - ✅ Created MODEL_SELECTION_GUIDE.md (19KB)
 - ✅ Updated image_generation_guide.md to v5.0 (22KB, 11 models)
 - ✅ Updated video_generation_guide.md to v5.0 (22KB, 7 models)
