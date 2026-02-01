@@ -118,16 +118,17 @@ PHASE 3: Motion
 
 ## The Knowledge Base: 250,000+ Words of Expert Prompting
 
-Cine-AI includes **18 comprehensive prompting mastery guides** (900KB total content):
+Cine-AI includes **22 comprehensive prompting mastery guides** (~1.2MB total content):
 
 **Image Models (11 guides):**
-- Nano Banana Pro, GPT Image 1.5, Kling 2.6, Seedance 1.5 Pro
+- Nano Banana Pro, GPT Image 1.5, Kling 2.6 Image, Midjourney
 - Seedream 4.5, FLUX.2, Z-Image, Kling O1 Image
-- Wan 2.2, Reve, Topaz
+- Wan 2.2 Image, Reve, Topaz
 
-**Video Models (7 guides):**
-- Kling Motion Control, Kling O1 Edit, Veo 3.1, Sora 2
-- Wan 2.6, Minimax Hailuo 02, Kling Avatars 2.0
+**Video Models (11 guides):**
+- Seedance 1.5 Pro, Kling 2.6, Kling Motion Control, Kling O1 Edit
+- Veo 3.1, Sora 2, Wan 2.6, Minimax Hailuo 02
+- Kling Avatars 2.0, Grok Imagine, Higgsfield DoP, Runway Gen-4.5
 
 Each guide provides:
 - Technical specifications and capabilities
