@@ -193,11 +193,6 @@
 - Coverage: Editing workflows
 - Topics: Final polish, delivery formats
 
-**System Architecture** (11KB)
-- File: `cine_ai_system.md`
-- Coverage: Cine-AI Agent System
-- Topics: Autonomous filmmaking, agent workflows
-
 ---
 
 ### Advanced Specialized Guides

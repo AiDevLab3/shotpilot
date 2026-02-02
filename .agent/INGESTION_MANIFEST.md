@@ -65,7 +65,6 @@ These are the **core production workflows** and should be ingested as primary pr
 18. **quality_control_guide.md** - QC protocols
 19. **post_production_guide.md** - Final assembly
 20. **ethics_legal_guide.md** - Responsible use
-21. **cine_ai_system.md** - System architecture
 
 ### Prompting Mastery Guides (22 files)
 These contain **model-specific expert-level prompting techniques** and should be ingested as comprehensive prompt engineering references:
@@ -107,7 +106,6 @@ These contain **model-specific expert-level prompting techniques** and should be
 4. `PRODUCTION_WORKFLOW.md` (v3.0) - Shot-Lock Protocol with Phase 0
 5. `MODEL_SELECTION_GUIDE.md` - Decision framework for 22 models
 6. `AI Agent Interaction Protocol (Revised)` (v2.0) - 5 protocols for agent behavior
-7. `cine_ai_system.md` - System architecture
 
 **Why First:** These establish the foundational knowledge for intelligent model selection and agent behavior.
 
