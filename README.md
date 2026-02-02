@@ -463,12 +463,34 @@ This repository is optimized for integration with the Gemini/Antigravity ecosyst
 
 **The Cine-AI Knowledge Base represents the most comprehensive collection of AI filmmaking prompting knowledge available, designed for professional creators and AI agents alike.**
 
-**Total Coverage**: 18 models | 900KB content | 200,000+ words | Expert-level depth
+**Total Coverage**: 22 models | ~1.2MB content | 250,000+ words | Expert-level depth
 
 **Ready for**: Production use | AI agent training | Educational purposes | Professional workflows
 
 ---
 
-*Last Updated: January 29, 2026*  
-*Repository Version: 5.0*  
+## 📚 Research Archive
+
+Historical research notes and source materials are preserved in a separate branch for reference:
+
+📁 **[Research Archive Branch](https://github.com/cramsey28/cine-ai-knowledge-base/tree/archive/research-notes/research)**
+
+The archive contains:
+- Original research notes for all 22 models
+- API vs. direct prompting differences
+- Character consistency techniques
+- Cross-model workflow strategies
+- Pricing and competitive analysis
+- Platform integration details
+
+Useful for:
+- Updating guides with new information
+- Understanding research methodology
+- Accessing business/integration details not in final guides
+- Historical context and source attribution
+
+---
+
+*Last Updated: February 1, 2026*  
+*Repository Version: 7.0*  
 *Maintained for: Gemini/Antigravity Ecosystem*
