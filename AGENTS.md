@@ -138,7 +138,7 @@ Agents **MUST** follow this sequential workflow. **Video tools are DISABLED unti
 5. **Shot-Lock Enforcement**: Prevents agents from skipping phases (e.g., jumping directly to video without user-approved Hero Frame)
 
 ### Knowledge Base Access
-- Full access to all 18 model prompting guides
+- Full access to all 22 model prompting guides
 - MODEL_SELECTION_GUIDE.md (Model Exhaustion protocol)
 - AI Agent Interaction Protocol
 - Character consistency guides

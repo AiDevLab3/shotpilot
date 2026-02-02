@@ -2,7 +2,7 @@
 
 **Version:** 2.0  
 **Last Updated:** January 31, 2026  
-**Coverage:** 18 AI Generation Models (11 Image + 7 Video)
+**Coverage:** 22 AI Generation Models (11 Image + 11 Video)
 
 ---
 

@@ -130,7 +130,7 @@
 
 **Model Selection & Decision Making** (19KB, 660 lines) **[NEW]**
 - File: `MODEL_SELECTION_GUIDE.md`
-- Coverage: Comprehensive decision framework for all 18 models
+- Coverage: Comprehensive decision framework for all 22 models
 - Topics: Selection matrices, decision trees, use case recommendations, multi-model workflows
 
 **Image Generation** (22KB) **[UPDATED v5.0]**
@@ -204,7 +204,7 @@
 
 **AI Agent Interaction Protocol** (21KB) **[UPDATED v2.0]**
 - File: `AI Agent Interaction Protocol (Revised): A Flexible Guidance Framework.md`
-- Coverage: 18-model ecosystem integration for AI agents
+- Coverage: 22-model ecosystem integration for AI agents
 - Topics: Model selection logic, multi-model workflows, ecosystem-aware decision making
 
 **The Ultimate Guide to Cinematic AI Image Generation** (18KB)
@@ -238,7 +238,7 @@
 
 **Decision Trees**
 - `model_selection_tree_v2.mmd` (4.4KB) - Model selection decision tree source (Mermaid)
-- `model_selection_tree_v2.png` (200KB) - Visual decision tree for all 18 models
+- `model_selection_tree_v2.png` (200KB) - Visual decision tree for all 22 models
 
 ---
 
@@ -341,9 +341,9 @@ This knowledge base is ready for:
 
 ---
 
-**The Cine-AI Knowledge Base represents the most comprehensive collection of AI filmmaking knowledge available, with 18 expert-level prompting mastery guides and complete production workflows.**
+**The Cine-AI Knowledge Base represents the most comprehensive collection of AI filmmaking knowledge available, with 22 expert-level prompting mastery guides and complete production workflows.**
 
-**Total Coverage:** 18 models | 900KB+ content | 250,000+ words | Expert-level depth
+**Total Coverage:** 22 models | ~1.2MB content | 250,000+ words | Expert-level depth
 
 ---
 

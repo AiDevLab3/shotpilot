@@ -1,15 +1,15 @@
-# AI Agent Interaction Protocol: Flexible Guidance Framework for 18-Model Ecosystem
+# AI Agent Interaction Protocol: Flexible Guidance Framework for 22-Model Ecosystem
 
 **Version:** 2.1  
 **Last Updated:** January 31, 2026  
-**Coverage:** 18 AI Generation Models (11 Image + 7 Video)  
+**Coverage:** 22 AI Generation Models (11 Image + 11 Video)  
 **Critical Update:** Protocol 0 (Shot-Lock Protocol) added to prevent Context Drift
 
 ---
 
 ## Executive Summary
 
-This protocol defines interaction frameworks for AI agents acting as "Chief Cinematographer" or "Creative Director" in a comprehensive 18-model ecosystem. The framework is designed to be flexible, prevent quality degradation from excessive iteration, and empower AI agents to provide intelligent, context-aware recommendations leveraging the full spectrum of available models.
+This protocol defines interaction frameworks for AI agents acting as "Chief Cinematographer" or "Creative Director" in a comprehensive 22-model ecosystem. The framework is designed to be flexible, prevent quality degradation from excessive iteration, and empower AI agents to provide intelligent, context-aware recommendations leveraging the full spectrum of available models.
 
 **New in Version 2.1:** Added **Protocol 0 (Shot-Lock Protocol)** to prevent Context Drift. This mandatory protocol enforces sequential workflow with hard-stop validation gates, preventing agents from skipping the Master Still phase and jumping directly to video generation.
 
@@ -19,21 +19,21 @@ This protocol defines interaction frameworks for AI agents acting as "Chief Cine
 
 ## 1. Introduction
 
-### The 18-Model Ecosystem
+### The 22-Model Ecosystem
 
-AI agents now have access to **18 comprehensive AI generation models**, each with unique strengths, limitations, and ideal use cases:
+AI agents now have access to **22 comprehensive AI generation models**, each with unique strengths, limitations, and ideal use cases:
 
 **Image Models (11):**
 - Nano Banana Pro, GPT Image 1.5, Kling 2.6 Image, Seedance 1.5 Pro (foundation)
 - Seedream 4.5, FLUX.2, Z-Image, Kling O1 Image, Wan 2.2 Image (advanced)
 - Reve, Topaz (specialized)
 
-**Video Models (7):**
+**Video Models (11):**
 - Veo 3.1, Sora 2, Kling O1 Edit, Kling Motion Control, Wan 2.6, Minimax Hailuo 02, Kling Avatars 2.0
 
 ### Agent Role
 
-The AI agent acts as an expert creative director, leveraging comprehensive knowledge of all 18 models to:
+The AI agent acts as an expert creative director, leveraging comprehensive knowledge of all 22 models to:
 - Recommend optimal model selection
 - Provide expert prompting guidance
 - Design multi-model workflows
@@ -233,7 +233,7 @@ Brief expert critique of provided images/videos, comparing against project goals
 > **Example:** "Image 2 successfully captured the cinematic lighting and composition we're targeting, but the character's facial details are softer than desired. Images 1 and 3 have better facial clarity but lost the dramatic lighting. Image 4 has an unwanted color cast."
 
 **2. Actionable Recommendation**
-Single, clear recommendation for next step, leveraging full 18-model knowledge base.
+Single, clear recommendation for next step, leveraging full 22-model knowledge base.
 
 > **Example:** "I recommend we use **Image 2** as the base composition and upscale it using **Topaz** to enhance facial details. Then use the upscaled version as a reference with **Kling O1 Image** to generate the final version, which will combine the cinematic lighting with sharp facial features."
 
@@ -516,7 +516,7 @@ PROMPT: Refine character details, enhance facial features, maintain consistency,
 
 ## 6. Conclusion
 
-This protocol empowers AI agents to act as expert creative directors in a comprehensive 18-model ecosystem. By following these protocols, agents can:
+This protocol empowers AI agents to act as expert creative directors in a comprehensive 22-model ecosystem. By following these protocols, agents can:
 
 - **Prevent quality degradation** through highest-quality source principle
 - **Optimize model selection** based on specific requirements
@@ -534,4 +534,4 @@ This protocol empowers AI agents to act as expert creative directors in a compre
 
 *Last Updated: January 29, 2026*  
 *Version: 2.0*  
-*Coverage: 18 AI Generation Models*
+*Coverage: 22 AI Generation Models*
