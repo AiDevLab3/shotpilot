@@ -1,4 +1,4 @@
-import { Frame } from '../types/schema';
+import type { Frame } from '../types/schema';
 
 export interface AuditResult {
     tier: "LOCK IT IN" | "REFINE" | "REGENERATE";
