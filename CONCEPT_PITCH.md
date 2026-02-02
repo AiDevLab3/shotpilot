@@ -71,7 +71,7 @@ Cine-AI operates as a **specialized film production team**, not a single AI. Eac
 **Output**: Detailed analysis reports with specific recommendations
 
 ### 5. **Motion Agent** (Lead Editor)
-- Expert in video model syntax across 7 models
+- Expert in video model syntax across 11 models
 - Ensures 24fps motion cadence and physics-based camera moves
 - Receives optical metadata from DP for temporal consistency
 - Animates approved Hero Frames using image-to-video workflow
