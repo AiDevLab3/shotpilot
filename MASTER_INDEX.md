@@ -2,9 +2,9 @@
 
 **Comprehensive Navigation Guide for All Content**
 
-**Version:** 2.0  
-**Last Updated:** January 29, 2026  
-**Total Guides:** 18 Prompting Mastery Guides + 20+ Production Guides
+**Version:** 3.0  
+**Last Updated:** February 1, 2026  
+**Total Guides:** 22 Prompting Mastery Guides + 22 Production Guides
 
 ---
 
@@ -12,8 +12,8 @@
 
 | Category | File Count | Location |
 |----------|------------|----------|
-| **Prompting Mastery Guides** | 18 | `/prompting_guides/` |
-| **Production Guides** | 20+ | `/guides/` |
+| **Prompting Mastery Guides** | 22 | `/prompting_guides/` |
+| **Production Guides** | 22 | `/guides/` |
 | **Assets & Visual Aids** | 13+ | `/assets/` |
 
 ---
@@ -21,6 +21,8 @@
 ## I. Prompting Mastery Guides (`/prompting_guides/`)
 
 ### Image Generation Models (11 Guides)
+
+**Note**: Midjourney was added in v7.0 to complete the 11 image models.
 
 **Foundation Models**
 
@@ -39,10 +41,10 @@
    - Coverage: Kuaishou's image-to-video foundation, motion-ready composition
    - Key Features: Cinematic quality, video generation preparation, physics-aware
 
-4. **Seedance 1.5 Pro** (34KB, 1,024 lines)
-   - File: `seedance_1.5_pro_prompting_mastery_guide.md`
-   - Coverage: ByteDance's unified image-video model, seamless I2V workflow
-   - Key Features: Audio-visual integration, high-quality photorealism, unified workflow
+4. **Midjourney** (48KB, 1,200 lines)
+   - File: `midjourney_prompting_mastery_guide.md`
+   - Coverage: Industry-standard image generation, V7 with personalization
+   - Key Features: Natural language prompting, character consistency, draft mode
 
 **Advanced Models**
 
@@ -85,42 +87,69 @@
 
 ---
 
-### Video Generation Models (7 Guides)
+### Video Generation Models (11 Guides)
 
-12. **Kling Motion Control** (38KB, 937 lines)
+**Note**: Kling 2.6 is counted as 1 model with 2 guides (base + Motion Control feature). New models in v7.0: Seedance 1.5 Pro, Grok Imagine, Higgsfield DoP, Runway Gen-4.5.
+
+12. **Seedance 1.5 Pro** (34KB, 1,024 lines)
+    - File: `seedance_1.5_pro_prompting_mastery_guide.md`
+    - Coverage: ByteDance's video model with pro-grade audio-visual sync
+    - Key Features: Audio-visual integration, high-quality photorealism, seamless I2V workflow
+
+13. **Kling 2.6** (68KB, 1,700 lines)
+    - File: `kling_2.6_prompting_mastery_guide.md`
+    - Coverage: Kuaishou's video model with T2V, I2V, native audio
+    - Key Features: Cinematic quality, native audio generation, motion control feature
+
+14. **Kling Motion Control** (38KB, 937 lines)
     - File: `kling_motion_control_prompting_mastery_guide.md`
     - Coverage: Precision character motion transfer, keyframe-based control
     - Key Features: Motion trajectory guidance, advanced motion techniques, character focus
 
-13. **Kling O1 Edit** (52KB, 1,597 lines)
+15. **Kling O1 Edit** (52KB, 1,597 lines)
     - File: `kling_o1_edit_prompting_mastery_guide.md`
     - Coverage: Unified multimodal video generation & editing
     - Key Features: I2V + V2V, advanced reasoning, intelligent prompt interpretation
 
-14. **Veo 3.1** (64KB, 1,737 lines)
+16. **Veo 3.1** (64KB, 1,737 lines)
     - File: `veo_3.1_prompting_mastery_guide.md`
     - Coverage: High-fidelity cinematic video with native audio
     - Key Features: 1080p output, 8s duration, Google's flagship video model
 
-15. **Sora 2** (73KB, 2,296 lines)
+17. **Sora 2** (73KB, 2,296 lines)
     - File: `sora_2_prompting_mastery_guide.md`
     - Coverage: OpenAI's advanced video model, extended duration
     - Key Features: 20s capability, photorealistic quality, complex scene understanding
 
-16. **Wan 2.6** (67KB, 1,872 lines)
+18. **Wan 2.6** (67KB, 1,872 lines)
     - File: `wan_2.6_prompting_mastery_guide.md`
     - Coverage: Alibaba's video model, three generation modes
     - Key Features: T2V, I2V, V2V workflows, high-quality outputs, flexible production
 
-17. **Minimax Hailuo 02** (56KB, 1,937 lines)
+19. **Minimax Hailuo 02** (56KB, 1,937 lines)
     - File: `minimax_hailuo_02_prompting_mastery_guide.md`
     - Coverage: Cinematic AI video model, professional quality
     - Key Features: Advanced motion understanding, Chinese market leader, high-end production
 
-18. **Kling Avatars 2.0** (64KB, 1,983 lines)
+20. **Kling Avatars 2.0** (64KB, 1,983 lines)
     - File: `kling_avatars_2.0_prompting_mastery_guide.md`
     - Coverage: Audio-driven talking avatars, 5-minute consistency
     - Key Features: Industry-leading lip-sync, Unified Character Memory, virtual presenters
+
+21. **Grok Imagine** (65KB, 1,800 lines)
+    - File: `grok_imagine_prompting_mastery_guide.md`
+    - Coverage: xAI's cinematic video model with synchronized audio
+    - Key Features: Natural language prompting, native audio, cinematic quality
+
+22. **Higgsfield DoP** (42KB, 1,200 lines)
+    - File: `higgsfield_dop_prompting_mastery_guide.md`
+    - Coverage: VFX and camera control with 50+ presets
+    - Key Features: Precise camera movements, VFX capabilities, professional control
+
+23. **Runway Gen-4.5** (58KB, 1,500 lines)
+    - File: `runway_gen4.5_prompting_mastery_guide.md`
+    - Coverage: Best-in-class photorealism (#1 benchmark leader)
+    - Key Features: Exceptional prompt adherence, photorealistic quality, industry standard
 
 ---
 
@@ -284,8 +313,8 @@
 
 ## VII. Statistics
 
-- **Total Prompting Mastery Guides:** 18 (10 image + 11 video)
-- **Total Production Guides:** 20+ comprehensive guides
+- **Total Prompting Mastery Guides:** 22 (11 image + 11 video)
+- **Total Production Guides:** 22 comprehensive guides
 - **Total Assets:** 13+ visual aids and references
 - **Total Content:** ~1.5MB+ (including all documentation)
 - **Total Word Count:** ~250,000+ words of expert-level content
@@ -294,7 +323,19 @@
 
 ## VIII. Version History
 
-### Version 2.0 (January 29, 2026) - Current
+### Version 3.0 (February 1, 2026) - Current
+- ✅ Expanded to 22 prompting mastery guides (11 image + 11 video)
+- ✅ Added Midjourney Prompting Mastery Guide (48KB)
+- ✅ Added Grok Imagine, Higgsfield DoP, Runway Gen-4.5 video guides
+- ✅ Corrected Seedance 1.5 Pro categorization (moved from image to video)
+- ✅ Updated Kling 2.6 guide to include Motion Control feature
+- ✅ Renamed 9 production guides for AI agent clarity
+- ✅ Added cross-references between related guides
+- ✅ Updated all documentation to reflect 5-agent crew and 4-phase workflow
+- ✅ Removed redundant cine_ai_system.md (v3.1)
+- ✅ Created research archive branch for historical preservation
+
+### Version 2.0 (January 29, 2026)
 - ✅ Added 18 prompting mastery guides (10 image + 11 video)
 - ✅ Created MODEL_SELECTION_GUIDE.md (19KB)
 - ✅ Updated image_generation_guide.md to v5.0 (22KB, 11 models)
@@ -342,6 +383,6 @@ This knowledge base is ready for:
 
 ---
 
-*Last Updated: January 29, 2026*  
-*Version: 2.0*  
+*Last Updated: February 1, 2026*  
+*Version: 3.0*  
 *Maintained for: Gemini/Antigravity Ecosystem*
