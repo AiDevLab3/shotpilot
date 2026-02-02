@@ -71,6 +71,11 @@ interface ProjectDNA {
   
   // Forbidden Drift
   forbiddenDrift: string[];      // 5+ things to never see
+  
+  // Canon Frame Anchors (Project-Level)
+  canonStyleFrameId: string | null;      // Reference frame for global style
+  canonCharacterFrameId: string | null;  // Reference frame for character identity
+  canonLightingFrameId: string | null;   // Reference frame for lighting continuity
 }
 ```
 
@@ -263,6 +268,19 @@ interface Shot {
   // Frames
   frames: string[];              // References to Frame IDs
   heroFrameId?: string;          // Primary/hero frame for this shot
+  
+  // Shot Locks (separate from status)
+  locks: {
+    compositionLocked: boolean;
+    characterLocked: boolean;
+    entitiesLocked: boolean;
+    lightingLocked: boolean;
+    lensLocked: boolean;
+    motionReadyLocked: boolean;
+  };
+  
+  // Iteration Tracking
+  iterationsCount: number;       // Number of regeneration attempts (default 0)
 }
 ```
 
@@ -286,6 +304,7 @@ interface Frame {
   // Generation Details
   model: string;                 // e.g., "higgsfield_cinema_studio_v1_5"
   generationType: "image" | "video" | "image_to_video";
+  generationAttemptNumber: number; // Attempt number for this frame variant
   
   // Prompt
   promptId: string;              // Reference to PromptHistory

@@ -5,6 +5,78 @@ This pack is designed to be **used by a Prompt Compiler** (content intent → re
 
 ---
 
+## REALISM_LOCK_BLOCK (Copy/Paste Macro)
+
+Use this block when you want **cinematic realism without the AI/CGI look**.  
+This is the default realism injection for Cine-AI.
+
+**REALISM_LOCK_BLOCK**
+- cinematic still frame, raw photographed realism, captured through a physical lens
+- natural depth of field, realistic highlight rolloff, subtle filmic grain
+- physically plausible lighting and shadows, realistic skin texture (no plastic)
+- imperfect real-world entropy: mild wear, micro-scratches, natural variation
+- avoid AI sheen, avoid HDR/glow, avoid sterile symmetry
+
+**Universal Negative Pack**
+- no CGI, no render, no plastic skin, no waxy texture, no hyper-detailed, no oversharpened, no HDR, no perfect symmetry
+- no airbrushed skin, no unnatural bokeh, no glossy surfaces, no fake volumetrics
+
+---
+
+## AI Sheen Symptoms (What to Detect and Remove)
+
+If any of these show up, the image will feel "AI-generated" instead of filmed:
+
+- overly crisp micro-contrast (everything looks etched)
+- HDR glow / haloing around edges
+- plastic or waxy skin texture
+- perfectly clean gradients (no natural noise)
+- sterile symmetry and overly perfect composition
+- unrealistic bokeh or "fake lens blur"
+- volumetrics that look like smoke simulation instead of atmosphere
+- lighting that has no motivated source (looks like studio fill everywhere)
+- surfaces that are too glossy, too clean, too new
+
+---
+
+## LENS_BLOCK (Copy/Paste Macro)
+
+Pick ONE lens and ONE aperture. Do not stack camera brands.
+
+**Portrait / Character**
+- 35mm or 50mm lens, f/4 to f/5.6, natural facial proportions
+
+**Environment / Architecture**
+- 24mm to 35mm lens, f/8 to f/11, deeper focus and spatial clarity
+
+**Close Detail / Product Insert**
+- 85mm lens, f/2.8 to f/4, controlled background separation
+
+---
+
+## LIGHTING_MOTIVATION_BLOCK (Copy/Paste Macro)
+
+Always specify a motivated light source. Realism fails when lighting has no reason to exist.
+
+- motivated key light source: (window daylight / tungsten practical / neon sign / streetlight / overcast skylight)
+- key direction: (camera-left / camera-right / top-down / backlight / side light)
+- contrast + falloff: (soft rolloff / hard shadow edge / high contrast noir / gentle fill)
+- atmosphere interaction: (subtle haze / dust in air / light fog / none)
+
+---
+
+## DO / DON'T (Cinematic Realism)
+
+| Goal | DO | DON'T |
+|---|---|---|
+| Real film still | "raw photographed cinematic still" | "hyper detailed 8K masterpiece" |
+| Natural skin | "subtle pores, natural texture" | "perfect smooth airbrushed skin" |
+| Real lighting | "motivated key from window" | "perfect studio lighting everywhere" |
+| Cinematic depth | "natural depth of field" | "everything sharp front to back" |
+| Avoid AI sheen | "subtle grain, gentle rolloff" | "HDR glow, oversharpened edges" |
+
+---
+
 ## 0) The Hard Truth: "Cinematic realism" is a constraint system
 If you want "real," you must constrain:
 - **optics** (lens + aperture + focus behavior)
