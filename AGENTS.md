@@ -491,7 +491,7 @@ Analysis Summary:
 4. **Physics-Based Motion**: Applies realistic motion blur, parallax, and depth-of-field changes
 
 ### Knowledge Base Access
-- All 7 video model prompting mastery guides
+- All 11 video model prompting mastery guides
 - Camera movement and cinematography guides
 - Temporal consistency techniques
 - Image-to-video workflow documentation

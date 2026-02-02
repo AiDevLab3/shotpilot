@@ -303,7 +303,7 @@
 - ✅ Added 18 prompting mastery guides (10 image + 11 video)
 - ✅ Created MODEL_SELECTION_GUIDE.md (19KB)
 - ✅ Updated image_generation_guide.md to v5.0 (22KB, 11 models)
-- ✅ Updated video_generation_guide.md to v5.0 (22KB, 7 models)
+- ✅ Updated video_generation_guide.md to v5.0 (22KB, 11 models)
 - ✅ Updated AI Agent Interaction Protocol to v2.0 (21KB)
 - ✅ Created model_selection_tree_v2 (visual decision tree)
 - ✅ Comprehensive repository audit and integration

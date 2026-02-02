@@ -263,7 +263,7 @@ These contain **model-specific expert-level prompting techniques** and should be
 
 **✅ Expanded Model Coverage:**
 - Image models: 5 → 11 models (+6 advanced models)
-- Video models: 5 → 7 models (+2 specialized models)
+- Video models: 5 → 11 models (+6 specialized models)
 - Total prompting guides: 7 → 22 guides
 
 **✅ New Decision-Making Frameworks:**
@@ -273,7 +273,7 @@ These contain **model-specific expert-level prompting techniques** and should be
 
 **✅ Updated Core Guides:**
 - image_generation_guide.md → v5.0 (11 models, 22KB)
-- video_generation_guide.md → v5.0 (7 models, 22KB)
+- video_generation_guide.md → v5.0 (11 models, 22KB)
 - README.md → v7.0 (5-agent film crew)
 - MASTER_INDEX.md → v2.0 (complete navigation)
 - AGENTS.md → v3.0 (Creative Director added)
