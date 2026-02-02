@@ -46,25 +46,27 @@ These are the **primary entry points** and should be ingested first:
 These are the **core production workflows** and should be ingested as primary project logic:
 
 1. **MODEL_SELECTION_GUIDE.md** (NEW - 19KB) - Comprehensive decision framework for 22 models
-2. **AI Agent Interaction Protocol (Revised): A Flexible Guidance Framework.md** (v2.0 - 21KB) - 5 protocols for agent behavior
+2. **ai_agent_interaction_protocol.md** (v2.0 - 21KB) - 5 protocols for agent behavior
 3. **image_generation_guide.md** (v5.0 - 22KB) - 11 image models coverage
 4. **video_generation_guide.md** (v5.0 - 22KB) - 11 video models coverage
-5. **character_consistency_guide.md** (19KB) - Character workflows
-6. **The Chief Cinematographer AI: A Guide to Cross-Model Cinematic Consistency.md**
-7. **The Global Style System: A Framework for Cinematic Coherence.md**
-8. **The Rosetta Stone: Cross-Model Cinematic Translation Guide.md**
-9. **The Ultimate Guide to Cinematic AI Image Generation.md**
-10. **Spatial Mastery & Anatomy Rescue Guide.md**
-11. **cinema_studio_image_generation_guide.md** - Professional camera controls
-12. **motion_ready_guide.md** - Image-First workflow
-13. **audio_design_guide.md** - Audio workflows
-14. **shot_planning_guide.md** - Production workflow
-15. **vfx_guide.md** - VFX integration
-16. **advanced_prompt_engineering_guide.md** - Universal formulas
-17. **video_analysis_guide.md** - QC automation
-18. **quality_control_guide.md** - QC protocols
-19. **post_production_guide.md** - Final assembly
-20. **ethics_legal_guide.md** - Responsible use
+5. **character_consistency_comprehensive_guide.md** (19KB) - Character workflows (comprehensive)
+6. **cross_model_consistency_integration_framework.md** - GSS + Rosetta Stone + Agent Protocol integration
+7. **global_style_system_methodology_guide.md** - GSS methodology deep dive
+8. **cross_model_translation_reference.md** - Cross-model translation tables
+9. **universal_prompting_techniques_guide.md** - Universal prompting theory
+10. **spatial_composition_and_anatomy_guide.md** - Spatial and anatomy techniques
+11. **higgsfield_cinema_studio_image_guide.md** - Higgsfield platform guide
+12. **character_consistency_quick_reference.md** - Character workflows (quick reference)
+13. **motion_ready_guide.md** - Image-First workflow
+14. **audio_design_guide.md** - Audio workflows
+15. **shot_planning_guide.md** - Production workflow
+16. **vfx_guide.md** - VFX integration
+17. **advanced_prompt_engineering_guide.md** - Universal formulas
+18. **video_analysis_guide.md** - QC automation
+19. **quality_control_guide.md** - QC protocols
+20. **post_production_guide.md** - Final assembly
+21. **api_vs_direct_prompting_guide.md** - API vs. direct prompting differences
+22. **ethics_legal_guide.md** - Responsible use
 
 ### Prompting Mastery Guides (22 files)
 These contain **model-specific expert-level prompting techniques** and should be ingested as comprehensive prompt engineering references:
@@ -105,7 +107,7 @@ These contain **model-specific expert-level prompting techniques** and should be
 3. `AGENTS.md` (v3.0) - 5-agent film crew architecture
 4. `PRODUCTION_WORKFLOW.md` (v3.0) - Shot-Lock Protocol with Phase 0
 5. `MODEL_SELECTION_GUIDE.md` - Decision framework for 22 models
-6. `AI Agent Interaction Protocol (Revised)` (v2.0) - 5 protocols for agent behavior
+6. `ai_agent_interaction_protocol.md` (v2.0) - 5 protocols for agent behavior
 
 **Why First:** These establish the foundational knowledge for intelligent model selection and agent behavior.
 
@@ -145,8 +147,8 @@ These contain **model-specific expert-level prompting techniques** and should be
 11. `topaz_prompting_mastery_guide.md` (35KB)
 
 **Supporting:**
-12. `cinema_studio_image_generation_guide.md` - Professional camera controls
-13. `The Ultimate Guide to Cinematic AI Image Generation.md` - Master guide
+12. `higgsfield_cinema_studio_image_guide.md` - Higgsfield platform guide
+13. `universal_prompting_techniques_guide.md` - Universal prompting theory
 
 **Why Third:** Comprehensive image generation knowledge before video workflows.
 
@@ -173,11 +175,12 @@ These contain **model-specific expert-level prompting techniques** and should be
 ### Phase 5: Character & Consistency
 **Priority: MEDIUM - Ingest Fifth**
 
-1. `character_consistency_guide.md` - Character workflows across models
-2. `The Chief Cinematographer AI` - Cross-model cinematic consistency
-3. `The Rosetta Stone` - Cross-model translation
-4. `The Global Style System` - Consistency framework
-5. `Spatial Mastery & Anatomy Rescue Guide` - Quality fixes
+1. `character_consistency_comprehensive_guide.md` - Character workflows (comprehensive)
+2. `character_consistency_quick_reference.md` - Character workflows (quick reference)
+3. `cross_model_consistency_integration_framework.md` - GSS + Rosetta Stone + Agent Protocol
+4. `cross_model_translation_reference.md` - Cross-model translation tables
+5. `global_style_system_methodology_guide.md` - GSS methodology deep dive
+6. `spatial_composition_and_anatomy_guide.md` - Spatial and anatomy techniques
 
 **Why Fifth:** Advanced techniques for maintaining consistency across shots and models.
 

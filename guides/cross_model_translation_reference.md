@@ -1,5 +1,7 @@
 # The Rosetta Stone: Cross-Model Cinematic Translation Guide
 
+> **Integration Framework:** This reference manual provides translation tables for the Rosetta Stone concept introduced in [`cross_model_consistency_integration_framework.md`](cross_model_consistency_integration_framework.md). For GSS methodology, see [`global_style_system_methodology_guide.md`](global_style_system_methodology_guide.md).
+
 ## Purpose
 
 This document maps how the **same cinematic concept** must be phrased differently across four major AI image generation models to achieve visually consistent results. It serves as a translation layer for an AI agent acting as a "Chief Cinematographer."

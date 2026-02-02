@@ -4,6 +4,8 @@
 **Date:** February 1, 2026  
 **Author:** Cine-AI Knowledge Base Team
 
+> **Comprehensive Guide:** For detailed step-by-step workflows, advanced techniques, and troubleshooting, see [`character_consistency_comprehensive_guide.md`](character_consistency_comprehensive_guide.md).
+
 ---
 
 ## Table of Contents

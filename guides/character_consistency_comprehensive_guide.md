@@ -3,6 +3,8 @@
 **Author:** Manus AI
 **Date:** January 26, 2026
 
+> **Quick Reference:** For a concise overview of character consistency techniques and model-specific features, see [`character_consistency_quick_reference.md`](character_consistency_quick_reference.md).
+
 ## Introduction
 
 Character consistency is the holy grail of AI filmmaking. It is the art and science of ensuring a character looks, feels, and acts the same across multiple shots, scenes, and even different AI models. Without it, a narrative falls apart, and the audience's suspension of disbelief is shattered. This guide provides a comprehensive framework for achieving professional-grade character consistency in your AI video productions, covering everything from foundational principles to model-specific techniques and advanced cross-model workflows.

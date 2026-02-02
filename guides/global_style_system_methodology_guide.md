@@ -1,5 +1,7 @@
 # The Global Style System: A Framework for Cinematic Coherence
 
+> **Integration Framework:** This guide expands on the GSS concept introduced in [`cross_model_consistency_integration_framework.md`](cross_model_consistency_integration_framework.md). For translation tables, see [`cross_model_translation_reference.md`](cross_model_translation_reference.md).
+
 ## 1. Introduction
 
 The Global Style System (GSS) is a framework for defining, maintaining, and translating a project's unique visual signature across multiple scenes, settings, and AI image generation models. It is designed to be used by an AI agent acting as a "Chief Cinematographer," ensuring that every image produced for a project feels like it belongs to the same cinematic world.

@@ -6,9 +6,9 @@ This document outlines a comprehensive framework for an AI agent to act as a "Ch
 
 This guide integrates three core components:
 
-1.  **The Global Style System (GSS):** A framework for defining and maintaining a project's unique visual signature.
-2.  **The Rosetta Stone:** A cross-model translation guide for cinematic terms and concepts.
-3.  **The AI Agent Interaction Protocol:** A set of mandatory rules for how the AI agent must interact with the user to ensure clarity and efficiency.
+1.  **The Global Style System (GSS):** A framework for defining and maintaining a project's unique visual signature. → See [`global_style_system_methodology_guide.md`](global_style_system_methodology_guide.md) for detailed implementation.
+2.  **The Rosetta Stone:** A cross-model translation guide for cinematic terms and concepts. → See [`cross_model_translation_reference.md`](cross_model_translation_reference.md) for comprehensive translation tables.
+3.  **The AI Agent Interaction Protocol:** A set of mandatory rules for how the AI agent must interact with the user to ensure clarity and efficiency. → See [`ai_agent_interaction_protocol.md`](ai_agent_interaction_protocol.md) for complete protocol specifications.
 
 By combining these three components, an AI agent can move beyond simple image generation and become a true partner in the creative process, ensuring that every frame of your project is visually coherent and stylistically unified.
 

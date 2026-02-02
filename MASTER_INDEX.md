@@ -198,32 +198,32 @@
 ### Advanced Specialized Guides
 
 **AI Agent Interaction Protocol** (21KB) **[UPDATED v2.0]**
-- File: `AI Agent Interaction Protocol (Revised): A Flexible Guidance Framework.md`
+- File: `ai_agent_interaction_protocol.md`
 - Coverage: 22-model ecosystem integration for AI agents
 - Topics: Model selection logic, multi-model workflows, ecosystem-aware decision making
 
-**The Ultimate Guide to Cinematic AI Image Generation** (18KB)
-- File: `The Ultimate Guide to Cinematic AI Image Generation.md`
-- Coverage: Master guide for all image generation fundamentals
+**Universal Prompting Techniques Guide** (18KB)
+- File: `universal_prompting_techniques_guide.md`
+- Coverage: Universal prompting theory for cinematic image generation
 - Topics: Anatomy of prompts, character creation, composition, lighting, camera work
 
-**The Rosetta Stone: Cross-Model Cinematic Translation Guide** (14KB)
-- File: `The Rosetta Stone: Cross-Model Cinematic Translation Guide.md`
+**Cross-Model Translation Reference** (14KB)
+- File: `cross_model_translation_reference.md`
 - Coverage: Translating prompts and techniques across models
 - Topics: Model-specific syntax, cross-platform workflows, style consistency
 
-**The Chief Cinematographer AI** (7.8KB)
-- File: `The Chief Cinematographer AI: A Guide to Cross-Model Cinematic Consistency.md`
-- Coverage: Maintaining cinematic consistency across models
+**Cross-Model Consistency Integration Framework** (7.8KB)
+- File: `cross_model_consistency_integration_framework.md`
+- Coverage: Integration framework for GSS + Rosetta Stone + Agent Protocol
 - Topics: Style management, cross-model strategies
 
-**The Global Style System** (6.7KB)
-- File: `The Global Style System: A Framework for Cinematic Coherence.md`
-- Coverage: Framework for global style management
+**Global Style System Methodology Guide** (6.7KB)
+- File: `global_style_system_methodology_guide.md`
+- Coverage: GSS methodology deep dive and implementation
 - Topics: Style systems, coherence strategies
 
-**Spatial Mastery & Anatomy Rescue Guide** (5.3KB)
-- File: `Spatial Mastery & Anatomy Rescue Guide.md`
+**Spatial Composition and Anatomy Guide** (5.3KB)
+- File: `spatial_composition_and_anatomy_guide.md`
 - Coverage: Fixing anatomical and spatial issues
 - Topics: Hand fixes, face corrections, spatial relationships
 
