@@ -1,9 +1,10 @@
 import React from 'react';
 import { useStore } from '../../store';
-import { Shot } from '../../types/schema';
+
 
 export const ShotboardGrid: React.FC = () => {
-    const shots = useStore((state) => Object.values(state.shots));
+    const shotsDict = useStore((state) => state.shots);
+    const shots = Object.values(shotsDict);
     const frames = useStore((state) => state.frames);
     const selectedShotId = useStore((state) => state.ui.selectedShotId);
     const setUiSelection = useStore((state) => state.setUiSelection);
@@ -11,15 +12,22 @@ export const ShotboardGrid: React.FC = () => {
     // Sort shots by scene/number (simple sort for now)
     const sortedShots = [...shots].sort((a, b) => a.shotNumber.localeCompare(b.shotNumber));
 
+    // Auto-select first shot if none selected
+    React.useEffect(() => {
+        if (!selectedShotId && sortedShots.length > 0) {
+            setUiSelection(sortedShots[0].id);
+        }
+    }, [selectedShotId, sortedShots, setUiSelection]);
+
     const handleShotClick = (shotId: string) => {
         setUiSelection(shotId);
     };
 
     return (
-        <div className="flex-1 bg-gray-950 p-6 overflow-y-auto h-full">
-            <h2 className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-4">Shot List ({sortedShots.length})</h2>
+        <div className="sp-flex-1 sp-panel-dark sp-p-4 sp-overflow-hidden" style={{ overflowY: 'auto', height: '100%' }}>
+            <h2 className="sp-text-xs sp-font-bold sp-uppercase sp-tracking-widest sp-text-muted" style={{ marginBottom: '1rem' }}>Shot List ({sortedShots.length})</h2>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className="sp-shot-grid">
                 {sortedShots.map((shot) => {
                     const heroFrame = shot.heroFrameId ? frames[shot.heroFrameId] : null;
                     const isSelected = selectedShotId === shot.id;
@@ -28,35 +36,30 @@ export const ShotboardGrid: React.FC = () => {
                         <div
                             key={shot.id}
                             onClick={() => handleShotClick(shot.id)}
-                            className={`
-                                relative group cursor-pointer rounded-lg overflow-hidden border-2 transition-all
-                                ${isSelected
-                                    ? 'border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)] scale-[1.02] z-10'
-                                    : 'border-gray-800 hover:border-gray-600 hover:shadow-lg'
-                                }
-                            `}
+                            className={`shot-card ${isSelected ? 'selected' : ''}`}
+                            style={{ padding: 0, overflow: 'hidden', borderWidth: 2 }}
                         >
-                            <div className="aspect-video bg-gray-900 w-full relative">
+                            <div className="sp-aspect-video">
                                 {heroFrame ? (
                                     <img
                                         src={heroFrame.asset.url}
                                         alt={`Shot ${shot.shotNumber}`}
-                                        className="w-full h-full object-cover"
+                                        className="sp-cover"
                                     />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-700">
-                                        <span className="text-xs">No Frame</span>
+                                    <div className="sp-flex" style={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#374151' }}>
+                                        <span className="sp-text-xs">No Frame</span>
                                     </div>
                                 )}
 
-                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-3 pt-6">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-white font-bold text-lg">{shot.shotNumber}</span>
-                                        <span className="text-xs text-gray-300 bg-gray-800/80 px-1.5 py-0.5 rounded capitalize">
+                                <div className="sp-overlay-gradient">
+                                    <div className="sp-flex" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span className="sp-card-title">{shot.shotNumber}</span>
+                                        <span className="sp-text-xs" style={{ color: '#d1d5db', backgroundColor: 'rgba(31, 41, 55, 0.8)', padding: '0.125rem 0.375rem', borderRadius: '0.25rem', textTransform: 'capitalize' }}>
                                             {shot.shotType.replace('_', ' ')}
                                         </span>
                                     </div>
-                                    <div className="text-xs text-gray-400 mt-1 truncate">
+                                    <div className="sp-text-xs sp-text-muted" style={{ marginTop: '0.25rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                         {shot.cameraMovement.replace('_', ' ')}
                                     </div>
                                 </div>
@@ -67,7 +70,7 @@ export const ShotboardGrid: React.FC = () => {
             </div>
 
             {sortedShots.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+                <div className="sp-flex sp-flex-col" style={{ alignItems: 'center', justifyContent: 'center', height: '16rem', color: '#6b7280' }}>
                     <p>No shots in this project yet.</p>
                 </div>
             )}

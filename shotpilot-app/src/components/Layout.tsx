@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Header } from './shared/Header';
 import { ShotboardGrid } from './views/ShotboardGrid';
+import { SceneCanvas } from './views/SceneCanvas';
 import { Inspector } from './panels/Inspector';
 import { FrameVariantsPanel } from './panels/FrameVariantsPanel';
 import { ProjectDNAPanel } from './panels/ProjectDNAPanel';
@@ -8,49 +9,93 @@ import { ProjectDNAPanel } from './panels/ProjectDNAPanel';
 export const Layout: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'shotboard' | 'dna' | 'canvas'>('shotboard');
 
+    // Panel Visibility States (Default: Canvas hidden, Inspector visible)
+    const [showCanvas, setShowCanvas] = useState(false);
+    const [showInspector, setShowInspector] = useState(true);
+
+    const isMainView = activeTab === 'shotboard' || activeTab === 'canvas';
+    const isCanvasMode = activeTab === 'canvas';
+
+    // Canvas Visibility Logic:
+    // - In Shotboard mode: controlled by `showCanvas`
+    // - In Canvas mode: ALWAYS visible
+    const isCanvasVisible = isCanvasMode || showCanvas;
+
     return (
-        <div className="flex flex-col h-screen w-screen bg-gray-950 text-white overflow-hidden">
+        <div className="sp-flex sp-flex-col sp-overflow-hidden" style={{ height: '100vh', width: '100vw', background: 'var(--sp-bg-main)', color: 'white' }}>
             <Header activeTab={activeTab} onTabChange={setActiveTab} />
 
-            <main className="flex-1 overflow-hidden relative">
-                {activeTab === 'shotboard' && (
-                    <div className="grid grid-cols-12 h-full">
-                        {/* Left Column: Shotboard Grid */}
-                        <div className="col-span-5 h-full border-r border-gray-800 overflow-hidden flex flex-col">
-                            <ShotboardGrid />
-                        </div>
-
-                        {/* Middle Column: Scene Canvas Placeholder */}
-                        <div className="col-span-4 h-full bg-black flex flex-col items-center justify-center border-r border-gray-800 relative">
-                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gray-900 via-black to-black opacity-50"></div>
-                            <div className="z-10 text-center">
-                                <h3 className="text-gray-500 font-medium mb-2">Scene Canvas</h3>
-                                <p className="text-xs text-gray-700 max-w-xs mx-auto">
-                                    Visualize spatial relationships and blocking here.
-                                </p>
+            <main className="sp-flex-1 sp-relative sp-overflow-hidden sp-flex sp-flex-col">
+                {isMainView && (
+                    <div className="sp-flex sp-flex-col sp-h-full sp-w-full">
+                        {/* View Options Toolbar (Only show in Shotboard mode as toggle is relevant there) */}
+                        {!isCanvasMode && (
+                            <div className="sp-view-toolbar">
+                                <span className="sp-text-xs sp-font-bold sp-uppercase sp-tracking-widest sp-text-muted" style={{ marginRight: '0.5rem' }}>View Options</span>
+                                <button
+                                    onClick={() => setShowCanvas(!showCanvas)}
+                                    className={`sp-btn-toggle ${showCanvas ? 'active' : ''}`}
+                                >
+                                    {showCanvas ? 'Hide Canvas' : 'Show Canvas'}
+                                </button>
+                                <button
+                                    onClick={() => setShowInspector(!showInspector)}
+                                    className={`sp-btn-toggle ${showInspector ? 'active' : ''}`}
+                                >
+                                    {showInspector ? 'Hide Inspector' : 'Show Inspector'}
+                                </button>
                             </div>
-                        </div>
+                        )}
+                        {/* In Canvas Mode, maybe show simple header text or nothing? Assuming nothing for max space. */}
 
-                        {/* Right Column: Inspector & Variants */}
-                        <div className="col-span-3 h-full bg-gray-900 overflow-y-auto border-l border-gray-800 p-4">
-                            <Inspector />
-                            <FrameVariantsPanel />
+                        {/* Flexible Content Area */}
+                        <div className="sp-main-layout">
+                            {/* LEFT COLUMN: Shotboard Grid */}
+                            {/* In Shotboard Mode: Flex Grows (Main Focus) */}
+                            {/* In Canvas Mode: Fixed width sidebar (25%) */}
+                            <div
+                                className={`sp-flex-col sp-overflow-hidden sp-transition-all ${isCanvasMode ? 'sp-border-r' : 'sp-flex-1'}`}
+                                style={{
+                                    minWidth: 0,
+                                    background: 'var(--sp-bg-main)',
+                                    width: isCanvasMode ? '25%' : 'auto',
+                                    minWidth: isCanvasMode ? '250px' : '0'
+                                }}
+                            >
+                                <ShotboardGrid />
+                            </div>
+
+                            {/* MIDDLE COLUMN: Scene Canvas */}
+                            {isCanvasVisible && (
+                                <div
+                                    className={`sp-flex-col sp-overflow-hidden sp-transition-all ${!isCanvasMode ? 'sp-border-l' : ''}`}
+                                    style={{
+                                        width: isCanvasMode ? 'auto' : '30%',
+                                        flex: isCanvasMode ? 1 : 'none',
+                                        minWidth: '320px',
+                                        background: '#000'
+                                    }}
+                                >
+                                    <SceneCanvas />
+                                </div>
+                            )}
+
+                            {/* RIGHT COLUMN: Inspector & Variants */}
+                            {showInspector && (
+                                <div className="sp-flex-col sp-overflow-hidden sp-transition-all sp-border-l" style={{ width: '25%', minWidth: '300px', background: 'var(--sp-bg-panel)' }}>
+                                    <div className="sp-h-full" style={{ overflowY: 'auto' }}>
+                                        <Inspector />
+                                        <FrameVariantsPanel />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
 
                 {activeTab === 'dna' && (
-                    <div className="h-full overflow-y-auto bg-gray-950">
+                    <div className="sp-h-full sp-overflow-hidden" style={{ overflowY: 'auto', background: 'var(--sp-bg-main)' }}>
                         <ProjectDNAPanel />
-                    </div>
-                )}
-
-                {activeTab === 'canvas' && (
-                    <div className="h-full flex items-center justify-center bg-gray-900">
-                        <div className="text-center">
-                            <h2 className="text-2xl font-bold text-gray-700 mb-2">Scene Canvas Full View</h2>
-                            <p className="text-gray-500">Coming soon in Phase 2</p>
-                        </div>
                     </div>
                 )}
             </main>
