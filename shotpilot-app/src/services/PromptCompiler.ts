@@ -23,7 +23,7 @@ export class PromptCompiler {
         scene: Scene,
         project: ProjectDNA,
         soulIds: Record<string, SoulID>,
-        entityIds: Record<string, EntityID>,
+        _entityIds: Record<string, EntityID>,
         userIntent?: string
     ): PromptBundle {
 
@@ -109,7 +109,7 @@ function buildIntentBlock(shot: Shot, scene: Scene, soulIds: Record<string, Soul
     if (userIntent) return userIntent;
 
     // Auto-construct
-    const characterNames = shot.characterIds.map(id => soulIds[id]?.name).join(", ") || "No characters";
+    const characterNames = shot.characterIds.map((id: string) => soulIds[id]?.name).join(", ") || "No characters";
     return `Scene: ${scene.name}. Action: ${scene.description}. Shot: ${shot.shotType}. Subject: ${characterNames}. Blocking: ${shot.composition.blocking}.`;
 }
 

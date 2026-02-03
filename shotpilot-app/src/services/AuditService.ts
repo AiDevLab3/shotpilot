@@ -12,7 +12,7 @@ export interface AuditResult {
 }
 
 export class AuditService {
-    static async runAudit(frame: Frame): Promise<AuditResult> {
+    static async runAudit(_frame: Frame): Promise<AuditResult> {
         // Mock delay
         await new Promise(resolve => setTimeout(resolve, 1000));
 

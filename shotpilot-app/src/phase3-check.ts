@@ -1,6 +1,6 @@
 import { PromptCompiler } from './services/PromptCompiler';
 import { useStore } from './store';
-import { Frame } from './types/schema';
+import type { Frame } from './types/schema';
 import { v4 as uuidv4 } from 'uuid';
 
 export function runPhase3Check() {

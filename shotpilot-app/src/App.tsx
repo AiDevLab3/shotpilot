@@ -1,6 +1,5 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Layout } from './components/Layout';
-import { runPhase1Check } from './phase1-check';
 import { useStore } from './store';
 
 function App() {
@@ -10,7 +9,6 @@ function App() {
     // Seed data if empty (Simulator/Driver integration)
     if (!hasProjects) {
       console.log("Seeding demo data...");
-      runPhase1Check();
     }
   }, [hasProjects]);
 
