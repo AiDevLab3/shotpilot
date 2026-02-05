@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 
 // Access key from process.env (loaded by dotenv in index.js)
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:generateContent';
 
 async function generateRecommendations(context) {
     const { project, scene, shot, missingFields } = context;
