@@ -80,8 +80,25 @@ export interface ImageVariant {
     image_url: string;
     model_used?: string;
     prompt_used?: string;
+    generated_prompt?: string;
+    user_edited_prompt?: string;
     quality_score?: number;
-    status: 'pending' | 'completed' | 'failed';
+    status: 'pending' | 'draft' | 'generated' | 'completed' | 'failed';
     analysis_notes?: string;
     created_at: string;
+    quality_tier?: string;
+    quality_percentage?: number;
+    assumptions?: string;
+    credits_remaining?: number;
+}
+
+export interface UserCredits {
+    credits: number;
+    tier: string;
+}
+
+export interface AIModel {
+    id: string;
+    name: string;
+    type: 'image' | 'video';
 }

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import type { Scene, Shot, ImageVariant } from '../types/schema';
-import { getScenes, getShots, createShot, updateShot, deleteShot, updateScene, createScene, deleteScene, getAllProjects, fileToBase64, createImageVariant, getImageVariants, deleteImageVariant } from '../services/api';
-import { GripVertical, Plus, Image as ImageIcon, Check, Video, Edit2, Trash2, ChevronDown, ChevronRight, FileText, Clock, Maximize2, Minimize2 } from 'lucide-react';
+import { getScenes, getShots, createShot, updateShot, deleteShot, updateScene, createScene, deleteScene, getAllProjects, fileToBase64, createImageVariant, getImageVariants, deleteImageVariant, getAvailableModels, getUserCredits, generatePrompt, checkShotQuality } from '../services/api';
+import { GripVertical, Plus, Image as ImageIcon, Check, Video, Edit2, Trash2, ChevronDown, ChevronRight, FileText, Clock, Maximize2, Minimize2, Wand2, Sparkles, Loader2 } from 'lucide-react';
 
 // Specialized Dropdown Option Component
 const DropdownOption = ({
@@ -60,6 +60,16 @@ const ShotBoardPage: React.FC = () => {
     const sceneRefs = useRef<(HTMLDivElement | null)[]>([]);
     const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // AI & Credits State
+    const [userCredits, setUserCredits] = useState<number>(0);
+    const [availableModels, setAvailableModels] = useState<any[]>([]);
+    const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+    const [aiShot, setAiShot] = useState<Shot | null>(null);
+    const [selectedModel, setSelectedModel] = useState<string>('');
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [generationResult, setGenerationResult] = useState<ImageVariant | null>(null);
+
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -131,6 +141,17 @@ const ShotBoardPage: React.FC = () => {
                 // Auto-expand first scene
                 if (fetchedScenes.length > 0) {
                     setExpandedScenes([fetchedScenes[0].id]);
+                }
+
+                // Load Credits & Models
+                try {
+                    const credits = await getUserCredits();
+                    setUserCredits(credits.credits);
+                    const models = await getAvailableModels();
+                    setAvailableModels(models);
+                    if (models.length > 0) setSelectedModel(models[0].id);
+                } catch (e) {
+                    console.error("Failed to load AI config", e);
                 }
             }
         } catch (error) {
@@ -367,6 +388,36 @@ const ShotBoardPage: React.FC = () => {
         }
     };
 
+    const handleOpenAIModal = (shot: Shot) => {
+        setAiShot(shot);
+        setGenerationResult(null);
+        setIsAIModalOpen(true);
+    };
+
+    const handleGeneratePrompt = async () => {
+        if (!aiShot || !selectedModel) return;
+        if (userCredits < 1) {
+            alert("Insufficient credits!");
+            return;
+        }
+
+        setIsGenerating(true);
+        try {
+            const result = await generatePrompt(aiShot.id, selectedModel);
+            setGenerationResult(result);
+            setUserCredits(prev => prev - 1);
+
+            // Refresh variants for this shot
+            const variants = await getImageVariants(aiShot.id);
+            setShotImages(prev => ({ ...prev, [aiShot.id]: variants }));
+        } catch (error: any) {
+            console.error("Generation failed", error);
+            alert(`Generation failed: ${error.message}`);
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
     const styles = {
         container: { display: 'flex', flexDirection: 'column' as const, height: '100%', backgroundColor: '#0A0E14', color: '#E8E8E8', fontFamily: 'sans-serif', overflow: 'hidden' },
         actionBar: { padding: '16px 32px', backgroundColor: '#0A0E14', borderBottom: '1px solid #1E2530', display: 'flex', justifyContent: 'flex-end', gap: '12px' },
@@ -417,6 +468,9 @@ const ShotBoardPage: React.FC = () => {
                 <button style={styles.actionButton} onClick={collapseAll}>
                     <Minimize2 size={16} /> Collapse All
                 </button>
+                <div style={{ ...styles.actionButton, color: '#fbbf24', border: '1px solid #f59e0b' }}>
+                    <Sparkles size={16} /> {userCredits} Credits
+                </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 32px 16px', borderBottom: '1px solid #1E2530' }}>
@@ -636,6 +690,7 @@ const ShotBoardPage: React.FC = () => {
                                                         </div>
                                                         <div style={styles.cardActions}>
                                                             <button onClick={() => handleOpenModal(scene.id, shot)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}><Edit2 size={14} /></button>
+                                                            <button onClick={() => handleOpenAIModal(shot)} style={{ background: 'none', border: 'none', color: '#8b5cf6', cursor: 'pointer' }} title="Generate AI Prompt"><Wand2 size={14} /></button>
                                                             <button onClick={() => handleDelete(shot.id, scene.id)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}><Trash2 size={14} /></button>
                                                         </div>
                                                     </div>
@@ -761,6 +816,82 @@ const ShotBoardPage: React.FC = () => {
                     <div style={{ display: 'flex', gap: '8px' }}>
                         <button onClick={acceptSuggestion} style={{ padding: '8px 16px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '13px', fontWeight: '500', cursor: 'pointer' }}>Yes</button>
                         <button onClick={dismissSuggestion} style={{ padding: '8px 16px', background: '#374151', color: '#e5e7eb', border: 'none', borderRadius: '4px', fontSize: '13px', fontWeight: '500', cursor: 'pointer' }}>Not Yet</button>
+                    </div>
+                </div>
+            )}
+
+            {isAIModalOpen && aiShot && (
+                <div style={styles.modalOverlay}>
+                    <div style={{ ...styles.modal, maxWidth: '600px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <h2 style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Wand2 color="#8b5cf6" /> Generate AI Prompt
+                            </h2>
+                            <div style={{ color: '#fbbf24', fontSize: '14px', fontWeight: 'bold' }}>
+                                {userCredits} Credits Available
+                            </div>
+                        </div>
+
+                        {!generationResult ? (
+                            <>
+                                <div style={{ marginBottom: '20px', padding: '16px', background: '#27272a', borderRadius: '8px', fontSize: '14px', color: '#d1d5db' }}>
+                                    <strong style={{ display: 'block', marginBottom: '8px', color: 'white' }}>Shot Context:</strong>
+                                    {aiShot.shot_type} {aiShot.camera_movement} - {aiShot.description || 'No description'}
+                                </div>
+
+                                <div style={styles.formGroup}>
+                                    <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>SELECT MODEL</label>
+                                    <select
+                                        value={selectedModel}
+                                        onChange={(e) => setSelectedModel(e.target.value)}
+                                        style={styles.select}
+                                    >
+                                        {availableModels.map(Model => (
+                                            <option key={Model.id} value={Model.id}>{Model.name} ({Model.type})</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+                                    <button onClick={() => setIsAIModalOpen(false)} style={{ background: 'transparent', color: '#9ca3af', border: 'none', cursor: 'pointer' }}>Cancel</button>
+                                    <button
+                                        onClick={handleGeneratePrompt}
+                                        disabled={isGenerating || userCredits < 1}
+                                        style={{
+                                            backgroundColor: isGenerating ? '#4b5563' : '#8b5cf6',
+                                            color: 'white',
+                                            padding: '10px 20px',
+                                            borderRadius: '6px',
+                                            border: 'none',
+                                            cursor: isGenerating || userCredits < 1 ? 'not-allowed' : 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px'
+                                        }}
+                                    >
+                                        {isGenerating ? <><Loader2 className="spin" size={16} /> Generating...</> : <><Sparkles size={16} /> Generate (1 Credit)</>}
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div style={{ marginBottom: '20px' }}>
+                                    <label style={{ color: '#10b981', display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 'bold' }}>Success! Prompt Generated:</label>
+                                    <div style={{ background: '#0f172a', padding: '16px', borderRadius: '8px', border: '1px solid #1e293b', color: '#e2e8f0', fontSize: '14px', whiteSpace: 'pre-wrap', maxHeight: '300px', overflowY: 'auto' }}>
+                                        {generationResult.generated_prompt}
+                                    </div>
+                                    {generationResult.assumptions && (
+                                        <div style={{ marginTop: '12px', fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
+                                            <strong>AI Assumptions:</strong><br />
+                                            {generationResult.assumptions}
+                                        </div>
+                                    )}
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                                    <button onClick={() => setIsAIModalOpen(false)} style={{ backgroundColor: '#2563eb', color: 'white', padding: '8px 16px', borderRadius: '6px', border: 'none', cursor: 'pointer' }}>Done</button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}

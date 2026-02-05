@@ -184,5 +184,35 @@ export const deleteImageVariant = async (id: number): Promise<void> => {
     await apiCall(`/images/${id}`, { method: 'DELETE' });
 };
 
+
+// AI & PROMPTS
+export const getAvailableModels = async (): Promise<any[]> => {
+    return apiCall('/models');
+};
+
+export const getUserCredits = async (): Promise<any> => {
+    return apiCall('/user/credits');
+};
+
+export const generatePrompt = async (shotId: number, modelName: string): Promise<ImageVariant> => {
+    return apiCall(`/shots/${shotId}/generate-prompt`, {
+        method: 'POST',
+        body: JSON.stringify({ modelName })
+    });
+};
+
+export const checkShotQuality = async (shotId: number): Promise<any> => {
+    return apiCall(`/shots/${shotId}/check-quality`, {
+        method: 'POST'
+    });
+};
+
+export const updateVariant = async (id: number, data: Partial<ImageVariant>): Promise<ImageVariant> => {
+    return apiCall(`/variants/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+    });
+};
+
 // Deprecated or Unused in Server Mode
 export const saveDB = async () => { };

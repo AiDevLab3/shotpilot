@@ -56,22 +56,29 @@ export const ProjectInfoPage: React.FC = () => {
     const styles = {
         container: {
             width: '100%',
+            height: '100%',
+            overflowY: 'auto' as const,
             margin: '0 auto',
             padding: '32px',
             fontFamily: 'sans-serif',
             color: '#E8E8E8'
         },
         header: {
-            marginBottom: '32px'
+            marginBottom: '32px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
         },
         h1: {
             fontSize: '36px',
             fontWeight: 'bold',
             color: '#ffffff',
-            marginBottom: '8px'
+            marginBottom: '8px',
+            margin: 0
         },
         subtitle: {
-            color: '#9ca3af'
+            color: '#9ca3af',
+            margin: 0
         },
         card: {
             backgroundColor: '#27272a',
@@ -167,8 +174,18 @@ export const ProjectInfoPage: React.FC = () => {
     return (
         <div style={styles.container}>
             <div style={styles.header}>
-                <h1 style={styles.h1}>ShotPilot Storyboard</h1>
-                <p style={styles.subtitle}>Professional template for AI video creation workflow</p>
+                <div>
+                    <h1 style={styles.h1}>ShotPilot Storyboard</h1>
+                    <p style={styles.subtitle}>Professional template for AI video creation workflow</p>
+                </div>
+                <button
+                    onClick={handleSave}
+                    style={{ ...styles.button, marginTop: '0' }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+                >
+                    Save Changes
+                </button>
             </div>
 
             <div style={styles.card}>

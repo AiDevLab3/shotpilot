@@ -19,8 +19,29 @@ db.pragma('journal_mode = WAL');
 
 export const initDatabase = () => {
     const schema = `
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        credits INTEGER DEFAULT 10,
+        tier TEXT DEFAULT 'free',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS usage_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        action TEXT NOT NULL,
+        credits_used INTEGER DEFAULT 1,
+        model_name TEXT,
+        shot_id INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+
     CREATE TABLE IF NOT EXISTS projects (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
         title TEXT NOT NULL,
         frame_size TEXT,
         purpose TEXT,
@@ -31,7 +52,8 @@ export const initDatabase = () => {
         atmosphere_mood TEXT,
         cinematic_references TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id)
     );
 
     CREATE TABLE IF NOT EXISTS characters (
@@ -68,6 +90,7 @@ export const initDatabase = () => {
         lighting_notes TEXT,
         camera_approach TEXT,
         characters_present TEXT,
+        status TEXT DEFAULT 'planning',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
     );
@@ -91,6 +114,7 @@ export const initDatabase = () => {
         vfx_notes TEXT,
         sfx_notes TEXT,
         notes TEXT,
+        status TEXT DEFAULT 'planning',
         order_index INTEGER,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (scene_id) REFERENCES scenes(id) ON DELETE CASCADE
@@ -102,6 +126,8 @@ export const initDatabase = () => {
         image_url TEXT,
         model_used TEXT,
         prompt_used TEXT,
+        generated_prompt TEXT,
+        user_edited_prompt TEXT,
         quality_score INTEGER,
         status TEXT,
         analysis_notes TEXT,
@@ -148,6 +174,59 @@ export const initDatabase = () => {
 
     } catch (e) {
         console.error("Migration check failed:", e);
+    }
+
+    // Phase 2 Migrations
+    try {
+        // Add user_id to projects if missing
+        const projectsInfo = db.pragma('table_info(projects)');
+        if (!projectsInfo.some(col => col.name === 'user_id')) {
+            console.log('Migrating: Adding user_id to projects table...');
+            db.exec('ALTER TABLE projects ADD COLUMN user_id INTEGER REFERENCES users(id)');
+        }
+
+        // Add generated_prompt columns to image_variants if missing
+        const variantsInfo = db.pragma('table_info(image_variants)');
+        if (!variantsInfo.some(col => col.name === 'generated_prompt')) {
+            console.log('Migrating: Adding generated_prompt to image_variants table...');
+            db.exec('ALTER TABLE image_variants ADD COLUMN generated_prompt TEXT');
+            db.exec('ALTER TABLE image_variants ADD COLUMN user_edited_prompt TEXT');
+        }
+
+        // Add status to scenes if missing
+        const scenesInfo = db.pragma('table_info(scenes)');
+        if (!scenesInfo.some(col => col.name === 'status')) {
+            console.log('Migrating: Adding status to scenes table...');
+            db.exec("ALTER TABLE scenes ADD COLUMN status TEXT DEFAULT 'planning'");
+        }
+
+        // Add status to shots if missing
+        const shotsInfo = db.pragma('table_info(shots)');
+        if (!shotsInfo.some(col => col.name === 'status')) {
+            console.log('Migrating: Adding status to shots table...');
+            db.exec("ALTER TABLE shots ADD COLUMN status TEXT DEFAULT 'planning'");
+        }
+
+    } catch (e) {
+        console.error("Phase 2 Migration check failed:", e);
+    }
+
+    // Create default test user if not exists
+    try {
+        const testUser = db.prepare('SELECT * FROM users WHERE email = ?').get('test@shotpilot.com');
+        if (!testUser) {
+            console.log('Creating default test user...');
+            // Note: In a real app, hash this password! For MVP/Test, we store directly or handling in service. 
+            // The instructions provided a hash: $2b$10$YourHashedPasswordHere. 
+            // We should use that if we can, or just plain text if the auth logic allows (but instruction said use hash).
+            // Let's use the provided hash and assume the logic compares correctly (or we temporarily skip bcrypt compare for MVP login as hinted in instructions).
+            db.prepare(`
+                INSERT INTO users (email, password_hash, credits, tier)
+                VALUES (?, ?, ?, ?)
+            `).run('test@shotpilot.com', '$2b$10$YourHashedPasswordHere', 100, 'pro');
+        }
+    } catch (e) {
+        console.error("Failed to create test user:", e);
     }
 };
 

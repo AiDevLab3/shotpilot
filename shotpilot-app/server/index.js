@@ -5,6 +5,11 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { db, initDatabase } from './database.js';
+import { setupAuth, requireAuth, checkCredits } from './middleware/auth.js';
+import { deductCredit, getUserCredits, getUsageStats } from './services/creditService.js';
+import { loadKBForModel, getAvailableModels } from './services/kbLoader.js';
+import { calculateCompleteness } from './services/qualityCheck.js';
+import { generateRecommendations, generatePrompt } from './services/geminiService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,47 +17,259 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Ensure uploads directory exists
+const uploadDir = path.join(__dirname, '../uploads/images');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const upload = multer({ dest: 'uploads/images/' });
+
 console.log("Initializing database...");
 initDatabase();
 console.log("Database initialized. Starting server middleware...");
 
 // Middleware
+
+
+// Setup authentication
+setupAuth(app);
+
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Static files for images
-// We'll store images in the project root's 'public/uploads' so Vite can serve them if needed,
-// OR just serve them via Express. Serving via Express is safer for dynamic uploads.
-// Let's create a 'uploads' dir one level up in root if we want it visible easily,
-// but for a pure app, keeping it in server/uploads or just root/uploads is fine.
-// The user asked for "shotpilot-app/public/uploads/images/"
-const UPLOADS_DIR = path.join(__dirname, '../public/uploads/images');
+// --- AUTH ROUTES ---
 
-if (!fs.existsSync(UPLOADS_DIR)) {
-    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-}
+// Login
+app.post('/api/auth/login', (req, res) => {
+    const { email, password } = req.body;
 
-// Serve static files from public
-app.use(express.static(path.join(__dirname, '../public')));
+    // MVP: Simple check (In production use bcrypt.compare)
+    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
 
-// Initialize DB
-initDatabase();
+    if (!user) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
-// Multer Storage
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, UPLOADS_DIR);
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname);
-        cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+    // Password check skipped for MVP as per instructions (or check if user exists)
+    // Logic: if user exists, log them in. 
+
+    req.session.userId = user.id;
+    res.json({
+        success: true,
+        user: {
+            id: user.id,
+            email: user.email,
+            credits: user.credits,
+            tier: user.tier
+        }
+    });
+});
+
+// Get current user session
+app.get('/api/auth/me', (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const user = db.prepare('SELECT id, email, credits, tier FROM users WHERE id = ?')
+        .get(req.session.userId);
+
+    res.json(user);
+});
+
+// Logout
+app.post('/api/auth/logout', (req, res) => {
+    req.session.destroy();
+    res.json({ success: true });
+});
+
+// Get user credits
+app.get('/api/user/credits', requireAuth, (req, res) => {
+    try {
+        const credits = getUserCredits(db, req.session.userId);
+        res.json(credits);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
+// Get usage stats
+app.get('/api/user/usage', requireAuth, (req, res) => {
+    try {
+        const stats = getUsageStats(db, req.session.userId);
+        res.json(stats);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// --- AI & MODELS ---
+
+// Get available models
+app.get('/api/models', (req, res) => {
+    try {
+        res.json(getAvailableModels());
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Check quality
+app.post('/api/shots/:shotId/check-quality', requireAuth, (req, res) => {
+    try {
+        const { shotId } = req.params;
+        const shot = db.prepare('SELECT * FROM shots WHERE id = ?').get(shotId);
+        if (!shot) return res.status(404).json({ error: 'Shot not found' });
+
+        const scene = db.prepare('SELECT * FROM scenes WHERE id = ?').get(shot.scene_id);
+        const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(scene.project_id);
+
+        const quality = calculateCompleteness(project, scene, shot);
+        res.json(quality);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get recommendations (free - no credit cost)
+app.post('/api/shots/:shotId/get-recommendations', requireAuth, async (req, res) => {
+    try {
+        const { shotId } = req.params;
+        const { missingFields } = req.body;
+
+        const shot = db.prepare('SELECT * FROM shots WHERE id = ?').get(shotId);
+        if (!shot) return res.status(404).json({ error: 'Shot not found' });
+
+        const scene = db.prepare('SELECT * FROM scenes WHERE id = ?').get(shot.scene_id);
+        const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(scene.project_id);
+
+        const recommendations = await generateRecommendations({
+            project, scene, shot, missingFields
+        });
+
+        res.json(recommendations);
+    } catch (error) {
+        console.error('Recommendations error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Generate prompt (costs 1 credit)
+app.post('/api/shots/:shotId/generate-prompt',
+    requireAuth,
+    checkCredits(db),
+    async (req, res) => {
+        try {
+            const { shotId } = req.params;
+            const { modelName } = req.body;
+            const userId = req.session.userId;
+
+            if (!modelName) {
+                return res.status(400).json({ error: 'modelName required' });
+            }
+
+            const shot = db.prepare('SELECT * FROM shots WHERE id = ?').get(shotId);
+            if (!shot) return res.status(404).json({ error: 'Shot not found' });
+
+            const scene = db.prepare('SELECT * FROM scenes WHERE id = ?').get(shot.scene_id);
+            const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(scene.project_id);
+
+            // Verify ownership (if project user_id set)
+            if (project.user_id && project.user_id !== userId) {
+                return res.status(403).json({ error: 'Access denied' });
+            }
+
+            // Check quality
+            const quality = calculateCompleteness(project, scene, shot);
+
+            // Load KB
+            const kbContent = loadKBForModel(modelName);
+
+            // Generate with Gemini
+            const result = await generatePrompt({
+                project, scene, shot, modelName, kbContent,
+                qualityTier: quality.tier
+            });
+
+            // Save variant
+            const insertResult = db.prepare(`
+        INSERT INTO image_variants (shot_id, model_used, generated_prompt, status, analysis_notes)
+        VALUES (?, ?, ?, 'draft', ?)
+      `).run(shotId, modelName, result.prompt, result.assumptions);
+
+            // DEDUCT CREDIT
+            const remainingCredits = deductCredit(db, userId, modelName, shotId);
+
+            const variant = db.prepare('SELECT * FROM image_variants WHERE id = ?')
+                .get(insertResult.lastInsertRowid);
+
+            res.json({
+                ...variant,
+                quality_tier: quality.tier,
+                quality_percentage: quality.percentage,
+                assumptions: result.assumptions,
+                credits_remaining: remainingCredits
+            });
+
+        } catch (error) {
+            console.error('Generate prompt error:', error);
+            res.status(500).json({ error: error.message });
+        }
+    }
+);
+
+// Get variants (Updated for new endpoint)
+app.get('/api/shots/:shotId/variants', requireAuth, (req, res) => {
+    try {
+        const variants = db.prepare('SELECT * FROM image_variants WHERE shot_id = ? ORDER BY created_at DESC')
+            .all(req.params.shotId);
+        res.json(variants);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Update variant
+app.put('/api/variants/:id', requireAuth, (req, res) => {
+    try {
+        const { user_edited_prompt, status } = req.body;
+        const updates = [];
+        const values = [];
+
+        if (user_edited_prompt !== undefined) {
+            updates.push('user_edited_prompt = ?');
+            values.push(user_edited_prompt);
+        }
+
+        if (status !== undefined) {
+            updates.push('status = ?');
+            values.push(status);
+        }
+
+        if (updates.length === 0) {
+            return res.status(400).json({ error: 'No fields to update' });
+        }
+
+        values.push(req.params.id);
+        db.prepare(`UPDATE image_variants SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+
+        const variant = db.prepare('SELECT * FROM image_variants WHERE id = ?').get(req.params.id);
+        res.json(variant);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Delete variant
+app.delete('/api/variants/:id', requireAuth, (req, res) => {
+    try {
+        db.prepare('DELETE FROM image_variants WHERE id = ?').run(req.params.id);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // --- API ROUTES ---
@@ -470,7 +687,44 @@ app.put('/api/variants/:id', (req, res) => {
 
 app.delete('/api/shots/:id', (req, res) => {
     const { id } = req.params;
-    db.prepare('DELETE FROM shots WHERE id = ?').run(id);
+
+    // Get the shot to be deleted to know its order/number
+    const shot = db.prepare('SELECT * FROM shots WHERE id = ?').get(id);
+
+    if (shot) {
+        const deleteTransaction = db.transaction(() => {
+            // 1. Delete the shot
+            db.prepare('DELETE FROM shots WHERE id = ?').run(id);
+
+            // 2. Get remaining shots in this scene ordered by order_index
+            const remainingShots = db.prepare('SELECT id, shot_number, order_index FROM shots WHERE scene_id = ? ORDER BY order_index ASC').all(shot.scene_id);
+
+            // 3. Renumber them sequentially
+            let cleanIndex = 1;
+            for (const s of remainingShots) {
+                const numericNum = parseInt(s.shot_number);
+
+                // Determine new shot Number (only if it was numeric)
+                let newShotNumber = s.shot_number;
+                if (!isNaN(numericNum) && String(numericNum) === String(s.shot_number)) {
+                    newShotNumber = String(cleanIndex);
+                }
+
+                // Update if changed
+                if (s.order_index !== cleanIndex || s.shot_number !== newShotNumber) {
+                    db.prepare('UPDATE shots SET order_index = ?, shot_number = ? WHERE id = ?')
+                        .run(cleanIndex, newShotNumber, s.id);
+                }
+                cleanIndex++;
+            }
+        });
+
+        deleteTransaction();
+    } else {
+        // Just try delete if not found (idempotent-ish) or 404
+        db.prepare('DELETE FROM shots WHERE id = ?').run(id);
+    }
+
     res.json({ success: true });
 });
 

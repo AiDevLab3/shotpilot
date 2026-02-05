@@ -56,8 +56,7 @@ const App: React.FC = () => {
                         <Route path="/projects/:id" element={<ProjectInfoPage />} />
                         <Route path="/projects/:id/characters" element={<CharacterBiblePage />} />
                         <Route path="/projects/:id/objects" element={<ObjectBiblePage />} />
-
-                        <Route path="/projects/:id/shotboard" element={<ShotBoardPage />} />
+                        <Route path="/projects/:id/scenes" element={<ShotBoardPage />} />
                     </Routes>
                 </main>
             </div>

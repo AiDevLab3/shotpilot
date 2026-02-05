@@ -179,15 +179,14 @@ export const Header: React.FC = () => {
                 >
                     Objects
                 </NavLink>
-
                 <NavLink
-                    to={`/projects/${pid}/shotboard`}
+                    to={`/projects/${pid}/scenes`}
                     style={({ isActive }) => ({
                         ...styles.navLink,
                         ...(isActive ? styles.activeNavLink : {})
                     })}
                 >
-                    Shot Board
+                    Scene Manager
                 </NavLink>
             </nav>
         </header>
