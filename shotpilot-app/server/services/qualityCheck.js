@@ -1,3 +1,10 @@
+import { readKBFile } from './kbLoader.js';
+import { analyzeQuality } from './geminiService.js';
+
+/**
+ * Fast local completeness check (no API call).
+ * Used for quick scoring before deciding whether to show recommendations.
+ */
 function calculateCompleteness(project, scene, shot) {
     const weights = {
         shot_description: 10,
@@ -63,6 +70,87 @@ function calculateCompleteness(project, scene, shot) {
     };
 }
 
+/**
+ * FIX 2: KB-guided quality check using Gemini + Knowledge Base.
+ * Loads KB files based on project context and returns expert analysis.
+ */
+async function checkQualityWithKB(context) {
+    const { project, scene, shot, characters, objects } = context;
+
+    // Load KB files for quality analysis
+    const kbFiles = [
+        '01_Core_Realism_Principles.md',
+        'packs/Cine-AI_Quality_Control_Pack_v1.md',
+    ];
+
+    // Add Character Pack if characters exist
+    const hasCharacters = characters && characters.length > 0;
+    if (hasCharacters) {
+        kbFiles.push('packs/Cine-AI_Character_Consistency_Pack_v1.md');
+    }
+
+    // Add model-specific file if preferred model is known
+    if (shot?.preferred_model) {
+        const modelStubs = {
+            'higgsfield': '02_Model_Higgsfield_Cinema_Studio.md',
+            'midjourney': '02_Model_Midjourney.md',
+            'nano-banana': '02_Model_Nano_Banana_Pro.md',
+            'gpt-image': '02_Model_GPT_Image.md',
+            'veo-3.1': '02_Model_VEO_31.md',
+            'kling-2.6': '02_Model_Kling_26.md',
+        };
+        const stub = modelStubs[shot.preferred_model];
+        if (stub) {
+            kbFiles.push(stub);
+        }
+    }
+
+    // Load and combine KB content
+    const kbContent = kbFiles
+        .map(f => readKBFile(f))
+        .filter(Boolean)
+        .join('\n\n---\n\n');
+
+    if (!kbContent.trim()) {
+        // Fallback to basic check if no KB content available
+        console.warn('[qualityCheck] No KB content available, falling back to basic check');
+        return calculateCompleteness(project, scene, shot);
+    }
+
+    try {
+        const analysis = await analyzeQuality({
+            context: { project, scene, shot, characters, objects },
+            kbContent,
+            thinkingLevel: 'high',
+        });
+
+        return {
+            percentage: analysis.completeness,
+            tier: analysis.tier,
+            missingFields: analysis.missingFields || [],
+            expertRecommendations: (analysis.missingFields || []).map(f => ({
+                field: f.field,
+                label: f.label,
+                recommendation: f.recommendation,
+                reasoning: f.reasoning,
+                alternatives: f.alternatives || [],
+            })),
+            // Also include basic check fields for backward compatibility
+            needsGuidance: analysis.tier === 'draft',
+            allMissing: (analysis.missingFields || []).map(f => ({
+                field: f.field,
+                weight: 7,
+                label: f.label,
+                description: f.reasoning,
+            })),
+        };
+    } catch (error) {
+        console.error('[qualityCheck] KB-guided check failed, falling back to basic:', error.message);
+        // Fallback to basic check on Gemini error
+        return calculateCompleteness(project, scene, shot);
+    }
+}
+
 function getFieldLabel(field) {
     const labels = {
         shot_description: 'Shot Description',
@@ -95,5 +183,6 @@ function getFieldDescription(field) {
 }
 
 export {
-    calculateCompleteness
+    calculateCompleteness,
+    checkQualityWithKB
 };

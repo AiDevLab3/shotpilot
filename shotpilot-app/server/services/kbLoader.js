@@ -144,5 +144,6 @@ function getAvailableModels() {
 
 export {
     loadKBForModel,
-    getAvailableModels
+    getAvailableModels,
+    readKBFile
 };

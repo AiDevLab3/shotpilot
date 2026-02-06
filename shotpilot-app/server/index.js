@@ -8,9 +8,9 @@ import { fileURLToPath } from 'url';
 import { db, initDatabase } from './database.js';
 import { setupAuth, requireAuth, checkCredits } from './middleware/auth.js';
 import { deductCredit, getUserCredits, getUsageStats } from './services/creditService.js';
-import { loadKBForModel, getAvailableModels } from './services/kbLoader.js';
-import { calculateCompleteness } from './services/qualityCheck.js';
-import { generateRecommendations, generatePrompt } from './services/geminiService.js';
+import { loadKBForModel, getAvailableModels, readKBFile } from './services/kbLoader.js';
+import { calculateCompleteness, checkQualityWithKB } from './services/qualityCheck.js';
+import { generateRecommendations, generatePrompt, analyzeQuality } from './services/geminiService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -57,7 +57,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Quick Gemini API validation: GET /api/health/gemini
 app.get('/api/health/gemini', async (req, res) => {
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-    const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+    const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3-flash-preview';
 
     if (!GEMINI_API_KEY) {
         return res.json({ ok: false, error: 'GEMINI_API_KEY not set in .env' });
@@ -165,24 +165,50 @@ app.get('/api/models', (req, res) => {
     }
 });
 
-// Check quality
-app.post('/api/shots/:shotId/check-quality', requireAuth, (req, res) => {
+// Check quality — uses KB-guided analysis when available, falls back to basic scoring
+app.post('/api/shots/:shotId/check-quality', requireAuth, async (req, res) => {
     try {
         const { shotId } = req.params;
+        const { useKB } = req.body || {};
+
         const shot = db.prepare('SELECT * FROM shots WHERE id = ?').get(shotId);
         if (!shot) return res.status(404).json({ error: 'Shot not found' });
 
         const scene = db.prepare('SELECT * FROM scenes WHERE id = ?').get(shot.scene_id);
         const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(scene.project_id);
 
-        const quality = calculateCompleteness(project, scene, shot);
-        res.json(quality);
+        // FIX 2: Load characters + objects for KB-guided quality check
+        const characters = db.prepare('SELECT * FROM characters WHERE project_id = ?').all(scene.project_id);
+        const objects = db.prepare('SELECT * FROM objects WHERE project_id = ?').all(scene.project_id);
+
+        // First: fast local check for immediate scoring
+        const basicQuality = calculateCompleteness(project, scene, shot);
+
+        // If KB-guided check requested (or by default), enhance with Gemini analysis
+        if (useKB !== false) {
+            try {
+                const kbQuality = await checkQualityWithKB({
+                    project, scene, shot, characters, objects
+                });
+                res.json({
+                    ...basicQuality,
+                    ...kbQuality,
+                    // Keep basic percentage as fallback reference
+                    basicPercentage: basicQuality.percentage,
+                });
+                return;
+            } catch (err) {
+                console.warn('[check-quality] KB check failed, using basic:', err.message);
+            }
+        }
+
+        res.json(basicQuality);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-// Get recommendations (free - no credit cost)
+// Get recommendations (free - no credit cost) — now includes KB context
 app.post('/api/shots/:shotId/get-recommendations', requireAuth, async (req, res) => {
     try {
         const { shotId } = req.params;
@@ -194,8 +220,18 @@ app.post('/api/shots/:shotId/get-recommendations', requireAuth, async (req, res)
         const scene = db.prepare('SELECT * FROM scenes WHERE id = ?').get(shot.scene_id);
         const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(scene.project_id);
 
+        // Load KB content for context-aware recommendations
+        let kbContent = '';
+        try {
+            const coreKB = readKBFile('01_Core_Realism_Principles.md');
+            const qualityKB = readKBFile('packs/Cine-AI_Quality_Control_Pack_v1.md');
+            kbContent = [coreKB, qualityKB].filter(Boolean).join('\n\n');
+        } catch (err) {
+            console.warn('[recommendations] Could not load KB:', err.message);
+        }
+
         const recommendations = await generateRecommendations({
-            project, scene, shot, missingFields
+            project, scene, shot, missingFields, kbContent
         });
 
         res.json(recommendations);
@@ -205,7 +241,7 @@ app.post('/api/shots/:shotId/get-recommendations', requireAuth, async (req, res)
     }
 });
 
-// Generate prompt (costs 1 credit)
+// Generate prompt (costs 1 credit) — FIX 3: complete context, FIX 4: multimodal
 app.post('/api/shots/:shotId/generate-prompt',
     requireAuth,
     checkCredits(db),
@@ -219,6 +255,7 @@ app.post('/api/shots/:shotId/generate-prompt',
                 return res.status(400).json({ error: 'modelName required' });
             }
 
+            // FIX 3: Query ALL data — complete shot, scene, project context
             const shot = db.prepare('SELECT * FROM shots WHERE id = ?').get(shotId);
             if (!shot) return res.status(404).json({ error: 'Shot not found' });
 
@@ -230,15 +267,21 @@ app.post('/api/shots/:shotId/generate-prompt',
                 return res.status(403).json({ error: 'Access denied' });
             }
 
-            // Check quality
+            // FIX 3: Query characters and objects for the project
+            const characters = db.prepare('SELECT * FROM characters WHERE project_id = ?').all(scene.project_id);
+            const objects = db.prepare('SELECT * FROM objects WHERE project_id = ?').all(scene.project_id);
+
+            // Check quality (basic fast check for tier determination)
             const quality = calculateCompleteness(project, scene, shot);
 
             // Load KB
             const kbContent = loadKBForModel(modelName);
 
-            // Generate with Gemini
+            // FIX 3+4: Generate with Gemini — full context + characters + objects + reference images
             const result = await generatePrompt({
-                project, scene, shot, modelName, kbContent,
+                project, scene, shot,
+                characters, objects,
+                modelName, kbContent,
                 qualityTier: quality.tier
             });
 

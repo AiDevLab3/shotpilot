@@ -478,6 +478,7 @@ const ShotBoardPage: React.FC = () => {
     if (!projectId) return <div style={{ padding: '32px', color: 'white' }}>No project found. Create a project first.</div>;
 
     return (
+        <ErrorBoundary onReset={loadData}>
         <div style={styles.container}>
             <div style={styles.actionBar}>
                 <button
@@ -883,6 +884,7 @@ const ShotBoardPage: React.FC = () => {
                 />
             )}
         </div>
+        </ErrorBoundary>
     );
 };
 

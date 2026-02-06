@@ -20,11 +20,19 @@ export const VariantList: React.FC<VariantListProps> = ({ shotId }) => {
             console.log('[VARIANT-LIST] Fetching variants for shot:', shotId);
             const data = await getVariants(shotId);
             console.log('[VARIANT-LIST] Raw data:', data);
+            if (!Array.isArray(data)) {
+                setVariants([]);
+                return;
+            }
             // Filter to only show variants with generated prompts
-            const generated = data.filter(v => v.generated_prompt || v.model_used || v.model_name);
+            const generated = data.filter(v => v && (v.generated_prompt || v.model_used || (v as any).model_name));
             console.log('[VARIANT-LIST] Filtered generated:', generated.length);
             // Sort newest first (backend already does this, but ensure)
-            generated.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            generated.sort((a, b) => {
+                const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                return (isNaN(timeB) ? 0 : timeB) - (isNaN(timeA) ? 0 : timeA);
+            });
             setVariants(generated);
         } catch (err: any) {
             console.error('[VARIANT-LIST] Failed to load variants:', err);
