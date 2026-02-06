@@ -1,8 +1,29 @@
 import type { Project, Character, ObjectItem, Scene, Shot, ImageVariant } from '../types/schema';
 
-// Helper for fetch calls
+// Auto-login: transparently authenticate on 401.
+// Lives here in api.ts because this file loads reliably (App.tsx can be browser-cached).
+let _loginPromise: Promise<boolean> | null = null;
+
+const autoLogin = (): Promise<boolean> => {
+    if (_loginPromise) return _loginPromise;
+    _loginPromise = fetch('/api/auth/login', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'test@shotpilot.com', password: 'testpassword123' }),
+    })
+    .then(r => {
+        console.log('[API] Auto-login response:', r.status);
+        return r.ok;
+    })
+    .catch(() => false)
+    .finally(() => { _loginPromise = null; });
+    return _loginPromise;
+};
+
+// Helper for fetch calls — retries once on 401 after auto-login
 const apiCall = async (endpoint: string, options: RequestInit = {}) => {
-    const response = await fetch(`/api${endpoint}`, {
+    const doFetch = () => fetch(`/api${endpoint}`, {
         ...options,
         credentials: 'include',
         headers: {
@@ -10,6 +31,18 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
             ...(options.headers || {})
         }
     });
+
+    let response = await doFetch();
+
+    // If 401, auto-login and retry once
+    if (response.status === 401) {
+        console.log('[API] Got 401 on', endpoint, '— auto-logging in...');
+        const ok = await autoLogin();
+        if (ok) {
+            response = await doFetch();
+        }
+    }
+
     if (!response.ok) {
         throw new Error(`API Error: ${response.statusText}`);
     }
