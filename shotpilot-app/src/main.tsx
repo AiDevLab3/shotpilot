@@ -1,8 +1,9 @@
-// Force module reload: 2026-02-06T14:00
+// autoAuth is a NEW file — cannot be browser-cached
+import './services/autoAuth';
 import './services/api';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 
-console.log("SHOTPILOT: Main script v3");
+console.log("SHOTPILOT: Main script v4");
 ReactDOM.createRoot(document.getElementById('root')!).render(<App />);
