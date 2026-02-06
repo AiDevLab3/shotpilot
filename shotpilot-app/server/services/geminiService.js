@@ -13,6 +13,24 @@ const THINKING_BUDGETS = {
     low: 1024,
 };
 
+// ShotPilot Lite: only these 6 models are available (4 image + 2 video)
+const AVAILABLE_MODELS = [
+    'Higgsfield Cinema Studio V1.5 (image)',
+    'Midjourney (image)',
+    'Nano Banana Pro (image)',
+    'GPT Image 1.5 (image)',
+    'VEO 3.1 (video)',
+    'Kling 2.6 (video)',
+];
+
+const AVAILABLE_MODELS_CONSTRAINT = `
+CRITICAL CONSTRAINT — AVAILABLE MODELS:
+Only recommend from these 6 models available in ShotPilot Lite:
+${AVAILABLE_MODELS.map((m, i) => `  ${i + 1}. ${m}`).join('\n')}
+
+DO NOT recommend Runway, Pika, Sora, DALL-E, Stable Diffusion, or any other models not listed above.
+When suggesting a model, choose from the 6 available models based on shot characteristics and KB guidance.`;
+
 /**
  * Build a non-null context string from an object — only includes populated fields.
  */
@@ -187,6 +205,7 @@ async function analyzeQuality({ context, kbContent, thinkingLevel = 'high' }) {
 
 Use these KB principles for your analysis:
 ${kbContent}
+${AVAILABLE_MODELS_CONSTRAINT}
 
 ANALYZE THIS SHOT:
 ${projectBlock}
@@ -206,6 +225,7 @@ TASK:
    - Expert recommendation based on KB rules
    - Reasoning referencing the specific project context
    - 2-3 alternatives
+4. If recommending an AI model, ONLY choose from the 6 available models listed above
 
 OUTPUT VALID JSON ONLY:
 {
@@ -268,7 +288,8 @@ async function generateRecommendations(context) {
 2. Clear reasoning (reference their specific context)
 3. 2-3 alternatives
 
-Be educational but concise.`;
+Be educational but concise.
+${AVAILABLE_MODELS_CONSTRAINT}`;
 
     const userPrompt = `Based on this project, recommend values for missing fields:
 ${kbSection}
