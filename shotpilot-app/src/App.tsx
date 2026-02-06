@@ -9,54 +9,52 @@ import ShotBoardPage from './pages/ShotBoardPage';
 import { getAllProjects, createProject } from './services/api';
 
 // Auto-login: MVP has no login page, so authenticate on mount
+// Uses a module-level flag to prevent React.StrictMode double-mount from
+// firing two login requests (which creates two sessions, invalidating the first).
+let loginInProgress = false;
+
 const useAutoLogin = () => {
     const [isReady, setIsReady] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
-        const login = async () => {
-            console.log('[AUTO-LOGIN] Starting...');
+        if (loginInProgress) {
+            console.log('[AUTO-LOGIN] Already in progress, skipping duplicate mount');
+            return;
+        }
+        loginInProgress = true;
 
-            // Check if already logged in
-            try {
-                const meRes = await fetch('/api/auth/me', {
-                    credentials: 'include',
-                });
-                if (meRes.ok) {
-                    const meData = await meRes.json();
-                    console.log('[AUTO-LOGIN] Already authenticated:', meData);
-                    setIsAuthenticated(true);
-                    setIsReady(true);
-                    return;
-                }
-                console.log('[AUTO-LOGIN] Not authenticated, status:', meRes.status);
-            } catch (err) {
-                console.log('[AUTO-LOGIN] /auth/me check failed:', err);
+        console.log('[AUTO-LOGIN] Hook mounted - starting login...');
+
+        fetch('/api/auth/login', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: 'test@shotpilot.com',
+                password: 'testpassword123'
+            })
+        })
+        .then(response => {
+            console.log('[AUTO-LOGIN] Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`Login failed: ${response.status}`);
             }
-
-            // Perform login
-            try {
-                const loginRes = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: 'test@shotpilot.com', password: 'testpassword123' }),
-                });
-                const loginData = await loginRes.json();
-                console.log('[AUTO-LOGIN] Login response:', loginRes.status, loginData);
-
-                if (loginRes.ok && loginData.success) {
-                    console.log('[AUTO-LOGIN] Authenticated as:', loginData.user?.email);
-                    setIsAuthenticated(true);
-                } else {
-                    console.error('[AUTO-LOGIN] Login failed:', loginRes.status, loginData);
-                }
-            } catch (err) {
-                console.error('[AUTO-LOGIN] Login request failed:', err);
-            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('[AUTO-LOGIN] Login SUCCESS:', data);
+            setIsAuthenticated(true);
+        })
+        .catch(error => {
+            console.error('[AUTO-LOGIN] Login FAILED:', error);
+            setIsAuthenticated(false);
+        })
+        .finally(() => {
+            console.log('[AUTO-LOGIN] Setting isReady = true');
             setIsReady(true);
-        };
-        login();
+            loginInProgress = false;
+        });
     }, []);
 
     return { isReady, isAuthenticated };
