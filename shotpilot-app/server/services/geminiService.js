@@ -14,22 +14,25 @@ const THINKING_BUDGETS = {
 };
 
 // ShotPilot Lite: only these 6 models are available (4 image + 2 video)
-const AVAILABLE_MODELS = [
-    'Higgsfield Cinema Studio V1.5 (image)',
-    'Midjourney (image)',
-    'Nano Banana Pro (image)',
-    'GPT Image 1.5 (image)',
-    'VEO 3.1 (video)',
-    'Kling 2.6 (video)',
-];
-
 const AVAILABLE_MODELS_CONSTRAINT = `
 CRITICAL CONSTRAINT — AVAILABLE MODELS:
-Only recommend from these 6 models available in ShotPilot Lite:
-${AVAILABLE_MODELS.map((m, i) => `  ${i + 1}. ${m}`).join('\n')}
+ShotPilot Lite has exactly 6 models. You MUST match the correct type.
 
-DO NOT recommend Runway, Pika, Sora, DALL-E, Stable Diffusion, or any other models not listed above.
-When suggesting a model, choose from the 6 available models based on shot characteristics and KB guidance.`;
+IMAGE models (for still image generation):
+  1. Higgsfield Cinema Studio V1.5
+  2. Midjourney
+  3. Nano Banana Pro
+  4. GPT Image 1.5
+
+VIDEO models (for video/motion generation):
+  5. VEO 3.1
+  6. Kling 2.6
+
+RULES:
+- If the shot needs a STILL IMAGE, ONLY recommend from the 4 IMAGE models above.
+- If the shot needs VIDEO/MOTION, ONLY recommend from the 2 VIDEO models above.
+- DO NOT recommend Runway, Pika, Sora, DALL-E, Stable Diffusion, or any model not listed above.
+- Default to IMAGE models unless the shot explicitly requires video or motion.`;
 
 /**
  * Build a non-null context string from an object — only includes populated fields.
