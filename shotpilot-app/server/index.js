@@ -228,7 +228,12 @@ app.post('/api/shots/:shotId/generate-prompt',
             });
 
         } catch (error) {
-            console.error('Generate prompt error:', error);
+            console.error('--- GENERATE PROMPT ERROR ---');
+            console.error('Message:', error.message);
+            console.error('Stack:', error.stack);
+            console.error('GEMINI_API_KEY set:', !!process.env.GEMINI_API_KEY);
+            console.error('Model requested:', req.body.modelName);
+            console.error('----------------------------');
             res.status(500).json({ error: error.message });
         }
     }
