@@ -208,7 +208,6 @@ async function analyzeQuality({ context, kbContent, thinkingLevel = 'high' }) {
 
 Use these KB principles for your analysis:
 ${kbContent}
-${AVAILABLE_MODELS_CONSTRAINT}
 
 ANALYZE THIS SHOT:
 ${projectBlock}
@@ -224,11 +223,33 @@ ${objectBlock}
 TASK:
 1. Calculate completeness (0-100%) using Quality Control Pack criteria
 2. Determine tier: "production" (>=70%) or "draft" (<70%)
-3. For each missing or weak field, provide:
-   - Expert recommendation based on KB rules
-   - Reasoning referencing the specific project context
-   - 2-3 alternatives
-4. If recommending an AI model, ONLY choose from the 6 available models listed above
+3. For each missing or weak field, provide an expert recommendation
+
+CRITICAL — VALID FIELDS ONLY:
+You may ONLY flag fields from this exact list. Do NOT invent new fields.
+Each "field" value in your response MUST be one of these exact strings:
+
+  Shot fields:
+    - "shot_description" (label: "Shot Description")
+    - "shot_type" (label: "Shot Type")
+    - "camera_angle" (label: "Camera Angle")
+    - "camera_movement" (label: "Camera Movement")
+    - "focal_length" (label: "Focal Length")
+    - "camera_lens" (label: "Camera/Lens")
+    - "blocking" (label: "Blocking/Staging")
+
+  Scene fields (read-only context, flag if missing):
+    - "scene_lighting_notes" (label: "Scene Lighting")
+    - "scene_mood_tone" (label: "Scene Mood/Tone")
+    - "scene_location_setting" (label: "Scene Location")
+    - "scene_time_of_day" (label: "Time of Day")
+
+  Project fields (read-only context, flag if missing):
+    - "style_aesthetic" (label: "Project Style")
+
+DO NOT include fields like "AI Model", "AI Video Model", "Atmospheric Details",
+"Lighting Prompt Specifics", or any field not in the list above.
+Model selection is handled separately — never recommend a model here.
 
 OUTPUT VALID JSON ONLY:
 {
@@ -248,22 +269,37 @@ OUTPUT VALID JSON ONLY:
     try {
         const text = await callGemini({
             parts: [{ text: prompt }],
-            systemInstruction: 'You are an expert cinematographer. Analyze shot quality using the provided KB. Output valid JSON only.',
+            systemInstruction: 'You are an expert cinematographer. Analyze shot quality using the provided KB. Only flag fields from the provided valid field list. Output valid JSON only.',
             thinkingLevel,
             responseMimeType: 'application/json',
             maxOutputTokens: 4096,
         });
 
+        let parsed;
         try {
-            return JSON.parse(text);
+            parsed = JSON.parse(text);
         } catch (e) {
-            // Fallback: extract JSON from response
             const jsonMatch = text.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
-                return JSON.parse(jsonMatch[0]);
+                parsed = JSON.parse(jsonMatch[0]);
+            } else {
+                throw new Error('Could not parse quality analysis JSON');
             }
-            throw new Error('Could not parse quality analysis JSON');
         }
+
+        // Post-process: strip any fields not in the valid set
+        const VALID_FIELDS = new Set([
+            'shot_description', 'shot_type', 'camera_angle', 'camera_movement',
+            'focal_length', 'camera_lens', 'blocking',
+            'scene_lighting_notes', 'scene_mood_tone', 'scene_location_setting', 'scene_time_of_day',
+            'style_aesthetic',
+        ]);
+
+        if (parsed.missingFields && Array.isArray(parsed.missingFields)) {
+            parsed.missingFields = parsed.missingFields.filter(f => VALID_FIELDS.has(f.field));
+        }
+
+        return parsed;
     } catch (error) {
         console.error('[gemini] Quality analysis error:', error);
         throw error;
@@ -292,7 +328,10 @@ async function generateRecommendations(context) {
 3. 2-3 alternatives
 
 Be educational but concise.
-${AVAILABLE_MODELS_CONSTRAINT}`;
+
+IMPORTANT: Only provide recommendations for the specific fields listed in MISSING FIELDS below.
+Do NOT add extra fields. Do NOT recommend AI models — model selection is handled separately.
+The "field" value in each response object must exactly match a field name from the MISSING FIELDS list.`;
 
     const userPrompt = `Based on this project, recommend values for missing fields:
 ${kbSection}
@@ -302,7 +341,7 @@ ${sceneBlock}
 
 ${shotBlock}
 
-MISSING FIELDS: ${missingFields.map(f => f.label || f.field).join(', ')}
+MISSING FIELDS: ${missingFields.map(f => `"${f.field}" (${f.label || f.field})`).join(', ')}
 
 Output valid JSON array only:
 [
