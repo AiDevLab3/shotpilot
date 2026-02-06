@@ -5,6 +5,7 @@ import { GripVertical, Plus, Image as ImageIcon, Check, Video, Edit2, Trash2, Ch
 import { GeneratePromptButton } from '../components/GeneratePromptButton';
 import { GeneratePromptModal } from '../components/GeneratePromptModal';
 import { RecommendationsDialog } from '../components/RecommendationsDialog';
+import { VariantList } from '../components/VariantList';
 
 // Specialized Dropdown Option Component
 const DropdownOption = ({
@@ -710,6 +711,7 @@ const ShotBoardPage: React.FC = () => {
                                                                 </div>
                                                                 <div style={{ fontSize: '12px', color: '#e5e7eb', lineHeight: '1.4' }}>{shot.description || 'No description'}</div>
                                                             </div>
+                                                            <VariantList shotId={shot.id} />
                                                             <GeneratePromptButton
                                                                 shotId={shot.id}
                                                                 onQualityCheck={(result) => handleQualityCheck(shot, scene.id, result)}

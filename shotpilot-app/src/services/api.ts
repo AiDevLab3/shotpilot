@@ -214,6 +214,15 @@ export const getRecommendations = async (shotId: number, missingFields: any[]): 
     });
 };
 
+// VARIANTS (generated prompts)
+export const getVariants = async (shotId: number): Promise<ImageVariant[]> => {
+    return apiCall(`/shots/${shotId}/variants`);
+};
+
+export const deleteVariant = async (id: number): Promise<void> => {
+    await apiCall(`/variants/${id}`, { method: 'DELETE' });
+};
+
 export const updateVariant = async (id: number, data: Partial<ImageVariant>): Promise<ImageVariant> => {
     return apiCall(`/variants/${id}`, {
         method: 'PUT',

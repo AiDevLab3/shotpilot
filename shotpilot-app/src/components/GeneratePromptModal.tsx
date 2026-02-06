@@ -89,6 +89,11 @@ export const GeneratePromptModal: React.FC<GeneratePromptModalProps> = ({
             window.dispatchEvent(new CustomEvent('creditUpdate', {
                 detail: { credits: res.credits_remaining ?? (currentCredits - 1) }
             }));
+
+            // Notify VariantList to refresh
+            window.dispatchEvent(new CustomEvent('variantCreated', {
+                detail: { shotId }
+            }));
         } catch (err: any) {
             const msg = err.message || '';
             if (msg.includes('403') || msg.toLowerCase().includes('forbidden')) {
