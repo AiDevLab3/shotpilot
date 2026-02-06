@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import type { Scene, Shot, ImageVariant } from '../types/schema';
 import { getScenes, getShots, createShot, updateShot, deleteShot, updateScene, createScene, deleteScene, getAllProjects, fileToBase64, createImageVariant, getImageVariants, deleteImageVariant, getAvailableModels, getUserCredits, generatePrompt, checkShotQuality } from '../services/api';
 import { GripVertical, Plus, Image as ImageIcon, Check, Video, Edit2, Trash2, ChevronDown, ChevronRight, FileText, Clock, Maximize2, Minimize2, Wand2, Sparkles, Loader2 } from 'lucide-react';
+import { GeneratePromptButton } from '../components/GeneratePromptButton';
 
 // Specialized Dropdown Option Component
 const DropdownOption = ({
@@ -394,6 +395,18 @@ const ShotBoardPage: React.FC = () => {
         setIsAIModalOpen(true);
     };
 
+    const handleQualityCheck = (shot: Shot, result: any) => {
+        if (result.tier === 'production') {
+            // Score >= 70%: go straight to generate modal
+            handleOpenAIModal(shot);
+        } else {
+            // Score < 70%: for now open modal anyway (recommendations dialog coming next)
+            // TODO: Phase 2C - open RecommendationsDialog here
+            console.log('Draft tier shot, quality:', result.score, 'missing:', result.missing_fields);
+            handleOpenAIModal(shot);
+        }
+    };
+
     const handleGeneratePrompt = async () => {
         if (!aiShot || !selectedModel) return;
         if (userCredits < 1) {
@@ -687,10 +700,13 @@ const ShotBoardPage: React.FC = () => {
                                                                 </div>
                                                                 <div style={{ fontSize: '12px', color: '#e5e7eb', lineHeight: '1.4' }}>{shot.description || 'No description'}</div>
                                                             </div>
+                                                            <GeneratePromptButton
+                                                                shotId={shot.id}
+                                                                onQualityCheck={(result) => handleQualityCheck(shot, result)}
+                                                            />
                                                         </div>
                                                         <div style={styles.cardActions}>
                                                             <button onClick={() => handleOpenModal(scene.id, shot)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}><Edit2 size={14} /></button>
-                                                            <button onClick={() => handleOpenAIModal(shot)} style={{ background: 'none', border: 'none', color: '#8b5cf6', cursor: 'pointer' }} title="Generate AI Prompt"><Wand2 size={14} /></button>
                                                             <button onClick={() => handleDelete(shot.id, scene.id)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}><Trash2 size={14} /></button>
                                                         </div>
                                                     </div>
