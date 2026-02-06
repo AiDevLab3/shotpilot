@@ -59,10 +59,13 @@ export const GeneratePromptModal: React.FC<GeneratePromptModalProps> = ({
     const loadModels = async () => {
         setLoadingModels(true);
         try {
+            console.log('[MODAL] Fetching models...');
             const fetched = await getAvailableModels();
+            console.log('[MODAL] Models data:', fetched);
             setModels(fetched);
             if (fetched.length > 0) setSelectedModel(fetched[0].id);
-        } catch {
+        } catch (err) {
+            console.error('[MODAL] Failed to load models:', err);
             setError('Failed to load models');
         } finally {
             setLoadingModels(false);

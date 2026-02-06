@@ -4,6 +4,7 @@ import type { Project, Character, ObjectItem, Scene, Shot, ImageVariant } from '
 const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     const response = await fetch(`/api${endpoint}`, {
         ...options,
+        credentials: 'include',
         headers: {
             'Content-Type': 'application/json',
             ...(options.headers || {})
@@ -22,6 +23,7 @@ const uploadCall = async (file: File) => {
 
     const response = await fetch('/api/upload', {
         method: 'POST',
+        credentials: 'include',
         body: formData
     });
 

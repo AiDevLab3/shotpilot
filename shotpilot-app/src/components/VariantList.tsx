@@ -17,13 +17,17 @@ export const VariantList: React.FC<VariantListProps> = ({ shotId }) => {
         setLoading(true);
         setError(null);
         try {
+            console.log('[VARIANT-LIST] Fetching variants for shot:', shotId);
             const data = await getVariants(shotId);
+            console.log('[VARIANT-LIST] Raw data:', data);
             // Filter to only show variants with generated prompts
             const generated = data.filter(v => v.generated_prompt || v.model_used || v.model_name);
+            console.log('[VARIANT-LIST] Filtered generated:', generated.length);
             // Sort newest first (backend already does this, but ensure)
             generated.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
             setVariants(generated);
         } catch (err: any) {
+            console.error('[VARIANT-LIST] Failed to load variants:', err);
             setError(err.message || 'Failed to load variants');
         } finally {
             setLoading(false);

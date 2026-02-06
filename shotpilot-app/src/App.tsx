@@ -14,23 +14,40 @@ const useAutoLogin = () => {
 
     useEffect(() => {
         const login = async () => {
+            console.log('[AUTO-LOGIN] Starting...');
+
+            // Check if already logged in
             try {
-                // Check if already logged in
-                const meRes = await fetch('/api/auth/me');
+                const meRes = await fetch('/api/auth/me', {
+                    credentials: 'include',
+                });
                 if (meRes.ok) {
+                    const meData = await meRes.json();
+                    console.log('[AUTO-LOGIN] Already authenticated:', meData);
                     setReady(true);
                     return;
                 }
-            } catch { /* not logged in */ }
+                console.log('[AUTO-LOGIN] Not authenticated, status:', meRes.status);
+            } catch (err) {
+                console.log('[AUTO-LOGIN] /auth/me check failed:', err);
+            }
 
+            // Perform login
             try {
-                await fetch('/api/auth/login', {
+                const loginRes = await fetch('/api/auth/login', {
                     method: 'POST',
+                    credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: 'test@shotpilot.com', password: 'testpassword123' }),
                 });
+                const loginData = await loginRes.json();
+                console.log('[AUTO-LOGIN] Login response:', loginRes.status, loginData);
+
+                if (!loginRes.ok) {
+                    console.error('[AUTO-LOGIN] Login failed with status:', loginRes.status);
+                }
             } catch (err) {
-                console.error('Auto-login failed:', err);
+                console.error('[AUTO-LOGIN] Login request failed:', err);
             }
             setReady(true);
         };

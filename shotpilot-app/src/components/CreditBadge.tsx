@@ -7,9 +7,12 @@ export const CreditBadge: React.FC = () => {
 
     const loadCredits = async () => {
         try {
+            console.log('[CREDIT-BADGE] Fetching credits...');
             const data = await getUserCredits();
+            console.log('[CREDIT-BADGE] Credits data:', data);
             setCredits(data.credits ?? data.balance ?? 0);
-        } catch {
+        } catch (err) {
+            console.error('[CREDIT-BADGE] Failed to fetch credits:', err);
             setCredits(null);
         } finally {
             setLoading(false);
