@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { Header } from './components/layout/Header';
 import { ProjectInfoPage } from './pages/ProjectInfoPage';
@@ -7,6 +7,38 @@ import { ObjectBiblePage } from './pages/ObjectBiblePage';
 
 import ShotBoardPage from './pages/ShotBoardPage';
 import { getAllProjects, createProject } from './services/api';
+
+// Auto-login: MVP has no login page, so authenticate on mount
+const useAutoLogin = () => {
+    const [ready, setReady] = useState(false);
+
+    useEffect(() => {
+        const login = async () => {
+            try {
+                // Check if already logged in
+                const meRes = await fetch('/api/auth/me');
+                if (meRes.ok) {
+                    setReady(true);
+                    return;
+                }
+            } catch { /* not logged in */ }
+
+            try {
+                await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'test@shotpilot.com', password: 'testpassword123' }),
+                });
+            } catch (err) {
+                console.error('Auto-login failed:', err);
+            }
+            setReady(true);
+        };
+        login();
+    }, []);
+
+    return ready;
+};
 
 // Wrapper to handle initial redirect logic
 const IndexRedirect: React.FC = () => {
@@ -42,7 +74,16 @@ const IndexRedirect: React.FC = () => {
 };
 
 const App: React.FC = () => {
-    console.log("SHOTPILOT: App mounting");
+    const ready = useAutoLogin();
+
+    if (!ready) {
+        return (
+            <div style={{ height: '100vh', width: '100vw', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0A0E14', color: 'white' }}>
+                Loading ShotPilot...
+            </div>
+        );
+    }
+
     return (
         <BrowserRouter>
             <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', backgroundColor: '#18181b', color: '#E8E8E8', overflow: 'hidden' }}>

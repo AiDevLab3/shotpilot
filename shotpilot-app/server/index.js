@@ -673,19 +673,6 @@ app.put('/api/shots/:id', (req, res) => {
     res.json({ success: true });
 });
 
-// Variants Placeholders (Phase 2)
-app.get('/api/shots/:shotId/variants', (req, res) => {
-    res.json([]);
-});
-
-app.post('/api/shots/:shotId/variants', (req, res) => {
-    res.json({ message: 'Phase 2 endpoint ready' });
-});
-
-app.put('/api/variants/:id', (req, res) => {
-    res.json({ message: 'Phase 2 endpoint ready' });
-});
-
 app.delete('/api/shots/:id', (req, res) => {
     const { id } = req.params;
 
