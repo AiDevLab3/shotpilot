@@ -595,6 +595,7 @@ app.post('/api/scenes/:id/shots', (req, res) => {
             desired_duration, generation_duration, focal_length, camera_lens,
             description, blocking, vfx_notes, sfx_notes, notes, order_index, status
         )
+        VALUES (
             @sceneId, @shot_number, @shot_type, @shot_type_custom, 
             @camera_angle, @camera_angle_custom, @camera_movement, @camera_movement_custom,
             @desired_duration, @generation_duration, @focal_length, @camera_lens,
