@@ -10,7 +10,8 @@ import { getAllProjects, createProject } from './services/api';
 
 // Auto-login: MVP has no login page, so authenticate on mount
 const useAutoLogin = () => {
-    const [ready, setReady] = useState(false);
+    const [isReady, setIsReady] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
         const login = async () => {
@@ -24,7 +25,8 @@ const useAutoLogin = () => {
                 if (meRes.ok) {
                     const meData = await meRes.json();
                     console.log('[AUTO-LOGIN] Already authenticated:', meData);
-                    setReady(true);
+                    setIsAuthenticated(true);
+                    setIsReady(true);
                     return;
                 }
                 console.log('[AUTO-LOGIN] Not authenticated, status:', meRes.status);
@@ -43,18 +45,21 @@ const useAutoLogin = () => {
                 const loginData = await loginRes.json();
                 console.log('[AUTO-LOGIN] Login response:', loginRes.status, loginData);
 
-                if (!loginRes.ok) {
-                    console.error('[AUTO-LOGIN] Login failed with status:', loginRes.status);
+                if (loginRes.ok && loginData.success) {
+                    console.log('[AUTO-LOGIN] Authenticated as:', loginData.user?.email);
+                    setIsAuthenticated(true);
+                } else {
+                    console.error('[AUTO-LOGIN] Login failed:', loginRes.status, loginData);
                 }
             } catch (err) {
                 console.error('[AUTO-LOGIN] Login request failed:', err);
             }
-            setReady(true);
+            setIsReady(true);
         };
         login();
     }, []);
 
-    return ready;
+    return { isReady, isAuthenticated };
 };
 
 // Wrapper to handle initial redirect logic
@@ -91,12 +96,27 @@ const IndexRedirect: React.FC = () => {
 };
 
 const App: React.FC = () => {
-    const ready = useAutoLogin();
+    const { isReady, isAuthenticated } = useAutoLogin();
 
-    if (!ready) {
+    if (!isReady) {
         return (
             <div style={{ height: '100vh', width: '100vw', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0A0E14', color: 'white' }}>
                 Loading ShotPilot...
+            </div>
+        );
+    }
+
+    if (!isAuthenticated) {
+        return (
+            <div style={{ height: '100vh', width: '100vw', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0A0E14', color: '#ef4444', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ fontSize: '18px', fontWeight: 600 }}>Authentication Failed</div>
+                <div style={{ color: '#9ca3af', fontSize: '14px' }}>Could not log in as test@shotpilot.com. Check the server console.</div>
+                <button
+                    onClick={() => window.location.reload()}
+                    style={{ marginTop: '8px', padding: '8px 20px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px' }}
+                >
+                    Retry
+                </button>
             </div>
         );
     }
