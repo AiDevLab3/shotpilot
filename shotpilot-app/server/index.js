@@ -53,6 +53,41 @@ app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
+// --- HEALTH CHECK ---
+// Quick Gemini API validation: GET /api/health/gemini
+app.get('/api/health/gemini', async (req, res) => {
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+
+    if (!GEMINI_API_KEY) {
+        return res.json({ ok: false, error: 'GEMINI_API_KEY not set in .env' });
+    }
+
+    try {
+        const { default: fetch } = await import('node-fetch');
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: 'Say "OK" in one word.' }] }],
+                generationConfig: { maxOutputTokens: 10 }
+            })
+        });
+
+        if (!response.ok) {
+            const errText = await response.text();
+            return res.json({ ok: false, model: GEMINI_MODEL, status: response.status, error: errText });
+        }
+
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        res.json({ ok: true, model: GEMINI_MODEL, response: text.trim() });
+    } catch (error) {
+        res.json({ ok: false, model: GEMINI_MODEL, error: error.message });
+    }
+});
+
 // --- AUTH ROUTES ---
 
 // Login
