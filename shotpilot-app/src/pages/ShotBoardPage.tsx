@@ -4,6 +4,7 @@ import { getScenes, getShots, createShot, updateShot, deleteShot, updateScene, c
 import { GripVertical, Plus, Image as ImageIcon, Check, Video, Edit2, Trash2, ChevronDown, ChevronRight, FileText, Clock, Maximize2, Minimize2, Sparkles } from 'lucide-react';
 import { GeneratePromptButton } from '../components/GeneratePromptButton';
 import { GeneratePromptModal } from '../components/GeneratePromptModal';
+import { RecommendationsDialog } from '../components/RecommendationsDialog';
 
 // Specialized Dropdown Option Component
 const DropdownOption = ({
@@ -69,6 +70,10 @@ const ShotBoardPage: React.FC = () => {
     const [generateModalShot, setGenerateModalShot] = useState<Shot | null>(null);
     const [generateModalSceneId, setGenerateModalSceneId] = useState<number | null>(null);
     const [qualityContext, setQualityContext] = useState<{ tier: string; score: number }>({ tier: 'draft', score: 0 });
+
+    // Recommendations Dialog State
+    const [isRecsDialogOpen, setIsRecsDialogOpen] = useState(false);
+    const [recsMissingFields, setRecsMissingFields] = useState<any[]>([]);
 
 
     // Modal State
@@ -386,19 +391,37 @@ const ShotBoardPage: React.FC = () => {
     };
 
     const handleQualityCheck = (shot: Shot, sceneId: number, result: any) => {
-        setQualityContext({ tier: result.tier || 'draft', score: result.score || 0 });
+        const score = result.percentage ?? result.score ?? 0;
+        const tier = result.tier || 'draft';
+        setQualityContext({ tier, score });
         setGenerateModalShot(shot);
         setGenerateModalSceneId(sceneId);
 
-        if (result.tier === 'production') {
-            // Score >= 70%: go straight to generate modal
+        if (tier === 'production') {
             setIsGenerateModalOpen(true);
         } else {
-            // Score < 70%: for now open modal anyway (recommendations dialog coming next)
-            // TODO: Phase 2C - open RecommendationsDialog here
-            console.log('Draft tier shot, quality:', result.score, 'missing:', result.missing_fields);
-            setIsGenerateModalOpen(true);
+            // Draft tier — show recommendations dialog
+            setRecsMissingFields(result.allMissing || []);
+            setIsRecsDialogOpen(true);
         }
+    };
+
+    const handleRecsClose = () => {
+        setIsRecsDialogOpen(false);
+    };
+
+    const handleRecsSkipGenerate = () => {
+        setIsRecsDialogOpen(false);
+        setIsGenerateModalOpen(true);
+    };
+
+    const handleRecsSaveAndGenerate = async () => {
+        setIsRecsDialogOpen(false);
+        // Refresh the shot data in local state after fields were saved
+        if (generateModalSceneId) {
+            await refreshSceneShots(generateModalSceneId);
+        }
+        setIsGenerateModalOpen(true);
     };
 
     const handleGenerateModalClose = () => {
@@ -408,7 +431,6 @@ const ShotBoardPage: React.FC = () => {
     };
 
     const handleVariantGenerated = async () => {
-        // Refresh variants for the shot + update local credits
         if (generateModalShot && generateModalSceneId) {
             const variants = await getImageVariants(generateModalShot.id);
             setShotImages(prev => ({ ...prev, [generateModalShot.id]: variants }));
@@ -822,6 +844,18 @@ const ShotBoardPage: React.FC = () => {
                         <button onClick={dismissSuggestion} style={{ padding: '8px 16px', background: '#374151', color: '#e5e7eb', border: 'none', borderRadius: '4px', fontSize: '13px', fontWeight: '500', cursor: 'pointer' }}>Not Yet</button>
                     </div>
                 </div>
+            )}
+
+            {generateModalShot && (
+                <RecommendationsDialog
+                    isOpen={isRecsDialogOpen}
+                    onClose={handleRecsClose}
+                    shotId={generateModalShot.id}
+                    qualityScore={qualityContext.score}
+                    missingFields={recsMissingFields}
+                    onSkipGenerate={handleRecsSkipGenerate}
+                    onSaveAndGenerate={handleRecsSaveAndGenerate}
+                />
             )}
 
             {generateModalShot && (

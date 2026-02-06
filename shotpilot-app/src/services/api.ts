@@ -207,6 +207,13 @@ export const checkShotQuality = async (shotId: number): Promise<any> => {
     });
 };
 
+export const getRecommendations = async (shotId: number, missingFields: any[]): Promise<any[]> => {
+    return apiCall(`/shots/${shotId}/get-recommendations`, {
+        method: 'POST',
+        body: JSON.stringify({ missingFields })
+    });
+};
+
 export const updateVariant = async (id: number, data: Partial<ImageVariant>): Promise<ImageVariant> => {
     return apiCall(`/variants/${id}`, {
         method: 'PUT',
