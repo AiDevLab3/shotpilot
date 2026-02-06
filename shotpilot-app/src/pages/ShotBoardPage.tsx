@@ -6,6 +6,7 @@ import { GeneratePromptButton } from '../components/GeneratePromptButton';
 import { GeneratePromptModal } from '../components/GeneratePromptModal';
 import { RecommendationsDialog } from '../components/RecommendationsDialog';
 import { VariantList } from '../components/VariantList';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 // Specialized Dropdown Option Component
 const DropdownOption = ({
@@ -610,9 +611,11 @@ const ShotBoardPage: React.FC = () => {
                                             </button>
                                         )}
                                         {getFilteredShots(sceneShots).map((shot) => {
-                                            const variants = shotImages[shot.id] || [];
-                                            const mainImage = variants[0];
-                                            const imageUrl = mainImage ? (mainImage.image_url.startsWith('http') ? mainImage.image_url : mainImage.image_url) : null;
+                                            const allVariants = shotImages[shot.id] || [];
+                                            // Only show actual uploaded images (not generated prompts which have no image_url)
+                                            const imageVariants = allVariants.filter(v => v.image_url);
+                                            const mainImage = imageVariants[0];
+                                            const imageUrl = mainImage?.image_url || null;
                                             const currentStatus = shot.status || 'planning';
                                             const isDropdownOpen = activeDropdownId === `shot-${shot.id}`;
 
@@ -657,6 +660,7 @@ const ShotBoardPage: React.FC = () => {
 
                                             return (
                                                 <React.Fragment key={shot.id}>
+                                                  <ErrorBoundary>
                                                     <div style={styles.card}>
                                                         {/* Card Content ... (omitted for brevity, relying on replace to keep existing) */}
                                                         {/* Actually I need to reproduce the card content here or use a smaller replacement scope. */}
@@ -741,6 +745,7 @@ const ShotBoardPage: React.FC = () => {
                                                     >
                                                         <Plus size={20} />
                                                     </button>
+                                                  </ErrorBoundary>
                                                 </React.Fragment>
                                             );
                                         })}
