@@ -1,11 +1,15 @@
 import type { Project, Character, ObjectItem, Scene, Shot, ImageVariant } from '../types/schema';
 
+// v3: Module-level fingerprint to verify this version loaded in browser
+console.log('[API v3] api.ts loaded — has 401 interceptor + eager login');
+
 // Auto-login: transparently authenticate on 401.
-// Lives here in api.ts because this file loads reliably (App.tsx can be browser-cached).
+// Also runs eagerly at import time so session is ready before first API call.
 let _loginPromise: Promise<boolean> | null = null;
 
 const autoLogin = (): Promise<boolean> => {
     if (_loginPromise) return _loginPromise;
+    console.log('[API v3] autoLogin called, fetching /api/auth/login...');
     _loginPromise = fetch('/api/auth/login', {
         method: 'POST',
         credentials: 'include',
@@ -13,13 +17,16 @@ const autoLogin = (): Promise<boolean> => {
         body: JSON.stringify({ email: 'test@shotpilot.com', password: 'testpassword123' }),
     })
     .then(r => {
-        console.log('[API] Auto-login response:', r.status);
+        console.log('[API v3] Auto-login response:', r.status);
         return r.ok;
     })
     .catch(() => false)
     .finally(() => { _loginPromise = null; });
     return _loginPromise;
 };
+
+// Eager login: fire immediately when this module loads, before any component mounts
+autoLogin();
 
 // Helper for fetch calls — retries once on 401 after auto-login
 const apiCall = async (endpoint: string, options: RequestInit = {}) => {
@@ -36,9 +43,10 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
 
     // If 401, auto-login and retry once
     if (response.status === 401) {
-        console.log('[API] Got 401 on', endpoint, '— auto-logging in...');
+        console.log('[API v3] Got 401 on', endpoint, '— auto-logging in...');
         const ok = await autoLogin();
         if (ok) {
+            console.log('[API v3] Retrying', endpoint, 'after login...');
             response = await doFetch();
         }
     }
