@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import type { Scene, Shot, ImageVariant } from '../types/schema';
-import { getScenes, getShots, createShot, updateShot, deleteShot, updateScene, createScene, deleteScene, getAllProjects, fileToBase64, createImageVariant, getImageVariants, deleteImageVariant, getAvailableModels, getUserCredits, generatePrompt, checkShotQuality } from '../services/api';
-import { GripVertical, Plus, Image as ImageIcon, Check, Video, Edit2, Trash2, ChevronDown, ChevronRight, FileText, Clock, Maximize2, Minimize2, Wand2, Sparkles, Loader2 } from 'lucide-react';
+import { getScenes, getShots, createShot, updateShot, deleteShot, updateScene, createScene, deleteScene, getAllProjects, fileToBase64, createImageVariant, getImageVariants, deleteImageVariant, getUserCredits } from '../services/api';
+import { GripVertical, Plus, Image as ImageIcon, Check, Video, Edit2, Trash2, ChevronDown, ChevronRight, FileText, Clock, Maximize2, Minimize2, Sparkles } from 'lucide-react';
 import { GeneratePromptButton } from '../components/GeneratePromptButton';
+import { GeneratePromptModal } from '../components/GeneratePromptModal';
 
 // Specialized Dropdown Option Component
 const DropdownOption = ({
@@ -64,12 +65,10 @@ const ShotBoardPage: React.FC = () => {
 
     // AI & Credits State
     const [userCredits, setUserCredits] = useState<number>(0);
-    const [availableModels, setAvailableModels] = useState<any[]>([]);
-    const [isAIModalOpen, setIsAIModalOpen] = useState(false);
-    const [aiShot, setAiShot] = useState<Shot | null>(null);
-    const [selectedModel, setSelectedModel] = useState<string>('');
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [generationResult, setGenerationResult] = useState<ImageVariant | null>(null);
+    const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
+    const [generateModalShot, setGenerateModalShot] = useState<Shot | null>(null);
+    const [generateModalSceneId, setGenerateModalSceneId] = useState<number | null>(null);
+    const [qualityContext, setQualityContext] = useState<{ tier: string; score: number }>({ tier: 'draft', score: 0 });
 
 
     // Modal State
@@ -144,15 +143,12 @@ const ShotBoardPage: React.FC = () => {
                     setExpandedScenes([fetchedScenes[0].id]);
                 }
 
-                // Load Credits & Models
+                // Load Credits
                 try {
                     const credits = await getUserCredits();
                     setUserCredits(credits.credits);
-                    const models = await getAvailableModels();
-                    setAvailableModels(models);
-                    if (models.length > 0) setSelectedModel(models[0].id);
                 } catch (e) {
-                    console.error("Failed to load AI config", e);
+                    console.error("Failed to load credits", e);
                 }
             }
         } catch (error) {
@@ -389,46 +385,38 @@ const ShotBoardPage: React.FC = () => {
         }
     };
 
-    const handleOpenAIModal = (shot: Shot) => {
-        setAiShot(shot);
-        setGenerationResult(null);
-        setIsAIModalOpen(true);
-    };
+    const handleQualityCheck = (shot: Shot, sceneId: number, result: any) => {
+        setQualityContext({ tier: result.tier || 'draft', score: result.score || 0 });
+        setGenerateModalShot(shot);
+        setGenerateModalSceneId(sceneId);
 
-    const handleQualityCheck = (shot: Shot, result: any) => {
         if (result.tier === 'production') {
             // Score >= 70%: go straight to generate modal
-            handleOpenAIModal(shot);
+            setIsGenerateModalOpen(true);
         } else {
             // Score < 70%: for now open modal anyway (recommendations dialog coming next)
             // TODO: Phase 2C - open RecommendationsDialog here
             console.log('Draft tier shot, quality:', result.score, 'missing:', result.missing_fields);
-            handleOpenAIModal(shot);
+            setIsGenerateModalOpen(true);
         }
     };
 
-    const handleGeneratePrompt = async () => {
-        if (!aiShot || !selectedModel) return;
-        if (userCredits < 1) {
-            alert("Insufficient credits!");
-            return;
-        }
+    const handleGenerateModalClose = () => {
+        setIsGenerateModalOpen(false);
+        setGenerateModalShot(null);
+        setGenerateModalSceneId(null);
+    };
 
-        setIsGenerating(true);
+    const handleVariantGenerated = async () => {
+        // Refresh variants for the shot + update local credits
+        if (generateModalShot && generateModalSceneId) {
+            const variants = await getImageVariants(generateModalShot.id);
+            setShotImages(prev => ({ ...prev, [generateModalShot.id]: variants }));
+        }
         try {
-            const result = await generatePrompt(aiShot.id, selectedModel);
-            setGenerationResult(result);
-            setUserCredits(prev => prev - 1);
-
-            // Refresh variants for this shot
-            const variants = await getImageVariants(aiShot.id);
-            setShotImages(prev => ({ ...prev, [aiShot.id]: variants }));
-        } catch (error: any) {
-            console.error("Generation failed", error);
-            alert(`Generation failed: ${error.message}`);
-        } finally {
-            setIsGenerating(false);
-        }
+            const credits = await getUserCredits();
+            setUserCredits(credits.credits);
+        } catch { /* CreditBadge event handles this too */ }
     };
 
     const styles = {
@@ -702,7 +690,7 @@ const ShotBoardPage: React.FC = () => {
                                                             </div>
                                                             <GeneratePromptButton
                                                                 shotId={shot.id}
-                                                                onQualityCheck={(result) => handleQualityCheck(shot, result)}
+                                                                onQualityCheck={(result) => handleQualityCheck(shot, scene.id, result)}
                                                             />
                                                         </div>
                                                         <div style={styles.cardActions}>
@@ -836,80 +824,22 @@ const ShotBoardPage: React.FC = () => {
                 </div>
             )}
 
-            {isAIModalOpen && aiShot && (
-                <div style={styles.modalOverlay}>
-                    <div style={{ ...styles.modal, maxWidth: '600px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                            <h2 style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <Wand2 color="#8b5cf6" /> Generate AI Prompt
-                            </h2>
-                            <div style={{ color: '#fbbf24', fontSize: '14px', fontWeight: 'bold' }}>
-                                {userCredits} Credits Available
-                            </div>
-                        </div>
-
-                        {!generationResult ? (
-                            <>
-                                <div style={{ marginBottom: '20px', padding: '16px', background: '#27272a', borderRadius: '8px', fontSize: '14px', color: '#d1d5db' }}>
-                                    <strong style={{ display: 'block', marginBottom: '8px', color: 'white' }}>Shot Context:</strong>
-                                    {aiShot.shot_type} {aiShot.camera_movement} - {aiShot.description || 'No description'}
-                                </div>
-
-                                <div style={styles.formGroup}>
-                                    <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>SELECT MODEL</label>
-                                    <select
-                                        value={selectedModel}
-                                        onChange={(e) => setSelectedModel(e.target.value)}
-                                        style={styles.select}
-                                    >
-                                        {availableModels.map(Model => (
-                                            <option key={Model.id} value={Model.id}>{Model.name} ({Model.type})</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-                                    <button onClick={() => setIsAIModalOpen(false)} style={{ background: 'transparent', color: '#9ca3af', border: 'none', cursor: 'pointer' }}>Cancel</button>
-                                    <button
-                                        onClick={handleGeneratePrompt}
-                                        disabled={isGenerating || userCredits < 1}
-                                        style={{
-                                            backgroundColor: isGenerating ? '#4b5563' : '#8b5cf6',
-                                            color: 'white',
-                                            padding: '10px 20px',
-                                            borderRadius: '6px',
-                                            border: 'none',
-                                            cursor: isGenerating || userCredits < 1 ? 'not-allowed' : 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '8px'
-                                        }}
-                                    >
-                                        {isGenerating ? <><Loader2 className="spin" size={16} /> Generating...</> : <><Sparkles size={16} /> Generate (1 Credit)</>}
-                                    </button>
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <div style={{ marginBottom: '20px' }}>
-                                    <label style={{ color: '#10b981', display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 'bold' }}>Success! Prompt Generated:</label>
-                                    <div style={{ background: '#0f172a', padding: '16px', borderRadius: '8px', border: '1px solid #1e293b', color: '#e2e8f0', fontSize: '14px', whiteSpace: 'pre-wrap', maxHeight: '300px', overflowY: 'auto' }}>
-                                        {generationResult.generated_prompt}
-                                    </div>
-                                    {generationResult.assumptions && (
-                                        <div style={{ marginTop: '12px', fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
-                                            <strong>AI Assumptions:</strong><br />
-                                            {generationResult.assumptions}
-                                        </div>
-                                    )}
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                                    <button onClick={() => setIsAIModalOpen(false)} style={{ backgroundColor: '#2563eb', color: 'white', padding: '8px 16px', borderRadius: '6px', border: 'none', cursor: 'pointer' }}>Done</button>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                </div>
+            {generateModalShot && (
+                <GeneratePromptModal
+                    isOpen={isGenerateModalOpen}
+                    onClose={handleGenerateModalClose}
+                    shotId={generateModalShot.id}
+                    shotContext={{
+                        shotNumber: generateModalShot.shot_number,
+                        sceneName: scenes.find(s => s.id === generateModalSceneId)?.name || '',
+                        shotType: generateModalShot.shot_type || '',
+                        shotDescription: generateModalShot.description || '',
+                        qualityTier: qualityContext.tier,
+                        qualityScore: qualityContext.score,
+                    }}
+                    currentCredits={userCredits}
+                    onGenerated={handleVariantGenerated}
+                />
             )}
         </div>
     );
