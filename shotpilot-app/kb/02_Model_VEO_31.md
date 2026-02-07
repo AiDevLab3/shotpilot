@@ -143,12 +143,10 @@ Introduce or remove objects from video. Note: currently uses Veo 2, no audio.
 
 ## Platform Specs
 
-| Platform | Aspect Ratio | Duration | Resolution |
-|----------|--------------|----------|------------|
+| Platform | Ratio | Duration | Resolution |
+|----------|-------|----------|------------|
 | YouTube | 16:9 | Any | 1080p, 4K |
-| YouTube Shorts | 9:16 | 15–60s | 1080p |
-| TikTok | 9:16 | 15–60s | 1080p |
-| Instagram Reels | 9:16 | 15–60s | 1080p |
+| Shorts/TikTok/Reels | 9:16 | 15–60s | 1080p |
 | Instagram Feed | 1:1 or 4:5 | 3–60s | 1080p |
 | Twitter/X | 16:9 or 1:1 | 15–45s | 1080p |
 | Broadcast/Cinema | 16:9 | Any | 4K |
