@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
-import type { Scene, Shot, ImageVariant } from '../types/schema';
-import { getScenes, getShots, createShot, updateShot, deleteShot, updateScene, createScene, deleteScene, getAllProjects, fileToBase64, createImageVariant, getImageVariants, deleteImageVariant, getUserCredits } from '../services/api';
-import { GripVertical, Plus, Image as ImageIcon, Check, Video, Edit2, Trash2, ChevronDown, ChevronRight, FileText, Clock, Maximize2, Minimize2, Sparkles } from 'lucide-react';
+import type { Project, Scene, Shot, ImageVariant } from '../types/schema';
+import { getScenes, getShots, createShot, updateShot, deleteShot, updateScene, createScene, deleteScene, getAllProjects, updateProject, fileToBase64, createImageVariant, getImageVariants, deleteImageVariant, getUserCredits } from '../services/api';
+import { GripVertical, Plus, Image as ImageIcon, Check, Video, Edit2, Trash2, ChevronDown, ChevronRight, FileText, Clock, Maximize2, Minimize2, Sparkles, Settings } from 'lucide-react';
 import { GeneratePromptButton } from '../components/GeneratePromptButton';
 import { GeneratePromptModal } from '../components/GeneratePromptModal';
 import { RecommendationsDialog } from '../components/RecommendationsDialog';
@@ -53,6 +53,7 @@ const DropdownOption = ({
 
 const ShotBoardPage: React.FC = () => {
     const [projectId, setProjectId] = useState<number | null>(null);
+    const [project, setProject] = useState<Project | null>(null);
     const [scenes, setScenes] = useState<Scene[]>([]);
     const [shotsByScene, setShotsByScene] = useState<Record<number, Shot[]>>({});
     const [shotImages, setShotImages] = useState<Record<number, ImageVariant[]>>({});
@@ -90,6 +91,10 @@ const ShotBoardPage: React.FC = () => {
     const [editingScene, setEditingScene] = useState<Scene | null>(null);
     const [sceneFormData, setSceneFormData] = useState<Partial<Scene>>({});
 
+    // Project Modal State
+    const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+    const [projectFormData, setProjectFormData] = useState<Partial<Project>>({});
+
     // Smart Suggestions
     const [suggestedScene, setSuggestedScene] = useState<Scene | null>(null);
     const [showSuggestion, setShowSuggestion] = useState(false);
@@ -117,6 +122,7 @@ const ShotBoardPage: React.FC = () => {
             if (projects.length > 0) {
                 const pid = projects[0].id;
                 setProjectId(pid);
+                setProject(projects[0]);
 
                 const fetchedScenes = await getScenes(pid);
                 setScenes(fetchedScenes);
@@ -383,6 +389,34 @@ const ShotBoardPage: React.FC = () => {
         }
     };
 
+    const handleOpenProjectModal = () => {
+        if (project) {
+            setProjectFormData({ style_aesthetic: project.style_aesthetic || '' });
+        }
+        setIsProjectModalOpen(true);
+    };
+
+    const handleCloseProjectModal = () => {
+        setIsProjectModalOpen(false);
+        setProjectFormData({});
+    };
+
+    const handleProjectFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setProjectFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSaveProject = async () => {
+        if (!projectId) return;
+        try {
+            await updateProject(projectId, projectFormData);
+            setProject(prev => prev ? { ...prev, ...projectFormData } : prev);
+            handleCloseProjectModal();
+        } catch (error) {
+            console.error("Failed to save project", error);
+        }
+    };
+
     const handleDeleteScene = async (sceneId: number) => {
         if (confirm('Delete this scene and all its shots?')) {
             try {
@@ -466,7 +500,7 @@ const ShotBoardPage: React.FC = () => {
         cardImage: { aspectRatio: '16/9', backgroundColor: '#000', position: 'relative' as const, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '12px', borderRadius: '6px', overflow: 'hidden' },
         cardActions: { padding: '12px 16px', borderTop: '1px solid #27272a', display: 'flex', justifyContent: 'flex-end', gap: '8px' },
         modalOverlay: { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' },
-        modal: { backgroundColor: '#18181b', padding: '24px', borderRadius: '12px', width: '100%', maxWidth: '500px', border: '1px solid #27272a' },
+        modal: { backgroundColor: '#18181b', padding: '24px', borderRadius: '12px', width: '100%', maxWidth: '500px', border: '1px solid #27272a', maxHeight: '85vh', overflowY: 'auto' as const },
         formGroup: { marginBottom: '16px' },
         input: { width: '100%', backgroundColor: '#27272a', border: '1px solid #3f3f46', padding: '8px', color: 'white', borderRadius: '6px' },
         select: { width: '100%', backgroundColor: '#27272a', border: '1px solid #3f3f46', padding: '8px', color: 'white', borderRadius: '6px' },
@@ -486,6 +520,12 @@ const ShotBoardPage: React.FC = () => {
                     onClick={() => handleOpenSceneModal(null)}
                 >
                     <Plus size={16} /> Add Scene
+                </button>
+                <button
+                    style={styles.actionButton}
+                    onClick={handleOpenProjectModal}
+                >
+                    <Settings size={16} /> Project Settings
                 </button>
                 <div style={{ flex: 1 }}></div>
                 <button style={styles.actionButton} onClick={expandAll}>
@@ -786,8 +826,33 @@ const ShotBoardPage: React.FC = () => {
                             </select>
                         </div>
                         <div style={styles.formGroup}>
+                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>CAMERA ANGLE</label>
+                            <select name="camera_angle" value={formData.camera_angle || ''} onChange={handleChange} style={styles.select}>
+                                <option value="">-- Select --</option>
+                                <option>Eye Level</option>
+                                <option>Low Angle</option>
+                                <option>High Angle</option>
+                                <option>Bird's Eye</option>
+                                <option>Dutch Angle</option>
+                                <option>Worm's Eye</option>
+                                <option>Over the Shoulder</option>
+                            </select>
+                        </div>
+                        <div style={styles.formGroup}>
+                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>FOCAL LENGTH</label>
+                            <input name="focal_length" placeholder="e.g. 50mm, 85mm, 24-70mm" value={formData.focal_length || ''} onChange={handleChange} style={styles.input} />
+                        </div>
+                        <div style={styles.formGroup}>
+                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>CAMERA LENS</label>
+                            <input name="camera_lens" placeholder="e.g. ARRI Signature Prime, Cooke S4/i" value={formData.camera_lens || ''} onChange={handleChange} style={styles.input} />
+                        </div>
+                        <div style={styles.formGroup}>
                             <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>DESCRIPTION</label>
                             <textarea name="description" placeholder="Action and details..." value={formData.description || ''} onChange={handleChange} style={{ ...styles.input, height: '80px', fontFamily: 'inherit' }} />
+                        </div>
+                        <div style={styles.formGroup}>
+                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>BLOCKING</label>
+                            <textarea name="blocking" placeholder="Actor/subject positioning and movement..." value={formData.blocking || ''} onChange={handleChange} style={{ ...styles.input, height: '60px', fontFamily: 'inherit' }} />
                         </div>
                         <div style={styles.formGroup}>
                             <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>VFX NOTES</label>
@@ -829,9 +894,50 @@ const ShotBoardPage: React.FC = () => {
                             <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>DESCRIPTION</label>
                             <textarea name="description" value={sceneFormData.description || ''} onChange={handleSceneFormChange} style={{ ...styles.input, height: '100px', fontFamily: 'inherit' }} />
                         </div>
+                        <div style={styles.formGroup}>
+                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>LOCATION / SETTING</label>
+                            <input name="location_setting" placeholder="e.g. Downtown alley at night, sunlit kitchen interior" value={sceneFormData.location_setting || ''} onChange={handleSceneFormChange} style={styles.input} />
+                        </div>
+                        <div style={styles.formGroup}>
+                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>TIME OF DAY</label>
+                            <select name="time_of_day" value={sceneFormData.time_of_day || ''} onChange={handleSceneFormChange} style={styles.select}>
+                                <option value="">-- Select --</option>
+                                <option>Dawn</option>
+                                <option>Morning</option>
+                                <option>Midday</option>
+                                <option>Afternoon</option>
+                                <option>Golden Hour</option>
+                                <option>Dusk / Twilight</option>
+                                <option>Night</option>
+                            </select>
+                        </div>
+                        <div style={styles.formGroup}>
+                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>MOOD / TONE</label>
+                            <input name="mood_tone" placeholder="e.g. Tense and suspenseful, warm and nostalgic" value={sceneFormData.mood_tone || ''} onChange={handleSceneFormChange} style={styles.input} />
+                        </div>
+                        <div style={styles.formGroup}>
+                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>LIGHTING NOTES</label>
+                            <textarea name="lighting_notes" placeholder="e.g. Key light from window camera left, practical table lamp fill" value={sceneFormData.lighting_notes || ''} onChange={handleSceneFormChange} style={{ ...styles.input, height: '60px', fontFamily: 'inherit' }} />
+                        </div>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
                             <button onClick={handleCloseSceneModal} style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #3f3f46', background: 'transparent', color: '#9ca3af', cursor: 'pointer' }}>Cancel</button>
                             <button onClick={handleSaveScene} style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: '#3b82f6', color: 'white', cursor: 'pointer' }}>Save</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {isProjectModalOpen && (
+                <div style={styles.modalOverlay}>
+                    <div style={styles.modal}>
+                        <h2 style={{ color: 'white', marginBottom: '20px' }}>Project Settings</h2>
+                        <div style={styles.formGroup}>
+                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>STYLE / AESTHETIC</label>
+                            <textarea name="style_aesthetic" placeholder="e.g. Gritty neo-noir, warm golden tones, film grain..." value={projectFormData.style_aesthetic || ''} onChange={handleProjectFormChange} style={{ ...styles.input, height: '100px', fontFamily: 'inherit' }} />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+                            <button onClick={handleCloseProjectModal} style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #3f3f46', background: 'transparent', color: '#9ca3af', cursor: 'pointer' }}>Cancel</button>
+                            <button onClick={handleSaveProject} style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: '#3b82f6', color: 'white', cursor: 'pointer' }}>Save</button>
                         </div>
                     </div>
                 </div>
@@ -859,6 +965,7 @@ const ShotBoardPage: React.FC = () => {
                     isOpen={isRecsDialogOpen}
                     onClose={handleRecsClose}
                     shotId={generateModalShot.id}
+                    sceneId={generateModalSceneId!}
                     qualityScore={qualityContext.score}
                     missingFields={recsMissingFields}
                     onSkipGenerate={handleRecsSkipGenerate}

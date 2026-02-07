@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getRecommendations, updateShot } from '../services/api';
+import { getRecommendations, updateShot, updateScene } from '../services/api';
 import { AlertTriangle, Sparkles, X, Loader2, ChevronDown, Check } from 'lucide-react';
 
 interface MissingField {
@@ -25,6 +25,7 @@ interface RecommendationsDialogProps {
     isOpen: boolean;
     onClose: () => void;
     shotId: number;
+    sceneId: number;
     qualityScore: number;
     missingFields: MissingField[];
     onSkipGenerate: () => void;
@@ -42,10 +43,19 @@ const SHOT_FIELD_MAP: Record<string, string> = {
     camera_lens: 'camera_lens',
 };
 
+// Map quality-check field names to the scene column names for PATCH
+const SCENE_FIELD_MAP: Record<string, string> = {
+    scene_lighting_notes: 'lighting_notes',
+    scene_mood_tone: 'mood_tone',
+    scene_location_setting: 'location_setting',
+    scene_time_of_day: 'time_of_day',
+};
+
 export const RecommendationsDialog: React.FC<RecommendationsDialogProps> = ({
     isOpen,
     onClose,
     shotId,
+    sceneId,
     qualityScore,
     missingFields,
     onSkipGenerate,
@@ -93,19 +103,27 @@ export const RecommendationsDialog: React.FC<RecommendationsDialogProps> = ({
     const handleSaveAndGenerate = async () => {
         setSaving(true);
         try {
-            // Build update payload from selections — only shot-level fields
+            // Build update payloads from selections
             const shotUpdate: Record<string, string> = {};
+            const sceneUpdate: Record<string, string> = {};
+
             for (const [field, sel] of Object.entries(selections)) {
                 if (sel.value.trim()) {
-                    const col = SHOT_FIELD_MAP[field];
-                    if (col) {
-                        shotUpdate[col] = sel.value;
+                    const shotCol = SHOT_FIELD_MAP[field];
+                    const sceneCol = SCENE_FIELD_MAP[field];
+                    if (shotCol) {
+                        shotUpdate[shotCol] = sel.value;
+                    } else if (sceneCol) {
+                        sceneUpdate[sceneCol] = sel.value;
                     }
                 }
             }
 
             if (Object.keys(shotUpdate).length > 0) {
                 await updateShot(shotId, shotUpdate);
+            }
+            if (Object.keys(sceneUpdate).length > 0 && sceneId) {
+                await updateScene(sceneId, sceneUpdate);
             }
 
             onSaveAndGenerate();
