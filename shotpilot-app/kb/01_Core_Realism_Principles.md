@@ -42,7 +42,8 @@ Pick ONE lens and ONE aperture. Never stack camera brands.
 
 | Shot Type | Lens | Aperture | Notes |
 |---|---|---|---|
-| Portrait / Dialogue | 35mm or 50mm | f/2.8 - f/5.6 | Natural facial proportions; avoid wafer-thin DOF unless motivated |
+| Portrait / Dialogue (environmental) | 35mm or 50mm | f/2.8 - f/5.6 | Natural facial proportions; shows subject in context; avoid wafer-thin DOF |
+| Portrait / Dialogue (tight compression) | 85mm - 105mm | f/1.4 - f/4 | Flattering compression; shallow DOF; isolates subject from background |
 | Environment / Architecture | 24mm - 35mm | f/8 - f/11 | Deep focus, spatial clarity |
 | Close Detail / Insert | 85mm | f/2.8 - f/4 | Background separation; use sparingly (can look "beauty ad") |
 | Documentary Grit | 35mm - 50mm | f/4 - f/8 | Less beauty blur |

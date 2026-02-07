@@ -1,29 +1,44 @@
 # Motion Readiness Pack
 
 ## Purpose
-Prepare still images for AI video generation. Build a visual language in stills first, then animate. This prevents the "drifting" effect where characters morph, lighting shifts, and continuity breaks.
+Prepare still images for AI video generation. Always generate stills first, then animate. This prevents character morphing, lighting shifts, and continuity breaks.
 
-## Image-First Workflow Philosophy
-- Generate still images first to "lock in" creative decisions (character identity, wardrobe, set design, lighting, camera language)
-- A video prompt asks the AI to solve too many variables simultaneously
-- Pre-production in stills = predictable, director-aligned video output
-- Goal: animate a plan, not gamble on a miracle
+---
+
+## Pre-Animation Checklist
+
+Before sending any image to a video model (VEO, Kling, Higgsfield):
+
+- [ ] **Still image generated and approved** (never go straight to text-to-video)
+- [ ] **Character identity locked** via Character Bible + master reference
+- [ ] **Lighting locked** with motivated source, direction, quality, contrast, fill
+- [ ] **Wardrobe and set design finalized** in still
+- [ ] **Camera language defined** (lens, aperture, angle, framing)
+- [ ] **Neutral or subtle expression** on face (avoid extreme expressions — AI cannot animate nuance from them)
+- [ ] **Clear, well-lit facial features** (no heavy shadow obscuring face)
+
+---
 
 ## Visual Bible (3-10 Reference Frames)
 
 | Step | Action | Description |
 |---|---|---|
 | 1. Style Anchor | Select single primary style direction | Consistent aesthetic for entire project (e.g., "1970s sci-fi, grainy 35mm, anamorphic lenses") |
-| 2. Visual Rules | Define recurring visual parameters | Color temperature, contrast, camera angles, film grain - repetition creates cohesion |
-| 3. Hero Frames | Generate perfect "hero" image for main character/location | Primary visual anchor - AI references this for identity and style |
+| 2. Visual Rules | Define recurring visual parameters | Color temperature, contrast, camera angles, film grain — repetition creates cohesion |
+| 3. Hero Frames | Generate perfect "hero" image for main character/location | Primary visual anchor — AI references this for identity and style |
 | 4. Variations | Controlled variations of hero frame | Change pose, angle, environment while keeping core identity stable |
 
-## Storyboard Structure
-- **Opening Hook:** Stop-scrolling moment
-- **Establishing Shot:** Wide shot answering "where are we?"
-- **Detail Shot:** Close-up on narratively important element
-- **Action Frame:** Key action or scene change
-- **Resolution Frame:** Final emotion or call to action
+---
+
+## Storyboard Shot Sequence
+
+| # | Shot Type | Purpose | Example |
+|---|---|---|---|
+| 1 | **Opening Hook** | Stop-scrolling moment | Dramatic close-up, striking composition |
+| 2 | **Establishing Shot** | Answer "where are we?" | Wide shot of location with atmosphere |
+| 3 | **Detail Shot** | Highlight narrative element | Close-up on key object or texture |
+| 4 | **Action Frame** | Key action or scene change | Character in motion, event trigger |
+| 5 | **Resolution Frame** | Final emotion or CTA | Emotional payoff, closing composition |
 
 ## Composition for Motion: 5 Key Principles
 

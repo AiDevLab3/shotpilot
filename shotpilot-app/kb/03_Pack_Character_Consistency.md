@@ -1,49 +1,62 @@
 # Character Consistency Pack
 
 ## Purpose
-Maintain character identity, appearance, and personality across multiple shots, scenes, and AI models for believable AI filmmaking narratives.
+Maintain character identity across multiple shots, scenes, and AI models.
 
-## Universal Techniques (All Models)
+---
 
-### Character Bible: Single Source of Truth
-Document every defining element before generation begins:
+## Character Bible Checklist (Complete Before Generation)
 
-**Physical Appearance:**
-- Facial features (eye color, nose shape, jawline, distinguishing marks)
-- Age & skin tone (specific: "early 30s, olive skin with warm undertones")
-- Hair (style, color, length, texture: "short, messy, platinum blonde with dark roots")
-- Clothing & accessories (wardrobe, jewelry, props)
-- Posture & body type ("slight slouch, athletic build")
+### Physical Appearance — All Required
+- [ ] **Face:** Eye color, nose shape, jawline, distinguishing marks (scars, moles, freckles)
+- [ ] **Age & Skin:** Specific age range + skin tone (e.g., "early 30s, olive skin with warm undertones")
+- [ ] **Hair:** Style, color, length, texture (e.g., "short, messy, platinum blonde with dark roots")
+- [ ] **Build & Posture:** Body type + posture habits (e.g., "slight slouch, athletic build")
+- [ ] **Wardrobe:** Clothing, accessories, jewelry, props per scene
+- [ ] **Personality:** 2-3 core traits (confident, pensive, aggressive)
+- [ ] **Mannerisms:** Recurring gestures or habits (optional but improves consistency)
 
-**Personality & Mannerisms:**
-- Personality traits (confident, shy, aggressive, pensive)
-- Vocal tone & speech quirks
-- Recurring gestures or habits
+### Master Reference Image — Required
+- [ ] Generate ONE high-resolution master reference image
+- [ ] Use Nano Banana Pro or Midjourney for master reference
+- [ ] Attach master reference to every subsequent generation
+- [ ] Embed physical descriptors from Bible in every prompt (do not rely on image alone)
 
-### High-Quality Reference Images
-- Start with a single, high-resolution master reference image as visual anchor
-- Prefer image-to-video workflow when possible
-- Use image-to-image for variations (angles, poses, expressions)
-- Embed visual descriptors in text prompts to reinforce the reference
+---
 
-### Frame-to-Frame Chaining
-For multi-shot sequences, prevent drift by chaining:
-1. Generate first shot
-2. Download last frame
-3. Upload as reference for next prompt
-4. Repeat for each subsequent shot
+## Frame-to-Frame Chaining Workflow
 
-### Feedback Loop
-- Review each clip for mismatched features, wardrobe, voice, mannerisms
-- Adjust prompts with specific corrections ("same hairstyle as previous clip")
-- Generate multiple takes per shot
-- Tighter review cycles = faster consistency
+Prevents character drift across multi-shot sequences:
 
-### Tool Chaining Workflow
-1. **Character Bible** - use LLM to expand and refine
-2. **Reference Image** - generate master in Nano Banana Pro or Midjourney
-3. **Video Generation** - feed reference + prompts into VEO, Kling, etc.
-4. **Post-Processing** - color grade, focus adjustments, refinements
+1. Generate first shot with master reference + full Bible descriptors
+2. Download last frame of output
+3. Upload last frame as reference for next prompt
+4. Include Bible descriptors again in new prompt (never skip text anchors)
+5. Repeat for each subsequent shot
+6. If drift occurs: reset to master reference, not the drifted frame
+
+---
+
+## Shot Review Checklist (After Every Generation)
+
+- [ ] Face matches Bible (eye color, jawline, distinguishing marks)
+- [ ] Hair matches Bible (style, color, length)
+- [ ] Wardrobe matches scene specification
+- [ ] Skin tone consistent with master reference
+- [ ] Build/posture consistent
+- [ ] Expression appropriate for narrative context
+- [ ] If FAIL on any item: adjust prompt with specific correction, regenerate
+
+---
+
+## Production Workflow
+
+1. **Complete Character Bible** — fill all checklist items above
+2. **Generate Master Reference** — Nano Banana Pro or Midjourney
+3. **Generate Shots** — attach master reference + Bible descriptors to every prompt
+4. **Review Every Shot** — run Shot Review Checklist
+5. **Chain Frames** — use last frame as reference for next shot in sequence
+6. **Post-Process** — color grade, focus adjustments to match Master Look
 
 ## Model-Specific Workflows
 
@@ -106,7 +119,7 @@ For multi-shot sequences, prevent drift by chaining:
 | Character drifts over multiple shots | Frame-to-frame chaining; lock core descriptors; reduce variables changed between shots |
 | Inconsistent wardrobe | State wardrobe explicitly in every prompt; use same clothing descriptors from Bible; include costume in reference image |
 | Face changes across models | Use high-quality master reference; include detailed facial descriptors; face-swap as final pass |
-| Expression inconsistency | Use Seedance for emotion-heavy scenes; specify emotional state explicitly; review and iterate |
+| Expression inconsistency | Use micro-expression prompting (see Motion Readiness Pack); specify emotional state explicitly; generate 2-3 variations and select best |
 
 ## 5 Operational Rules
 

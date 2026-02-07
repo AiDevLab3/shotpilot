@@ -1,8 +1,11 @@
-# Nano Banana Pro (Gemini 3 Pro Image)
+# Nano Banana Pro
+
+> **Official Model Name:** Gemini 3 Pro Image | **ShotPilot Display Name:** Nano Banana Pro
+> These are the same model. All references to "Nano Banana Pro" in this knowledge base refer to Gemini 3 Pro Image.
 
 ## Model Overview
 - **Type:** IMAGE generation (still images only, no video)
-- **Engine:** Gemini 3 Pro Image ("Thinking" model - reasons about intent, physics, composition)
+- **Engine:** Gemini 3 Pro Image ("Thinking" model — reasons about intent, physics, composition)
 - **Resolution:** Native 1K / 2K / 4K output
 - **Use in ShotPilot:** Hero Frame generation, reference images, storyboard panels
 
