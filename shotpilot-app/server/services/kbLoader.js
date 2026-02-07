@@ -4,66 +4,146 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const KB_ROOT = path.join(__dirname, '../../kb');
 
-const MODEL_KB_MAP = {
-    'midjourney-v7': ['midjourney_v7.md', 'character_consistency.md', 'translation_matrix.md'],
-    'runway-gen3': ['runway_gen3.md', 'translation_matrix.md'],
-    'kling-1.6': ['kling_1.6.md', 'translation_matrix.md'],
-    'kling-1.6-img': ['kling_1.6.md', 'translation_matrix.md'],
-    'flux-pro': ['flux_pro.md', 'translation_matrix.md'],
-    'ideogram-v2': ['ideogram_v2.md', 'translation_matrix.md'],
-    'imagen-3': ['imagen_3.md', 'translation_matrix.md'],
-    'veo-2': ['veo_2.md', 'translation_matrix.md'],
-    'veo-3.1': ['veo_3.1.md', 'translation_matrix.md'],
-    'sora': ['sora.md', 'translation_matrix.md']
+// Lite v1.0: 6 curated models (4 image + 2 video)
+// Maps model ID → KB directory, condensed stub filename, display info
+const LITE_MODELS = {
+    'higgsfield': {
+        dir: 'higgsfield_cinema_studio_v1_5',
+        stub: '02_Model_Higgsfield_Cinema_Studio.md',
+        name: 'Higgsfield Cinema Studio V1.5',
+        type: 'image',
+    },
+    'midjourney': {
+        dir: 'midjourney',
+        stub: '02_Model_Midjourney.md',
+        name: 'Midjourney',
+        type: 'image',
+    },
+    'nano-banana': {
+        dir: 'nano_banana_pro',
+        stub: '02_Model_Nano_Banana_Pro.md',
+        name: 'Nano Banana Pro',
+        type: 'image',
+    },
+    'gpt-image': {
+        dir: 'gpt_image_1_5',
+        stub: '02_Model_GPT_Image.md',
+        name: 'GPT Image 1.5',
+        type: 'image',
+    },
+    'veo-3.1': {
+        dir: 'veo_3_1',
+        stub: '02_Model_VEO_31.md',
+        name: 'VEO 3.1',
+        type: 'video',
+    },
+    'kling-2.6': {
+        dir: 'kling_2_6',
+        stub: '02_Model_Kling_26.md',
+        name: 'Kling 2.6',
+        type: 'video',
+    },
 };
 
-function loadKBForModel(modelName) {
-    // kb is in root/kb, so from server/services we go: ../../kb
-    const kbDir = path.join(__dirname, '../../kb');
-    const files = MODEL_KB_MAP[modelName] || [];
+// Supplementary packs (real content in packs/ directory)
+const PACK_FILES = {
+    character_consistency: 'packs/Cine-AI_Character_Consistency_Pack_v1.md',
+    quality_control:       'packs/Cine-AI_Quality_Control_Pack_v1.md',
+    motion_readiness:      'packs/Cine-AI_Motion_Readiness_Pack_v1.md',
+};
 
-    if (files.length === 0) {
-        throw new Error(`No KB files configured for model: ${modelName}`);
+// KB file cache (avoids re-reading files on every request)
+const kbCache = new Map();
+
+function readKBFile(relativePath) {
+    if (kbCache.has(relativePath)) {
+        return kbCache.get(relativePath);
+    }
+
+    const filepath = path.join(KB_ROOT, relativePath);
+    try {
+        if (fs.existsSync(filepath)) {
+            const content = fs.readFileSync(filepath, 'utf-8');
+            // Skip placeholder stubs (contain only "Placeholder content.")
+            if (content.trim() && !content.includes('Placeholder content.')) {
+                kbCache.set(relativePath, content);
+                return content;
+            }
+        }
+    } catch (error) {
+        console.warn(`KB read error: ${relativePath} - ${error.message}`);
+    }
+    kbCache.set(relativePath, null);
+    return null;
+}
+
+function loadKBForModel(modelName) {
+    const model = LITE_MODELS[modelName];
+
+    if (!model) {
+        throw new Error(`Unknown model: ${modelName}. Available models: ${Object.keys(LITE_MODELS).join(', ')}`);
     }
 
     let combinedKB = '';
 
-    for (const filename of files) {
-        const filepath = path.join(kbDir, filename);
+    // 1. Load core realism principles
+    const corePrinciples = readKBFile('01_Core_Realism_Principles.md');
+    if (corePrinciples) {
+        combinedKB += `\n\n=== Core Realism Principles ===\n\n${corePrinciples}`;
+    }
 
-        try {
-            if (fs.existsSync(filepath)) {
-                const content = fs.readFileSync(filepath, 'utf-8');
-                combinedKB += `\n\n=== ${filename} ===\n\n${content}`;
-            } else {
-                console.warn(`KB file not found: ${filename} (skipping)`);
-            }
-        } catch (error) {
-            console.error(`Error loading KB file ${filename}:`, error.message);
-            // We don't throw here to allow partial loading if one file fails
+    // 2. Load model-specific content
+    //    Prefer condensed stub if populated, otherwise use full Prompting Mastery guide
+    const stubContent = readKBFile(model.stub);
+    const fullGuide = readKBFile(`models/${model.dir}/Prompting_Mastery.md`);
+
+    if (stubContent) {
+        combinedKB += `\n\n=== ${model.name} Instructions ===\n\n${stubContent}`;
+    } else if (fullGuide) {
+        combinedKB += `\n\n=== ${model.name} Prompting Guide ===\n\n${fullGuide}`;
+    } else {
+        console.warn(`No KB content found for ${modelName} (checked stub + full guide)`);
+    }
+
+    // 3. Load supplementary packs based on model type
+    //    Image models: character consistency + quality control
+    //    Video models: motion readiness + character consistency + quality control
+    const packKeys = model.type === 'video'
+        ? ['motion_readiness', 'character_consistency', 'quality_control']
+        : ['character_consistency', 'quality_control'];
+
+    for (const key of packKeys) {
+        const packContent = readKBFile(PACK_FILES[key]);
+        if (packContent) {
+            combinedKB += `\n\n=== ${key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} ===\n\n${packContent}`;
         }
+    }
+
+    // 4. Load translation matrix
+    const translationMatrix = readKBFile('04_Translation_Matrix.md');
+    if (translationMatrix) {
+        combinedKB += `\n\n=== Translation Matrix ===\n\n${translationMatrix}`;
+    }
+
+    if (!combinedKB.trim()) {
+        throw new Error(`No KB content could be loaded for model: ${modelName}`);
     }
 
     return combinedKB;
 }
 
 function getAvailableModels() {
-    return [
-        { id: 'midjourney-v7', name: 'Midjourney v7', type: 'image' },
-        { id: 'runway-gen3', name: 'Runway Gen-3', type: 'video' },
-        { id: 'kling-1.6', name: 'Kling 1.6 Video', type: 'video' },
-        { id: 'kling-1.6-img', name: 'Kling 1.6 Image', type: 'image' },
-        { id: 'flux-pro', name: 'Flux Pro', type: 'image' },
-        { id: 'ideogram-v2', name: 'Ideogram v2', type: 'image' },
-        { id: 'imagen-3', name: 'Imagen 3', type: 'image' },
-        { id: 'veo-2', name: 'Veo 2', type: 'video' },
-        { id: 'veo-3.1', name: 'Veo 3.1', type: 'video' },
-        { id: 'sora', name: 'Sora', type: 'video' }
-    ];
+    return Object.entries(LITE_MODELS).map(([id, info]) => ({
+        id,
+        name: info.name,
+        type: info.type,
+    }));
 }
 
 export {
     loadKBForModel,
-    getAvailableModels
+    getAvailableModels,
+    readKBFile
 };

@@ -4,7 +4,7 @@
 **Version:** Lite v1.0 (Phase 2B Complete - Backend Done)  
 **Creator:** Caleb  
 **Repository:** cine-ai-knowledge-base  
-**Current Model:** Gemini 3.0 Flash
+**Current Model:** Gemini 2.0 Flash (configurable via GEMINI_MODEL env var)
 
 ---
 
@@ -175,7 +175,7 @@ cine-ai-knowledge-base/
     │   │   └── auth.js
     │   ├── services/
     │   │   ├── creditService.js
-    │   │   ├── geminiService.js     # Gemini 3.0 Flash integration
+    │   │   ├── geminiService.js     # Gemini 2.0 Flash integration
     │   │   ├── kbLoader.js
     │   │   └── qualityCheck.js
     │   ├── database.js
@@ -464,12 +464,12 @@ cine-ai-knowledge-base/
 - **Location:** `shotpilot.db` (file in project root)
 
 **AI Integration:**
-- **Model:** Gemini 3.0 Flash
+- **Model:** Gemini 2.0 Flash
 - **Context Window:** 1M tokens
 - **Capabilities:** Native multimodal (text + images)
 - **Free Tier:** 1500 requests/day
 - **Inference Speed:** Fast (optimized for production)
-- **API Endpoint:** `gemini-3.0-flash:generateContent`
+- **API Endpoint:** `gemini-2.0-flash:generateContent`
 
 **Hosting (Planned):**
 - **Frontend:** Vercel or Netlify
@@ -626,7 +626,7 @@ CREATE TABLE usage_log (
 - ✅ Sufficient for thousands of users
 - ✅ Can migrate to PostgreSQL later if needed
 
-#### 6. Gemini 3.0 Flash (Not Other AI Models)
+#### 6. Gemini 2.0 Flash (Not Other AI Models)
 **Reasoning:**
 - ✅ 1M token context window (can load entire KB + project data)
 - ✅ Native multimodal (can analyze images + text simultaneously)
@@ -642,7 +642,7 @@ CREATE TABLE usage_log (
 
 ### Overview
 
-ShotPilot uses **Gemini 3.0 Flash** as the core AI agent that ingests specialized knowledge and generates expert-level prompts. The system is designed as a **knowledge-augmented agent** rather than a general-purpose chatbot.
+ShotPilot uses **Gemini 2.0 Flash** as the core AI agent that ingests specialized knowledge and generates expert-level prompts. The system is designed as a **knowledge-augmented agent** rather than a general-purpose chatbot.
 
 ### Agent Architecture
 ```
@@ -656,7 +656,7 @@ Context Builder ──→ Loads KB files (model-specific)
     ↓              Loads project/scene/shot data
     ↓              Calculates hierarchical priority
     ↓
-Gemini 3.0 Flash Agent
+Gemini 2.0 Flash Agent
     ↓              System Instructions (rules + constraints)
     ↓              User Prompt (context + task)
     ↓              KB Content (model syntax + best practices)
@@ -1146,7 +1146,7 @@ Body: {
 
 **Gemini AI Integration:**
 - ✅ `server/services/geminiService.js`
-- ✅ **Model:** Gemini 3.0 Flash (updated from 2.0)
+- ✅ **Model:** Gemini 2.0 Flash (updated from 2.0)
 - ✅ `generateRecommendations()` - AI suggests values for missing fields
 - ✅ `generatePrompt()` - Main prompt generation using KB + context
 - ✅ Hierarchical priority: Shot > Scene > Project
@@ -1314,7 +1314,7 @@ This is the **critical missing piece** to complete the Lite version.
 - Credit management
 - Knowledge base loader
 - Quality checking
-- Gemini 3.0 Flash integration
+- Gemini 2.0 Flash integration
 - All API endpoints functional
 
 ---
@@ -1503,7 +1503,7 @@ Solves context loss + generic prompts + fragmented workflow that plagues AI film
 - **Full KB:** 250K words, 44 guides, 21 models
 - **Condensed KB:** 82KB, 11 files, 6 selected models
 - **Phase 1:** Complete CRUD UI with accordion navigation
-- **Phase 2A-B:** Complete backend (auth, credits, Gemini 3.0 Flash, AI services)
+- **Phase 2A-B:** Complete backend (auth, credits, Gemini 2.0 Flash, AI services)
 
 #### ✅ What's Left for Lite v1.0
 - **Phase 2C:** Frontend AI integration (modal, recommendations, variants)
@@ -1523,7 +1523,7 @@ Solves context loss + generic prompts + fragmented workflow that plagues AI film
 - **Hierarchical context** (Shot > Scene > Project)
 - **6 models only** (not all 21)
 - **SQLite database** (not cloud database)
-- **Gemini 3.0 Flash** (1M context, multimodal, free tier)
+- **Gemini 2.0 Flash** (1M context, multimodal, free tier)
 
 #### ✅ Current Navigation
 **Single Path:** Project Info | Characters | Objects | Scene Manager
@@ -1545,9 +1545,9 @@ Solves context loss + generic prompts + fragmented workflow that plagues AI film
 1. VEO 3.1 - Native audio, cinematic
 2. Kling 2.6 - Physics, character consistency
 
-#### ✅ Gemini 3.0 Flash Implementation
+#### ✅ Gemini 2.0 Flash Implementation
 - **File:** `server/services/geminiService.js`
-- **API URL:** `gemini-3.0-flash:generateContent`
+- **API URL:** `gemini-2.0-flash:generateContent`
 - **Context Window:** 1M tokens
 - **Functions:**
   - `generateRecommendations()` - Free AI suggestions
@@ -1585,7 +1585,7 @@ shotpilot-app/kb/
 
 | Date | Version | Milestone | Notes |
 |------|---------|-----------|-------|
-| Feb 5, 2026 | 0.1 | Phase 2B Complete | Backend services complete, Gemini 3.0 Flash integrated |
+| Feb 5, 2026 | 0.1 | Phase 2B Complete | Backend services complete, Gemini 2.0 Flash integrated |
 | [Future] | 0.2 | Phase 2C Complete | Frontend AI integration complete |
 | [Future] | 1.0 | Public Launch | ShotPilot Lite v1.0 live |
 
@@ -1602,10 +1602,10 @@ shotpilot-app/kb/
 - **Frontend:** React + TypeScript + Vite
 - **Backend:** Node.js + Express (ES Modules)
 - **Database:** SQLite (file-based)
-- **AI:** Gemini 3.0 Flash (1M context)
+- **AI:** Gemini 2.0 Flash (1M context)
 
 ### Key Files
-- `server/services/geminiService.js` - Gemini 3.0 Flash integration
+- `server/services/geminiService.js` - Gemini 2.0 Flash integration
 - `server/services/kbLoader.js` - Knowledge base loader
 - `server/services/qualityCheck.js` - Completeness scoring
 - `server/services/creditService.js` - Credit management

@@ -2,6 +2,7 @@ import React from 'react';
 
 interface Props {
     children: React.ReactNode;
+    fallback?: React.ReactNode;
     onReset?: () => void;
 }
 
@@ -10,18 +11,15 @@ interface State {
     error: Error | null;
 }
 
-class ErrorBoundary extends React.Component<Props, State> {
-    constructor(props: Props) {
-        super(props);
-        this.state = { hasError: false, error: null };
-    }
+export class ErrorBoundary extends React.Component<Props, State> {
+    state: State = { hasError: false, error: null };
 
     static getDerivedStateFromError(error: Error): State {
         return { hasError: true, error };
     }
 
-    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-        console.error('ErrorBoundary caught:', error, errorInfo);
+    componentDidCatch(error: Error, info: React.ErrorInfo) {
+        console.error('[ErrorBoundary] Caught render error:', error, info.componentStack);
     }
 
     handleReset = () => {
@@ -31,43 +29,36 @@ class ErrorBoundary extends React.Component<Props, State> {
 
     render() {
         if (this.state.hasError) {
+            if (this.props.fallback) return this.props.fallback;
+
             return (
                 <div style={{
-                    padding: '32px',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    minHeight: '200px',
-                    backgroundColor: '#0A0E14'
+                    padding: '16px',
+                    margin: '8px',
+                    backgroundColor: '#1f1f23',
+                    border: '1px solid #ef4444',
+                    borderRadius: '8px',
+                    color: '#fca5a5',
+                    fontSize: '13px',
                 }}>
-                    <div style={{
-                        backgroundColor: '#1E2530',
-                        border: '1px solid #ef4444',
-                        borderRadius: '12px',
-                        padding: '24px',
-                        maxWidth: '480px',
-                        textAlign: 'center'
-                    }}>
-                        <div style={{ fontSize: '24px', marginBottom: '12px' }}>Something went wrong</div>
-                        <p style={{ color: '#9ca3af', fontSize: '14px', marginBottom: '16px' }}>
-                            {this.state.error?.message || 'An unexpected error occurred'}
-                        </p>
-                        <button
-                            onClick={this.handleReset}
-                            style={{
-                                backgroundColor: '#2563eb',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '6px',
-                                padding: '10px 20px',
-                                cursor: 'pointer',
-                                fontSize: '14px',
-                                fontWeight: '500'
-                            }}
-                        >
-                            Try Again
-                        </button>
+                    <div style={{ fontWeight: 600, marginBottom: '8px' }}>Something went wrong</div>
+                    <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '12px' }}>
+                        {this.state.error?.message || 'Unknown error'}
                     </div>
+                    <button
+                        onClick={this.handleReset}
+                        style={{
+                            background: '#27272a',
+                            border: '1px solid #3f3f46',
+                            borderRadius: '4px',
+                            color: '#e5e7eb',
+                            fontSize: '12px',
+                            padding: '6px 12px',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        Try Again
+                    </button>
                 </div>
             );
         }
@@ -75,5 +66,3 @@ class ErrorBoundary extends React.Component<Props, State> {
         return this.props.children;
     }
 }
-
-export default ErrorBoundary;

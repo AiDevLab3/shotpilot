@@ -1,7 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
-import type { Scene, Shot, ImageVariant } from '../types/schema';
-import { getScenes, getShots, createShot, updateShot, deleteShot, updateScene, createScene, deleteScene, getAllProjects, fileToBase64, createImageVariant, getImageVariants, deleteImageVariant, getAvailableModels, getUserCredits, generatePrompt, checkShotQuality } from '../services/api';
-import { GripVertical, Plus, Image as ImageIcon, Check, Video, Edit2, Trash2, ChevronDown, ChevronRight, FileText, Clock, Maximize2, Minimize2, Wand2, Sparkles, Loader2 } from 'lucide-react';
+import type { Project, Scene, Shot, ImageVariant } from '../types/schema';
+import { getScenes, getShots, createShot, updateShot, deleteShot, updateScene, createScene, deleteScene, getAllProjects, updateProject, fileToBase64, createImageVariant, getImageVariants, deleteImageVariant, getUserCredits } from '../services/api';
+import { GripVertical, Plus, Image as ImageIcon, Check, Video, Edit2, Trash2, ChevronDown, ChevronRight, FileText, Clock, Maximize2, Minimize2, Sparkles, Settings } from 'lucide-react';
+import { GeneratePromptButton } from '../components/GeneratePromptButton';
+import { GeneratePromptModal } from '../components/GeneratePromptModal';
+import { RecommendationsDialog } from '../components/RecommendationsDialog';
+import { VariantList } from '../components/VariantList';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 // Specialized Dropdown Option Component
 const DropdownOption = ({
@@ -48,6 +53,7 @@ const DropdownOption = ({
 
 const ShotBoardPage: React.FC = () => {
     const [projectId, setProjectId] = useState<number | null>(null);
+    const [project, setProject] = useState<Project | null>(null);
     const [scenes, setScenes] = useState<Scene[]>([]);
     const [shotsByScene, setShotsByScene] = useState<Record<number, Shot[]>>({});
     const [shotImages, setShotImages] = useState<Record<number, ImageVariant[]>>({});
@@ -63,12 +69,14 @@ const ShotBoardPage: React.FC = () => {
 
     // AI & Credits State
     const [userCredits, setUserCredits] = useState<number>(0);
-    const [availableModels, setAvailableModels] = useState<any[]>([]);
-    const [isAIModalOpen, setIsAIModalOpen] = useState(false);
-    const [aiShot, setAiShot] = useState<Shot | null>(null);
-    const [selectedModel, setSelectedModel] = useState<string>('');
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [generationResult, setGenerationResult] = useState<ImageVariant | null>(null);
+    const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
+    const [generateModalShot, setGenerateModalShot] = useState<Shot | null>(null);
+    const [generateModalSceneId, setGenerateModalSceneId] = useState<number | null>(null);
+    const [qualityContext, setQualityContext] = useState<{ tier: string; score: number }>({ tier: 'draft', score: 0 });
+
+    // Recommendations Dialog State
+    const [isRecsDialogOpen, setIsRecsDialogOpen] = useState(false);
+    const [recsMissingFields, setRecsMissingFields] = useState<any[]>([]);
 
 
     // Modal State
@@ -82,6 +90,10 @@ const ShotBoardPage: React.FC = () => {
     const [isSceneModalOpen, setIsSceneModalOpen] = useState(false);
     const [editingScene, setEditingScene] = useState<Scene | null>(null);
     const [sceneFormData, setSceneFormData] = useState<Partial<Scene>>({});
+
+    // Project Modal State
+    const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+    const [projectFormData, setProjectFormData] = useState<Partial<Project>>({});
 
     // Smart Suggestions
     const [suggestedScene, setSuggestedScene] = useState<Scene | null>(null);
@@ -110,6 +122,7 @@ const ShotBoardPage: React.FC = () => {
             if (projects.length > 0) {
                 const pid = projects[0].id;
                 setProjectId(pid);
+                setProject(projects[0]);
 
                 const fetchedScenes = await getScenes(pid);
                 setScenes(fetchedScenes);
@@ -143,15 +156,12 @@ const ShotBoardPage: React.FC = () => {
                     setExpandedScenes([fetchedScenes[0].id]);
                 }
 
-                // Load Credits & Models
+                // Load Credits
                 try {
                     const credits = await getUserCredits();
                     setUserCredits(credits.credits);
-                    const models = await getAvailableModels();
-                    setAvailableModels(models);
-                    if (models.length > 0) setSelectedModel(models[0].id);
                 } catch (e) {
-                    console.error("Failed to load AI config", e);
+                    console.error("Failed to load credits", e);
                 }
             }
         } catch (error) {
@@ -379,6 +389,34 @@ const ShotBoardPage: React.FC = () => {
         }
     };
 
+    const handleOpenProjectModal = () => {
+        if (project) {
+            setProjectFormData({ style_aesthetic: project.style_aesthetic || '' });
+        }
+        setIsProjectModalOpen(true);
+    };
+
+    const handleCloseProjectModal = () => {
+        setIsProjectModalOpen(false);
+        setProjectFormData({});
+    };
+
+    const handleProjectFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setProjectFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSaveProject = async () => {
+        if (!projectId) return;
+        try {
+            await updateProject(projectId, projectFormData);
+            setProject(prev => prev ? { ...prev, ...projectFormData } : prev);
+            handleCloseProjectModal();
+        } catch (error) {
+            console.error("Failed to save project", error);
+        }
+    };
+
     const handleDeleteScene = async (sceneId: number) => {
         if (confirm('Delete this scene and all its shots?')) {
             try {
@@ -388,34 +426,55 @@ const ShotBoardPage: React.FC = () => {
         }
     };
 
-    const handleOpenAIModal = (shot: Shot) => {
-        setAiShot(shot);
-        setGenerationResult(null);
-        setIsAIModalOpen(true);
+    const handleQualityCheck = (shot: Shot, sceneId: number, result: any) => {
+        const score = result.percentage ?? result.score ?? 0;
+        const tier = result.tier || 'draft';
+        setQualityContext({ tier, score });
+        setGenerateModalShot(shot);
+        setGenerateModalSceneId(sceneId);
+
+        if (tier === 'production') {
+            setIsGenerateModalOpen(true);
+        } else {
+            // Draft tier — show recommendations dialog
+            setRecsMissingFields(result.allMissing || []);
+            setIsRecsDialogOpen(true);
+        }
     };
 
-    const handleGeneratePrompt = async () => {
-        if (!aiShot || !selectedModel) return;
-        if (userCredits < 1) {
-            alert("Insufficient credits!");
-            return;
-        }
+    const handleRecsClose = () => {
+        setIsRecsDialogOpen(false);
+    };
 
-        setIsGenerating(true);
+    const handleRecsSkipGenerate = () => {
+        setIsRecsDialogOpen(false);
+        setIsGenerateModalOpen(true);
+    };
+
+    const handleRecsSaveAndGenerate = async () => {
+        setIsRecsDialogOpen(false);
+        // Refresh the shot data in local state after fields were saved
+        if (generateModalSceneId) {
+            await refreshSceneShots(generateModalSceneId);
+        }
+        setIsGenerateModalOpen(true);
+    };
+
+    const handleGenerateModalClose = () => {
+        setIsGenerateModalOpen(false);
+        setGenerateModalShot(null);
+        setGenerateModalSceneId(null);
+    };
+
+    const handleVariantGenerated = async () => {
+        if (generateModalShot && generateModalSceneId) {
+            const variants = await getImageVariants(generateModalShot.id);
+            setShotImages(prev => ({ ...prev, [generateModalShot.id]: variants }));
+        }
         try {
-            const result = await generatePrompt(aiShot.id, selectedModel);
-            setGenerationResult(result);
-            setUserCredits(prev => prev - 1);
-
-            // Refresh variants for this shot
-            const variants = await getImageVariants(aiShot.id);
-            setShotImages(prev => ({ ...prev, [aiShot.id]: variants }));
-        } catch (error: any) {
-            console.error("Generation failed", error);
-            alert(`Generation failed: ${error.message}`);
-        } finally {
-            setIsGenerating(false);
-        }
+            const credits = await getUserCredits();
+            setUserCredits(credits.credits);
+        } catch { /* CreditBadge event handles this too */ }
     };
 
     const styles = {
@@ -441,7 +500,7 @@ const ShotBoardPage: React.FC = () => {
         cardImage: { aspectRatio: '16/9', backgroundColor: '#000', position: 'relative' as const, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '12px', borderRadius: '6px', overflow: 'hidden' },
         cardActions: { padding: '12px 16px', borderTop: '1px solid #27272a', display: 'flex', justifyContent: 'flex-end', gap: '8px' },
         modalOverlay: { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' },
-        modal: { backgroundColor: '#18181b', padding: '24px', borderRadius: '12px', width: '100%', maxWidth: '500px', border: '1px solid #27272a' },
+        modal: { backgroundColor: '#18181b', padding: '24px', borderRadius: '12px', width: '100%', maxWidth: '500px', border: '1px solid #27272a', maxHeight: '85vh', overflowY: 'auto' as const },
         formGroup: { marginBottom: '16px' },
         input: { width: '100%', backgroundColor: '#27272a', border: '1px solid #3f3f46', padding: '8px', color: 'white', borderRadius: '6px' },
         select: { width: '100%', backgroundColor: '#27272a', border: '1px solid #3f3f46', padding: '8px', color: 'white', borderRadius: '6px' },
@@ -453,6 +512,7 @@ const ShotBoardPage: React.FC = () => {
     if (!projectId) return <div style={{ padding: '32px', color: 'white' }}>No project found. Create a project first.</div>;
 
     return (
+        <ErrorBoundary onReset={loadData}>
         <div style={styles.container}>
             <div style={styles.actionBar}>
                 <button
@@ -460,6 +520,12 @@ const ShotBoardPage: React.FC = () => {
                     onClick={() => handleOpenSceneModal(null)}
                 >
                     <Plus size={16} /> Add Scene
+                </button>
+                <button
+                    style={styles.actionButton}
+                    onClick={handleOpenProjectModal}
+                >
+                    <Settings size={16} /> Project Settings
                 </button>
                 <div style={{ flex: 1 }}></div>
                 <button style={styles.actionButton} onClick={expandAll}>
@@ -586,9 +652,11 @@ const ShotBoardPage: React.FC = () => {
                                             </button>
                                         )}
                                         {getFilteredShots(sceneShots).map((shot) => {
-                                            const variants = shotImages[shot.id] || [];
-                                            const mainImage = variants[0];
-                                            const imageUrl = mainImage ? (mainImage.image_url.startsWith('http') ? mainImage.image_url : mainImage.image_url) : null;
+                                            const allVariants = shotImages[shot.id] || [];
+                                            // Only show actual uploaded images (not generated prompts which have no image_url)
+                                            const imageVariants = allVariants.filter(v => v.image_url);
+                                            const mainImage = imageVariants[0];
+                                            const imageUrl = mainImage?.image_url || null;
                                             const currentStatus = shot.status || 'planning';
                                             const isDropdownOpen = activeDropdownId === `shot-${shot.id}`;
 
@@ -633,6 +701,7 @@ const ShotBoardPage: React.FC = () => {
 
                                             return (
                                                 <React.Fragment key={shot.id}>
+                                                  <ErrorBoundary>
                                                     <div style={styles.card}>
                                                         {/* Card Content ... (omitted for brevity, relying on replace to keep existing) */}
                                                         {/* Actually I need to reproduce the card content here or use a smaller replacement scope. */}
@@ -687,10 +756,14 @@ const ShotBoardPage: React.FC = () => {
                                                                 </div>
                                                                 <div style={{ fontSize: '12px', color: '#e5e7eb', lineHeight: '1.4' }}>{shot.description || 'No description'}</div>
                                                             </div>
+                                                            <VariantList shotId={shot.id} />
+                                                            <GeneratePromptButton
+                                                                shotId={shot.id}
+                                                                onQualityCheck={(result) => handleQualityCheck(shot, scene.id, result)}
+                                                            />
                                                         </div>
                                                         <div style={styles.cardActions}>
                                                             <button onClick={() => handleOpenModal(scene.id, shot)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}><Edit2 size={14} /></button>
-                                                            <button onClick={() => handleOpenAIModal(shot)} style={{ background: 'none', border: 'none', color: '#8b5cf6', cursor: 'pointer' }} title="Generate AI Prompt"><Wand2 size={14} /></button>
                                                             <button onClick={() => handleDelete(shot.id, scene.id)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}><Trash2 size={14} /></button>
                                                         </div>
                                                     </div>
@@ -713,6 +786,7 @@ const ShotBoardPage: React.FC = () => {
                                                     >
                                                         <Plus size={20} />
                                                     </button>
+                                                  </ErrorBoundary>
                                                 </React.Fragment>
                                             );
                                         })}
@@ -752,8 +826,33 @@ const ShotBoardPage: React.FC = () => {
                             </select>
                         </div>
                         <div style={styles.formGroup}>
+                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>CAMERA ANGLE</label>
+                            <select name="camera_angle" value={formData.camera_angle || ''} onChange={handleChange} style={styles.select}>
+                                <option value="">-- Select --</option>
+                                <option>Eye Level</option>
+                                <option>Low Angle</option>
+                                <option>High Angle</option>
+                                <option>Bird's Eye</option>
+                                <option>Dutch Angle</option>
+                                <option>Worm's Eye</option>
+                                <option>Over the Shoulder</option>
+                            </select>
+                        </div>
+                        <div style={styles.formGroup}>
+                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>FOCAL LENGTH</label>
+                            <input name="focal_length" placeholder="e.g. 50mm, 85mm, 24-70mm" value={formData.focal_length || ''} onChange={handleChange} style={styles.input} />
+                        </div>
+                        <div style={styles.formGroup}>
+                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>CAMERA LENS</label>
+                            <input name="camera_lens" placeholder="e.g. ARRI Signature Prime, Cooke S4/i" value={formData.camera_lens || ''} onChange={handleChange} style={styles.input} />
+                        </div>
+                        <div style={styles.formGroup}>
                             <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>DESCRIPTION</label>
                             <textarea name="description" placeholder="Action and details..." value={formData.description || ''} onChange={handleChange} style={{ ...styles.input, height: '80px', fontFamily: 'inherit' }} />
+                        </div>
+                        <div style={styles.formGroup}>
+                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>BLOCKING</label>
+                            <textarea name="blocking" placeholder="Actor/subject positioning and movement..." value={formData.blocking || ''} onChange={handleChange} style={{ ...styles.input, height: '60px', fontFamily: 'inherit' }} />
                         </div>
                         <div style={styles.formGroup}>
                             <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>VFX NOTES</label>
@@ -795,9 +894,50 @@ const ShotBoardPage: React.FC = () => {
                             <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>DESCRIPTION</label>
                             <textarea name="description" value={sceneFormData.description || ''} onChange={handleSceneFormChange} style={{ ...styles.input, height: '100px', fontFamily: 'inherit' }} />
                         </div>
+                        <div style={styles.formGroup}>
+                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>LOCATION / SETTING</label>
+                            <input name="location_setting" placeholder="e.g. Downtown alley at night, sunlit kitchen interior" value={sceneFormData.location_setting || ''} onChange={handleSceneFormChange} style={styles.input} />
+                        </div>
+                        <div style={styles.formGroup}>
+                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>TIME OF DAY</label>
+                            <select name="time_of_day" value={sceneFormData.time_of_day || ''} onChange={handleSceneFormChange} style={styles.select}>
+                                <option value="">-- Select --</option>
+                                <option>Dawn</option>
+                                <option>Morning</option>
+                                <option>Midday</option>
+                                <option>Afternoon</option>
+                                <option>Golden Hour</option>
+                                <option>Dusk / Twilight</option>
+                                <option>Night</option>
+                            </select>
+                        </div>
+                        <div style={styles.formGroup}>
+                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>MOOD / TONE</label>
+                            <input name="mood_tone" placeholder="e.g. Tense and suspenseful, warm and nostalgic" value={sceneFormData.mood_tone || ''} onChange={handleSceneFormChange} style={styles.input} />
+                        </div>
+                        <div style={styles.formGroup}>
+                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>LIGHTING NOTES</label>
+                            <textarea name="lighting_notes" placeholder="e.g. Key light from window camera left, practical table lamp fill" value={sceneFormData.lighting_notes || ''} onChange={handleSceneFormChange} style={{ ...styles.input, height: '60px', fontFamily: 'inherit' }} />
+                        </div>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
                             <button onClick={handleCloseSceneModal} style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #3f3f46', background: 'transparent', color: '#9ca3af', cursor: 'pointer' }}>Cancel</button>
                             <button onClick={handleSaveScene} style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: '#3b82f6', color: 'white', cursor: 'pointer' }}>Save</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {isProjectModalOpen && (
+                <div style={styles.modalOverlay}>
+                    <div style={styles.modal}>
+                        <h2 style={{ color: 'white', marginBottom: '20px' }}>Project Settings</h2>
+                        <div style={styles.formGroup}>
+                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>STYLE / AESTHETIC</label>
+                            <textarea name="style_aesthetic" placeholder="e.g. Gritty neo-noir, warm golden tones, film grain..." value={projectFormData.style_aesthetic || ''} onChange={handleProjectFormChange} style={{ ...styles.input, height: '100px', fontFamily: 'inherit' }} />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+                            <button onClick={handleCloseProjectModal} style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #3f3f46', background: 'transparent', color: '#9ca3af', cursor: 'pointer' }}>Cancel</button>
+                            <button onClick={handleSaveProject} style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: '#3b82f6', color: 'white', cursor: 'pointer' }}>Save</button>
                         </div>
                     </div>
                 </div>
@@ -820,82 +960,38 @@ const ShotBoardPage: React.FC = () => {
                 </div>
             )}
 
-            {isAIModalOpen && aiShot && (
-                <div style={styles.modalOverlay}>
-                    <div style={{ ...styles.modal, maxWidth: '600px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                            <h2 style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <Wand2 color="#8b5cf6" /> Generate AI Prompt
-                            </h2>
-                            <div style={{ color: '#fbbf24', fontSize: '14px', fontWeight: 'bold' }}>
-                                {userCredits} Credits Available
-                            </div>
-                        </div>
+            {generateModalShot && (
+                <RecommendationsDialog
+                    isOpen={isRecsDialogOpen}
+                    onClose={handleRecsClose}
+                    shotId={generateModalShot.id}
+                    sceneId={generateModalSceneId!}
+                    qualityScore={qualityContext.score}
+                    missingFields={recsMissingFields}
+                    onSkipGenerate={handleRecsSkipGenerate}
+                    onSaveAndGenerate={handleRecsSaveAndGenerate}
+                />
+            )}
 
-                        {!generationResult ? (
-                            <>
-                                <div style={{ marginBottom: '20px', padding: '16px', background: '#27272a', borderRadius: '8px', fontSize: '14px', color: '#d1d5db' }}>
-                                    <strong style={{ display: 'block', marginBottom: '8px', color: 'white' }}>Shot Context:</strong>
-                                    {aiShot.shot_type} {aiShot.camera_movement} - {aiShot.description || 'No description'}
-                                </div>
-
-                                <div style={styles.formGroup}>
-                                    <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>SELECT MODEL</label>
-                                    <select
-                                        value={selectedModel}
-                                        onChange={(e) => setSelectedModel(e.target.value)}
-                                        style={styles.select}
-                                    >
-                                        {availableModels.map(Model => (
-                                            <option key={Model.id} value={Model.id}>{Model.name} ({Model.type})</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-                                    <button onClick={() => setIsAIModalOpen(false)} style={{ background: 'transparent', color: '#9ca3af', border: 'none', cursor: 'pointer' }}>Cancel</button>
-                                    <button
-                                        onClick={handleGeneratePrompt}
-                                        disabled={isGenerating || userCredits < 1}
-                                        style={{
-                                            backgroundColor: isGenerating ? '#4b5563' : '#8b5cf6',
-                                            color: 'white',
-                                            padding: '10px 20px',
-                                            borderRadius: '6px',
-                                            border: 'none',
-                                            cursor: isGenerating || userCredits < 1 ? 'not-allowed' : 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '8px'
-                                        }}
-                                    >
-                                        {isGenerating ? <><Loader2 className="spin" size={16} /> Generating...</> : <><Sparkles size={16} /> Generate (1 Credit)</>}
-                                    </button>
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <div style={{ marginBottom: '20px' }}>
-                                    <label style={{ color: '#10b981', display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 'bold' }}>Success! Prompt Generated:</label>
-                                    <div style={{ background: '#0f172a', padding: '16px', borderRadius: '8px', border: '1px solid #1e293b', color: '#e2e8f0', fontSize: '14px', whiteSpace: 'pre-wrap', maxHeight: '300px', overflowY: 'auto' }}>
-                                        {generationResult.generated_prompt}
-                                    </div>
-                                    {generationResult.assumptions && (
-                                        <div style={{ marginTop: '12px', fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
-                                            <strong>AI Assumptions:</strong><br />
-                                            {generationResult.assumptions}
-                                        </div>
-                                    )}
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                                    <button onClick={() => setIsAIModalOpen(false)} style={{ backgroundColor: '#2563eb', color: 'white', padding: '8px 16px', borderRadius: '6px', border: 'none', cursor: 'pointer' }}>Done</button>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                </div>
+            {generateModalShot && (
+                <GeneratePromptModal
+                    isOpen={isGenerateModalOpen}
+                    onClose={handleGenerateModalClose}
+                    shotId={generateModalShot.id}
+                    shotContext={{
+                        shotNumber: generateModalShot.shot_number,
+                        sceneName: scenes.find(s => s.id === generateModalSceneId)?.name || '',
+                        shotType: generateModalShot.shot_type || '',
+                        shotDescription: generateModalShot.description || '',
+                        qualityTier: qualityContext.tier,
+                        qualityScore: qualityContext.score,
+                    }}
+                    currentCredits={userCredits}
+                    onGenerated={handleVariantGenerated}
+                />
             )}
         </div>
+        </ErrorBoundary>
     );
 };
 

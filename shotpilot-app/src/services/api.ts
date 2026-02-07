@@ -1,14 +1,56 @@
 import type { Project, Character, ObjectItem, Scene, Shot, ImageVariant } from '../types/schema';
 
-// Helper for fetch calls
+// v3: Module-level fingerprint to verify this version loaded in browser
+console.log('[API v3] api.ts loaded — has 401 interceptor + eager login');
+
+// Auto-login: transparently authenticate on 401.
+// Also runs eagerly at import time so session is ready before first API call.
+let _loginPromise: Promise<boolean> | null = null;
+
+const autoLogin = (): Promise<boolean> => {
+    if (_loginPromise) return _loginPromise;
+    console.log('[API v3] autoLogin called, fetching /api/auth/login...');
+    _loginPromise = fetch('/api/auth/login', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'test@shotpilot.com', password: 'testpassword123' }),
+    })
+    .then(r => {
+        console.log('[API v3] Auto-login response:', r.status);
+        return r.ok;
+    })
+    .catch(() => false)
+    .finally(() => { _loginPromise = null; });
+    return _loginPromise;
+};
+
+// Eager login: fire immediately when this module loads, before any component mounts
+autoLogin();
+
+// Helper for fetch calls — retries once on 401 after auto-login
 const apiCall = async (endpoint: string, options: RequestInit = {}) => {
-    const response = await fetch(`/api${endpoint}`, {
+    const doFetch = () => fetch(`/api${endpoint}`, {
         ...options,
+        credentials: 'include',
         headers: {
             'Content-Type': 'application/json',
             ...(options.headers || {})
         }
     });
+
+    let response = await doFetch();
+
+    // If 401, auto-login and retry once
+    if (response.status === 401) {
+        console.log('[API v3] Got 401 on', endpoint, '— auto-logging in...');
+        const ok = await autoLogin();
+        if (ok) {
+            console.log('[API v3] Retrying', endpoint, 'after login...');
+            response = await doFetch();
+        }
+    }
+
     if (!response.ok) {
         throw new Error(`API Error: ${response.statusText}`);
     }
@@ -22,6 +64,7 @@ const uploadCall = async (file: File) => {
 
     const response = await fetch('/api/upload', {
         method: 'POST',
+        credentials: 'include',
         body: formData
     });
 
@@ -205,6 +248,22 @@ export const checkShotQuality = async (shotId: number): Promise<any> => {
     return apiCall(`/shots/${shotId}/check-quality`, {
         method: 'POST'
     });
+};
+
+export const getRecommendations = async (shotId: number, missingFields: any[]): Promise<any[]> => {
+    return apiCall(`/shots/${shotId}/get-recommendations`, {
+        method: 'POST',
+        body: JSON.stringify({ missingFields })
+    });
+};
+
+// VARIANTS (generated prompts)
+export const getVariants = async (shotId: number): Promise<ImageVariant[]> => {
+    return apiCall(`/shots/${shotId}/variants`);
+};
+
+export const deleteVariant = async (id: number): Promise<void> => {
+    await apiCall(`/variants/${id}`, { method: 'DELETE' });
 };
 
 export const updateVariant = async (id: number, data: Partial<ImageVariant>): Promise<ImageVariant> => {

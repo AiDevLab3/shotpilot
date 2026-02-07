@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { Header } from './components/layout/Header';
 import { ProjectInfoPage } from './pages/ProjectInfoPage';
@@ -7,6 +7,58 @@ import { ObjectBiblePage } from './pages/ObjectBiblePage';
 
 import ShotBoardPage from './pages/ShotBoardPage';
 import { getAllProjects, createProject } from './services/api';
+
+// Auto-login: MVP has no login page, so authenticate on mount
+// Uses a module-level flag to prevent React.StrictMode double-mount from
+// firing two login requests (which creates two sessions, invalidating the first).
+let loginInProgress = false;
+
+const useAutoLogin = () => {
+    const [isReady, setIsReady] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+    useEffect(() => {
+        if (loginInProgress) {
+            console.log('[AUTO-LOGIN] Already in progress, skipping duplicate mount');
+            return;
+        }
+        loginInProgress = true;
+
+        console.log('[AUTO-LOGIN] Hook mounted - starting login...');
+
+        fetch('/api/auth/login', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: 'test@shotpilot.com',
+                password: 'testpassword123'
+            })
+        })
+        .then(response => {
+            console.log('[AUTO-LOGIN] Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`Login failed: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('[AUTO-LOGIN] Login SUCCESS:', data);
+            setIsAuthenticated(true);
+        })
+        .catch(error => {
+            console.error('[AUTO-LOGIN] Login FAILED:', error);
+            setIsAuthenticated(false);
+        })
+        .finally(() => {
+            console.log('[AUTO-LOGIN] Setting isReady = true');
+            setIsReady(true);
+            loginInProgress = false;
+        });
+    }, []);
+
+    return { isReady, isAuthenticated };
+};
 
 // Wrapper to handle initial redirect logic
 const IndexRedirect: React.FC = () => {
@@ -42,7 +94,31 @@ const IndexRedirect: React.FC = () => {
 };
 
 const App: React.FC = () => {
-    console.log("SHOTPILOT: App mounting");
+    const { isReady, isAuthenticated } = useAutoLogin();
+
+    if (!isReady) {
+        return (
+            <div style={{ height: '100vh', width: '100vw', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0A0E14', color: 'white' }}>
+                Loading ShotPilot...
+            </div>
+        );
+    }
+
+    if (!isAuthenticated) {
+        return (
+            <div style={{ height: '100vh', width: '100vw', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0A0E14', color: '#ef4444', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ fontSize: '18px', fontWeight: 600 }}>Authentication Failed</div>
+                <div style={{ color: '#9ca3af', fontSize: '14px' }}>Could not log in as test@shotpilot.com. Check the server console.</div>
+                <button
+                    onClick={() => window.location.reload()}
+                    style={{ marginTop: '8px', padding: '8px 20px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px' }}
+                >
+                    Retry
+                </button>
+            </div>
+        );
+    }
+
     return (
         <BrowserRouter>
             <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', backgroundColor: '#18181b', color: '#E8E8E8', overflow: 'hidden' }}>

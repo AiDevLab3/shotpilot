@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { getAllProjects } from '../../services/api';
+import { CreditBadge } from '../CreditBadge';
 import type { Project } from '../../types/schema';
 
 export const Header: React.FC = () => {
@@ -145,8 +146,11 @@ export const Header: React.FC = () => {
                         </select>
                     </div>
                 </div>
-                <div style={{ fontSize: '12px', color: '#52525b', fontStyle: 'italic' }}>
-                    ShotPilot MVP
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <CreditBadge />
+                    <div style={{ fontSize: '12px', color: '#52525b', fontStyle: 'italic' }}>
+                        ShotPilot MVP
+                    </div>
                 </div>
             </div>
 
