@@ -60,7 +60,7 @@ The Rosetta Stone is the translation layer that allows the AI agent to speak the
 
 | Model | Prompt Language |
 |---|---|
-| **Midjourney** | `golden hour lighting, warm sunset glow --sw 150` |
+| **Midjourney** | `golden hour lighting, warm sunset glow --s 150` |
 | **Higgsfield** | `Camera: ARRI Alexa 35, Lens: Cooke, Time: Late afternoon, golden hour, warm directional sunlight` |
 | **GPT Image 1.5** | `Shot during golden hour with warm, directional sunlight creating long shadows and a golden glow.` |
 | **Nano Banana Pro** | `Golden hour. Warm directional sunlight from the left at 15-degree angle. Soft ambient fill. Color temperature 3200K.` |

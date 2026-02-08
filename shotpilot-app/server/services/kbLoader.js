@@ -7,40 +7,33 @@ const __dirname = path.dirname(__filename);
 const KB_ROOT = path.join(__dirname, '../../kb');
 
 // Lite v1.0: 6 curated models (4 image + 2 video)
-// Maps model ID → KB directory, condensed stub filename, display info
 const LITE_MODELS = {
     'higgsfield': {
-        dir: 'higgsfield_cinema_studio_v1_5',
         stub: '02_Model_Higgsfield_Cinema_Studio.md',
         name: 'Higgsfield Cinema Studio V1.5',
         type: 'image',
     },
     'midjourney': {
-        dir: 'midjourney',
         stub: '02_Model_Midjourney.md',
         name: 'Midjourney',
         type: 'image',
     },
     'nano-banana': {
-        dir: 'nano_banana_pro',
         stub: '02_Model_Nano_Banana_Pro.md',
         name: 'Nano Banana Pro',
         type: 'image',
     },
     'gpt-image': {
-        dir: 'gpt_image_1_5',
         stub: '02_Model_GPT_Image.md',
         name: 'GPT Image 1.5',
         type: 'image',
     },
     'veo-3.1': {
-        dir: 'veo_3_1',
         stub: '02_Model_VEO_31.md',
         name: 'VEO 3.1',
         type: 'video',
     },
     'kling-2.6': {
-        dir: 'kling_2_6',
         stub: '02_Model_Kling_26.md',
         name: 'Kling 2.6',
         type: 'video',
@@ -97,17 +90,12 @@ function loadKBForModel(modelName) {
         combinedKB += `\n\n=== Core Realism Principles ===\n\n${corePrinciples}`;
     }
 
-    // 2. Load model-specific content
-    //    Prefer condensed stub if populated, otherwise use full Prompting Mastery guide
+    // 2. Load model-specific condensed guide
     const stubContent = readKBFile(model.stub);
-    const fullGuide = readKBFile(`models/${model.dir}/Prompting_Mastery.md`);
-
     if (stubContent) {
         combinedKB += `\n\n=== ${model.name} Instructions ===\n\n${stubContent}`;
-    } else if (fullGuide) {
-        combinedKB += `\n\n=== ${model.name} Prompting Guide ===\n\n${fullGuide}`;
     } else {
-        console.warn(`No KB content found for ${modelName} (checked stub + full guide)`);
+        console.warn(`No KB content found for ${modelName}`);
     }
 
     // 3. Load supplementary packs based on model type
