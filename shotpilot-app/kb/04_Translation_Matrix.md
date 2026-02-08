@@ -158,7 +158,7 @@ Cross-model prompt translation for ShotPilot Lite's supported models. The same v
 | **Camera/Lens** | Focal length + `--ar` | Full rig: body + lens + focal + aperture | Photography language with specs | Technical specs + depth of field |
 | **Color** | Style keywords + `--style raw` | Camera + film stock | Descriptive color language | Hex codes + percentage adjustments |
 | **Atmosphere** | Effect keywords | Weather + atmospheric description | Natural language effects | Physics: density, scattering, caustics |
-| **Style Lock** | `--cref [character_ref_URL]` + `--sw` | "Hero Frame" lock | Reference image + explicit constraints | Reference matching + technical specs |
+| **Style Lock** | `--cref [character_ref_URL]` + `--cw` | "Hero Frame" lock | Reference image + explicit constraints | Reference matching + technical specs |
 
 ---
 
