@@ -1,5 +1,7 @@
 # Higgsfield Cinema Studio v1.5 - AI Prompt Generation Guide
 
+> Last Updated: 2026-02-08 | Source: higgsfield_cinema_studio_image_guide.md
+
 **Model:** Higgsfield Cinema Studio | **Type:** IMAGE generation with virtual camera rig | **Version:** 1.5
 
 ---

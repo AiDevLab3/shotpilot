@@ -47,19 +47,22 @@ const LITE_MODELS = {
     },
 };
 
-// Supplementary packs (real content in packs/ directory)
+// Supplementary packs (condensed, optimized versions)
 const PACK_FILES = {
-    character_consistency: 'packs/Cine-AI_Character_Consistency_Pack_v1.md',
-    quality_control:       'packs/Cine-AI_Quality_Control_Pack_v1.md',
-    motion_readiness:      'packs/Cine-AI_Motion_Readiness_Pack_v1.md',
+    character_consistency:  '03_Pack_Character_Consistency.md',
+    quality_control:        '03_Pack_Quality_Control.md',
+    motion_readiness:       '03_Pack_Motion_Readiness.md',
+    spatial_composition:    '03_Pack_Spatial_Composition.md',
 };
 
-// KB file cache (avoids re-reading files on every request)
+// KB file cache with TTL (re-reads files if modified on disk)
 const kbCache = new Map();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 function readKBFile(relativePath) {
-    if (kbCache.has(relativePath)) {
-        return kbCache.get(relativePath);
+    const cached = kbCache.get(relativePath);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+        return cached.content;
     }
 
     const filepath = path.join(KB_ROOT, relativePath);
@@ -68,14 +71,14 @@ function readKBFile(relativePath) {
             const content = fs.readFileSync(filepath, 'utf-8');
             // Skip placeholder stubs (contain only "Placeholder content.")
             if (content.trim() && !content.includes('Placeholder content.')) {
-                kbCache.set(relativePath, content);
+                kbCache.set(relativePath, { content, timestamp: Date.now() });
                 return content;
             }
         }
     } catch (error) {
         console.warn(`KB read error: ${relativePath} - ${error.message}`);
     }
-    kbCache.set(relativePath, null);
+    kbCache.set(relativePath, { content: null, timestamp: Date.now() });
     return null;
 }
 
@@ -111,8 +114,8 @@ function loadKBForModel(modelName) {
     //    Image models: character consistency + quality control
     //    Video models: motion readiness + character consistency + quality control
     const packKeys = model.type === 'video'
-        ? ['motion_readiness', 'character_consistency', 'quality_control']
-        : ['character_consistency', 'quality_control'];
+        ? ['motion_readiness', 'character_consistency', 'quality_control', 'spatial_composition']
+        : ['character_consistency', 'quality_control', 'spatial_composition'];
 
     for (const key of packKeys) {
         const packContent = readKBFile(PACK_FILES[key]);

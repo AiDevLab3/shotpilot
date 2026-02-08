@@ -1,5 +1,7 @@
 # Midjourney - AI Prompt Generation Guide
 
+> Last Updated: 2026-02-08 | Source: midjourney_prompting_mastery_guide.md (V7 params verified)
+
 **Model:** Midjourney V7 | **Type:** IMAGE generation (artistic + photorealistic) | **Developer:** Midjourney Inc.
 
 ---

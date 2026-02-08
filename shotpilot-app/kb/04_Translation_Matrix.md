@@ -68,6 +68,20 @@ Cross-model prompt translation for ShotPilot Lite's supported models. The same v
 
 ---
 
+## Aspect Ratio Quick Reference (All Models)
+
+| Use Case | Ratio | Midjourney | Higgsfield | GPT Image | Nano Banana | VEO / Kling |
+|---|---|---|---|---|---|---|
+| Cinematic widescreen | 16:9 | `--ar 16:9` | UI dropdown | `1792x1024` | State in prompt | Native support |
+| Ultra-widescreen | 21:9 | `--ar 21:9` | UI dropdown | `2016x864` | State in prompt | Not recommended |
+| Portrait / vertical | 9:16 | `--ar 9:16` | UI dropdown | `1024x1792` | State in prompt | Native support |
+| Standard photo | 4:5 | `--ar 4:5` | UI dropdown | `1024x1280` | State in prompt | Not standard |
+| Square (social) | 1:1 | `--ar 1:1` | UI dropdown | `1024x1024` | State in prompt | Crop after |
+
+**Rule:** Always specify aspect ratio explicitly. Never rely on model defaults — they vary per model and produce inconsistent results across a project.
+
+---
+
 ## 3. Color Grading Translation
 
 ### Teal & Orange Blockbuster

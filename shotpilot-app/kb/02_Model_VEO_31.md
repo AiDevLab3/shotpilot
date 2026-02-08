@@ -1,5 +1,7 @@
 # Veo 3.1 — AI Video Generation with Native Audio (Google DeepMind)
 
+> Last Updated: 2026-02-08 | Source: veo_3.1_prompting_mastery_guide.md
+
 ## Model Type
 - **VIDEO generation** with native audio (dialogue, SFX, ambient)
 - Google DeepMind's flagship cinematic video model

@@ -77,16 +77,17 @@ function calculateCompleteness(project, scene, shot) {
 async function checkQualityWithKB(context) {
     const { project, scene, shot, characters, objects } = context;
 
-    // Load KB files for quality analysis
+    // Load KB files for quality analysis (condensed, optimized versions)
     const kbFiles = [
         '01_Core_Realism_Principles.md',
-        'packs/Cine-AI_Quality_Control_Pack_v1.md',
+        '03_Pack_Quality_Control.md',
+        '03_Pack_Spatial_Composition.md',
     ];
 
     // Add Character Pack if characters exist
     const hasCharacters = characters && characters.length > 0;
     if (hasCharacters) {
-        kbFiles.push('packs/Cine-AI_Character_Consistency_Pack_v1.md');
+        kbFiles.push('03_Pack_Character_Consistency.md');
     }
 
     // Add model-specific file if preferred model is known

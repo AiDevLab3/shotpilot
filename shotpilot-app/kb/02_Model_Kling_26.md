@@ -1,5 +1,7 @@
 # Kling 2.6 — AI Video Generation with Native Audio
 
+> Last Updated: 2026-02-08 | Source: kling_2.6_prompting_mastery_guide.md
+
 ## Model Type
 - **VIDEO generation** with native synchronized audio
 - First model to generate video + audio simultaneously (no separate audio step)

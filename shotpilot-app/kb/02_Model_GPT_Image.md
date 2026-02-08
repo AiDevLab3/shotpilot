@@ -1,5 +1,7 @@
 # GPT Image 1.5 - AI Prompt Generation Guide
 
+> Last Updated: 2026-02-08 | Source: gpt_image_1.5_prompting_mastery_guide.md
+
 **Model:** gpt-image-1.5 | **Type:** IMAGE generation (NOT video) | **Developer:** OpenAI
 
 ---
