@@ -413,7 +413,8 @@ async function generatePrompt(context) {
     const systemInstruction = `You are an expert AI filmmaker specializing in ${modelName}. Generate precise prompts using the model-specific KB provided. Follow EXACT syntax from KB. Shot details override scene/project (hierarchical priority).
 
 CRITICAL RULES:
-- Reference characters by NAME (e.g., "Sarah" not "a woman" or "a property manager")
+- Reference characters by the EXACT NAME provided in the context (e.g. if name is "Property Manager", use "Property Manager").
+- DO NOT invent new names or rename characters.
 - If reference images are attached, mention using them for visual consistency
 - Follow the KB formatting rules exactly for the target model`;
 

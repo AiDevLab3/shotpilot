@@ -74,6 +74,22 @@ export const RecommendationsDialog: React.FC<RecommendationsDialogProps> = ({
         }
     }, [isOpen, shotId]);
 
+    // Handle click outside to close dropdowns
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            const target = event.target as Element;
+            // If click is not inside a dropdown wrapper, close all dropdowns
+            if (!target.closest('[data-dropdown-wrapper]')) {
+                setExpandedAlts({});
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
     const loadRecommendations = async () => {
         setLoading(true);
         setError(null);
@@ -214,7 +230,7 @@ export const RecommendationsDialog: React.FC<RecommendationsDialogProps> = ({
                                             </button>
 
                                             {rec.alternatives && rec.alternatives.length > 0 && (
-                                                <div style={{ position: 'relative' }}>
+                                                <div style={{ position: 'relative' }} data-dropdown-wrapper="true">
                                                     <button
                                                         onClick={() => setExpandedAlts(prev => ({ ...prev, [rec.field]: !isAltOpen }))}
                                                         style={styles.altBtn}

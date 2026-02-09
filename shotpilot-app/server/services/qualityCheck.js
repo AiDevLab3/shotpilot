@@ -6,23 +6,34 @@ import { analyzeQuality } from './geminiService.js';
  * Used for quick scoring before deciding whether to show recommendations.
  */
 function calculateCompleteness(project, scene, shot) {
-    const weights = {
-        shot_description: 10,
-        shot_type: 10,
-        camera_angle: 10,
-        camera_movement: 7,
-        scene_lighting_notes: 7,
-        scene_mood_tone: 7,
-        style_aesthetic: 5,
-        focal_length: 5,
-        scene_location_setting: 5,
-        scene_time_of_day: 3,
-        blocking: 3,
-        camera_lens: 3
+    // 1. Definition: Shot Specifics (80% of score)
+    // These define "The Shot" itself. Without these, it's just a scene description.
+    const shotWeights = {
+        shot_description: 25, // Core visual
+        shot_type: 20,        // Critical framing
+        camera_angle: 15,     // Critical perspective
+        camera_movement: 10,  // Motion
+        focal_length: 5,      // Technical detail
+        blocking: 5,          // Action
+        camera_lens: 5        // Equipment
+        // Total: 85 points available
     };
 
-    let score = 0;
-    let maxScore = 0;
+    // 2. Context: Scene/Project (20% of score)
+    // These are important but shouldn't pass a shot on their own.
+    const contextWeights = {
+        scene_lighting_notes: 5,
+        scene_mood_tone: 5,
+        style_aesthetic: 5,
+        scene_location_setting: 5,
+        scene_time_of_day: 5
+        // Total: 25 points available
+    };
+
+    let shotScore = 0;
+    let shotMax = 0;
+    let contextScore = 0;
+    let contextMax = 0;
     let missing = [];
 
     const fieldMap = {
@@ -30,23 +41,25 @@ function calculateCompleteness(project, scene, shot) {
         shot_type: shot?.shot_type,
         camera_angle: shot?.camera_angle,
         camera_movement: shot?.camera_movement,
+        focal_length: shot?.focal_length,
+        blocking: shot?.blocking,
+        camera_lens: shot?.camera_lens,
+
         scene_lighting_notes: scene?.lighting_notes,
         scene_mood_tone: scene?.mood_tone,
         style_aesthetic: project?.style_aesthetic,
-        focal_length: shot?.focal_length,
         scene_location_setting: scene?.location_setting,
         scene_time_of_day: scene?.time_of_day,
-        blocking: shot?.blocking,
-        camera_lens: shot?.camera_lens
     };
 
-    for (const [field, weight] of Object.entries(weights)) {
-        maxScore += weight;
+    // Calculate Shot Score
+    for (const [field, weight] of Object.entries(shotWeights)) {
+        shotMax += weight;
         const value = fieldMap[field];
-
         if (value && value.trim() !== '') {
-            score += weight;
-        } else if (weight >= 7) {
+            shotScore += weight;
+        } else if (weight >= 10) {
+            // Track missing critical/important fields
             missing.push({
                 field,
                 weight,
@@ -56,16 +69,46 @@ function calculateCompleteness(project, scene, shot) {
         }
     }
 
-    const percentage = Math.round((score / maxScore) * 100);
+    // Calculate Context Score
+    for (const [field, weight] of Object.entries(contextWeights)) {
+        contextMax += weight;
+        const value = fieldMap[field];
+        if (value && value.trim() !== '') {
+            contextScore += weight;
+        } else {
+            // Context usually missing at scene/project level, but track if needed
+            if (weight >= 5) {
+                missing.push({
+                    field,
+                    weight,
+                    label: getFieldLabel(field),
+                    description: getFieldDescription(field)
+                });
+            }
+        }
+    }
+
+    // Normalizing logic:
+    // Shot fields are the primary driver. 
+    // If NO shot fields are present, score should be near 0 even if context is full.
+
+    // Calculate raw percentages
+    const shotPercent = shotMax > 0 ? (shotScore / shotMax) : 0;
+    const contextPercent = contextMax > 0 ? (contextScore / contextMax) : 0;
+
+    // Final Weighted Score:
+    // 80% Shot Specifics + 20% Context
+    // Example: Empty shot (0%) + Full Context (100%) = 0 + 20 = 20% Total.
+    const finalPercentage = Math.round((shotPercent * 80) + (contextPercent * 20));
 
     return {
-        score,
-        maxScore,
-        percentage,
-        tier: percentage >= 70 ? 'production' : 'draft',
-        missingCritical: missing.filter(f => f.weight === 10),
-        missingImportant: missing.filter(f => f.weight === 7),
-        needsGuidance: percentage < 70,
+        score: finalPercentage, // Use percentage as the score for consistency
+        maxScore: 100,
+        percentage: finalPercentage,
+        tier: finalPercentage >= 70 ? 'production' : 'draft',
+        missingCritical: missing.filter(f => f.weight >= 20),
+        missingImportant: missing.filter(f => f.weight >= 10 && f.weight < 20),
+        needsGuidance: finalPercentage < 70,
         allMissing: missing
     };
 }

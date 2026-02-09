@@ -71,6 +71,8 @@ export interface Shot {
     status?: 'planning' | 'in-progress' | 'complete';
     order_index?: number;
     created_at: string;
+    quality_tier: string;
+    quality_percentage: number;
 }
 
 

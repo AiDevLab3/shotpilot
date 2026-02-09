@@ -224,7 +224,7 @@ app.post('/api/shots/:shotId/get-recommendations', requireAuth, async (req, res)
         let kbContent = '';
         try {
             const coreKB = readKBFile('01_Core_Realism_Principles.md');
-            const qualityKB = readKBFile('packs/Cine-AI_Quality_Control_Pack_v1.md');
+            const qualityKB = readKBFile('03_Pack_Quality_Control.md');
             kbContent = [coreKB, qualityKB].filter(Boolean).join('\n\n');
         } catch (err) {
             console.warn('[recommendations] Could not load KB:', err.message);
@@ -634,10 +634,43 @@ const getNextOrderIndex = (sceneId) => {
 
 // Shots
 app.get('/api/scenes/:id/shots', (req, res) => {
-    const { id } = req.params;
-    // Order by order_index ASC
-    const shots = db.prepare('SELECT * FROM shots WHERE scene_id = ? ORDER BY order_index ASC, id ASC').all(id);
-    res.json(shots);
+    try {
+        const { id } = req.params;
+        const startTime = Date.now();
+
+        // Fetch context once
+        const shots = db.prepare('SELECT * FROM shots WHERE scene_id = ? ORDER BY order_index ASC, id ASC').all(id);
+        const scene = db.prepare('SELECT * FROM scenes WHERE id = ?').get(id);
+        const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(scene.project_id);
+
+        // Calculate quality for each shot
+        const shotsWithQuality = shots.map(shot => {
+            try {
+                const quality = calculateCompleteness(project, scene, shot);
+                return {
+                    ...shot,
+                    quality_tier: quality.tier,
+                    quality_percentage: quality.percentage
+                };
+            } catch (err) {
+                console.error(`[Quality] Error calculating for shot ${shot.id}:`, err.message);
+                // Fallback values if calculation fails
+                return {
+                    ...shot,
+                    quality_tier: 'Draft',
+                    quality_percentage: 0
+                };
+            }
+        });
+
+        const duration = Date.now() - startTime;
+        console.log(`[Quality] Calculated ${shots.length} shot scores in ${duration}ms`);
+
+        res.json(shotsWithQuality);
+    } catch (error) {
+        console.error('[Shots Fetch] Error:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
 app.post('/api/scenes/:id/shots', (req, res) => {

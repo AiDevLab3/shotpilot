@@ -7,6 +7,7 @@ import { GeneratePromptModal } from '../components/GeneratePromptModal';
 import { RecommendationsDialog } from '../components/RecommendationsDialog';
 import { VariantList } from '../components/VariantList';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { QualityBadge } from '../components/QualityBadge';
 
 // Specialized Dropdown Option Component
 const DropdownOption = ({
@@ -513,484 +514,484 @@ const ShotBoardPage: React.FC = () => {
 
     return (
         <ErrorBoundary onReset={loadData}>
-        <div style={styles.container}>
-            <div style={styles.actionBar}>
-                <button
-                    style={{ ...styles.actionButton, backgroundColor: '#2563eb', color: 'white', border: 'none' }}
-                    onClick={() => handleOpenSceneModal(null)}
-                >
-                    <Plus size={16} /> Add Scene
-                </button>
-                <button
-                    style={styles.actionButton}
-                    onClick={handleOpenProjectModal}
-                >
-                    <Settings size={16} /> Project Settings
-                </button>
-                <div style={{ flex: 1 }}></div>
-                <button style={styles.actionButton} onClick={expandAll}>
-                    <Maximize2 size={16} /> Expand All
-                </button>
-                <button style={styles.actionButton} onClick={collapseAll}>
-                    <Minimize2 size={16} /> Collapse All
-                </button>
-                <div style={{ ...styles.actionButton, color: '#fbbf24', border: '1px solid #f59e0b' }}>
-                    <Sparkles size={16} /> {userCredits} Credits
+            <div style={styles.container}>
+                <div style={styles.actionBar}>
+                    <button
+                        style={{ ...styles.actionButton, backgroundColor: '#2563eb', color: 'white', border: 'none' }}
+                        onClick={() => handleOpenSceneModal(null)}
+                    >
+                        <Plus size={16} /> Add Scene
+                    </button>
+                    <button
+                        style={styles.actionButton}
+                        onClick={handleOpenProjectModal}
+                    >
+                        <Settings size={16} /> Project Settings
+                    </button>
+                    <div style={{ flex: 1 }}></div>
+                    <button style={styles.actionButton} onClick={expandAll}>
+                        <Maximize2 size={16} /> Expand All
+                    </button>
+                    <button style={styles.actionButton} onClick={collapseAll}>
+                        <Minimize2 size={16} /> Collapse All
+                    </button>
+                    <div style={{ ...styles.actionButton, color: '#fbbf24', border: '1px solid #f59e0b' }}>
+                        <Sparkles size={16} /> {userCredits} Credits
+                    </div>
                 </div>
-            </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 32px 16px', borderBottom: '1px solid #1E2530' }}>
-                <label style={{ fontSize: '14px', color: '#e5e7eb', fontWeight: '500' }}>Show:</label>
-                <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value as any)}
-                    style={{ height: '36px', padding: '0 12px', background: '#27272a', border: '1px solid #52525b', borderRadius: '4px', color: '#e5e7eb', fontSize: '14px', cursor: 'pointer' }}
-                >
-                    <option value="all">All</option>
-                    <option value="planning">Planning</option>
-                    <option value="in-progress">In Progress</option>
-                    <option value="complete">Complete</option>
-                </select>
-            </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 32px 16px', borderBottom: '1px solid #1E2530' }}>
+                    <label style={{ fontSize: '14px', color: '#e5e7eb', fontWeight: '500' }}>Show:</label>
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value as any)}
+                        style={{ height: '36px', padding: '0 12px', background: '#27272a', border: '1px solid #52525b', borderRadius: '4px', color: '#e5e7eb', fontSize: '14px', cursor: 'pointer' }}
+                    >
+                        <option value="all">All</option>
+                        <option value="planning">Planning</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="complete">Complete</option>
+                    </select>
+                </div>
 
-            <div style={styles.scrollArea}>
-                {filteredScenes.map((scene, index) => {
-                    const isExpanded = expandedScenes.includes(scene.id);
-                    const isFocused = focusedSceneIndex === index;
-                    const sceneShots = shotsByScene[scene.id] || [];
+                <div style={styles.scrollArea}>
+                    {filteredScenes.map((scene, index) => {
+                        const isExpanded = expandedScenes.includes(scene.id);
+                        const isFocused = focusedSceneIndex === index;
+                        const sceneShots = shotsByScene[scene.id] || [];
 
-                    const totalShots = sceneShots.length;
-                    const completedShots = sceneShots.filter(s => s.status === 'complete').length;
-                    const progressPct = totalShots > 0 ? (completedShots / totalShots) * 100 : 0;
+                        const totalShots = sceneShots.length;
+                        const completedShots = sceneShots.filter(s => s.status === 'complete').length;
+                        const progressPct = totalShots > 0 ? (completedShots / totalShots) * 100 : 0;
 
-                    return (
-                        <div key={scene.id}
-                            style={{
-                                ...styles.sceneAccordion,
-                                ...(isFocused ? styles.sceneAccordionFocused : {})
-                            }}
-                            ref={el => { sceneRefs.current[index] = el; }}
-                            tabIndex={-1}
-                        >
-                            <div
+                        return (
+                            <div key={scene.id}
                                 style={{
-                                    ...styles.sceneHeader,
-                                    ...((isFocused || isExpanded) ? styles.sceneHeaderHighlight : {}),
-                                    ...(isExpanded ? styles.sceneHeaderExpanded : {}),
-                                    flexDirection: 'column',
-                                    alignItems: 'stretch',
-                                    gap: '0',
-                                    padding: '0'
+                                    ...styles.sceneAccordion,
+                                    ...(isFocused ? styles.sceneAccordionFocused : {})
                                 }}
-                                onClick={() => {
-                                    setFocusedSceneIndex(index);
-                                    toggleScene(scene.id);
-                                }}
+                                ref={el => { sceneRefs.current[index] = el; }}
+                                tabIndex={-1}
                             >
-                                <div style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', gap: '12px' }}>
-                                    {isExpanded ? <ChevronDown style={styles.chevron} /> : <ChevronRight style={styles.chevron} />}
-                                    <span style={styles.sceneNumber}>{scene.order_index}.</span>
-                                    <span style={styles.sceneName}>{scene.name}</span>
+                                <div
+                                    style={{
+                                        ...styles.sceneHeader,
+                                        ...((isFocused || isExpanded) ? styles.sceneHeaderHighlight : {}),
+                                        ...(isExpanded ? styles.sceneHeaderExpanded : {}),
+                                        flexDirection: 'column',
+                                        alignItems: 'stretch',
+                                        gap: '0',
+                                        padding: '0'
+                                    }}
+                                    onClick={() => {
+                                        setFocusedSceneIndex(index);
+                                        toggleScene(scene.id);
+                                    }}
+                                >
+                                    <div style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', gap: '12px' }}>
+                                        {isExpanded ? <ChevronDown style={styles.chevron} /> : <ChevronRight style={styles.chevron} />}
+                                        <span style={styles.sceneNumber}>{scene.order_index}.</span>
+                                        <span style={styles.sceneName}>{scene.name}</span>
 
-                                    <div style={{ position: 'relative' }} ref={activeDropdownId === `scene-${scene.id}` ? dropdownRef : null}>
-                                        <button
-                                            className={`status-badge status-${scene.status || 'planning'}`}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setActiveDropdownId(activeDropdownId === `scene-${scene.id}` ? null : `scene-${scene.id}`);
-                                            }}
-                                            title="Click to toggle status"
-                                        >
-                                            {scene.status === 'planning' ? '📝 Planning' : scene.status === 'in-progress' ? '🎬 In Progress' : '✅ Complete'}
-                                            <span style={{ fontSize: '10px', opacity: 0.8, marginLeft: '2px' }}>▼</span>
-                                        </button>
+                                        <div style={{ position: 'relative' }} ref={activeDropdownId === `scene-${scene.id}` ? dropdownRef : null}>
+                                            <button
+                                                className={`status-badge status-${scene.status || 'planning'}`}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setActiveDropdownId(activeDropdownId === `scene-${scene.id}` ? null : `scene-${scene.id}`);
+                                                }}
+                                                title="Click to toggle status"
+                                            >
+                                                {scene.status === 'planning' ? '📝 Planning' : scene.status === 'in-progress' ? '🎬 In Progress' : '✅ Complete'}
+                                                <span style={{ fontSize: '10px', opacity: 0.8, marginLeft: '2px' }}>▼</span>
+                                            </button>
 
-                                        {activeDropdownId === `scene-${scene.id}` && (
-                                            <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, background: '#1f2937', border: '1px solid #374151', borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', zIndex: 100, minWidth: '140px', overflow: 'hidden' }}>
-                                                <DropdownOption label="Planning" isSelected={scene.status === 'planning'} onClick={async () => { setActiveDropdownId(null); await updateScene(scene.id, { status: 'planning' }); setScenes(prev => prev.map(s => s.id === scene.id ? { ...s, status: 'planning' } : s)); }} icon={<FileText size={14} />} />
-                                                <DropdownOption label="In Progress" isSelected={scene.status === 'in-progress'} onClick={async () => { setActiveDropdownId(null); await updateScene(scene.id, { status: 'in-progress' }); setScenes(prev => prev.map(s => s.id === scene.id ? { ...s, status: 'in-progress' } : s)); }} icon={<Clock size={14} />} />
-                                                <DropdownOption label="Complete" isSelected={scene.status === 'complete'} onClick={async () => {
-                                                    setActiveDropdownId(null);
-                                                    await updateScene(scene.id, { status: 'complete' });
+                                            {activeDropdownId === `scene-${scene.id}` && (
+                                                <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, background: '#1f2937', border: '1px solid #374151', borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', zIndex: 100, minWidth: '140px', overflow: 'hidden' }}>
+                                                    <DropdownOption label="Planning" isSelected={scene.status === 'planning'} onClick={async () => { setActiveDropdownId(null); await updateScene(scene.id, { status: 'planning' }); setScenes(prev => prev.map(s => s.id === scene.id ? { ...s, status: 'planning' } : s)); }} icon={<FileText size={14} />} />
+                                                    <DropdownOption label="In Progress" isSelected={scene.status === 'in-progress'} onClick={async () => { setActiveDropdownId(null); await updateScene(scene.id, { status: 'in-progress' }); setScenes(prev => prev.map(s => s.id === scene.id ? { ...s, status: 'in-progress' } : s)); }} icon={<Clock size={14} />} />
+                                                    <DropdownOption label="Complete" isSelected={scene.status === 'complete'} onClick={async () => {
+                                                        setActiveDropdownId(null);
+                                                        await updateScene(scene.id, { status: 'complete' });
 
-                                                    // Sync: Mark all shots complete
-                                                    const sShots = shotsByScene[scene.id] || [];
-                                                    const updatedShots = sShots.map(s => ({ ...s, status: 'complete' as const }));
-                                                    setShotsByScene(prev => ({ ...prev, [scene.id]: updatedShots }));
-                                                    sShots.forEach(s => updateShot(s.id, { status: 'complete' }).catch(e => console.error(e)));
+                                                        // Sync: Mark all shots complete
+                                                        const sShots = shotsByScene[scene.id] || [];
+                                                        const updatedShots = sShots.map(s => ({ ...s, status: 'complete' as const }));
+                                                        setShotsByScene(prev => ({ ...prev, [scene.id]: updatedShots }));
+                                                        sShots.forEach(s => updateShot(s.id, { status: 'complete' }).catch(e => console.error(e)));
 
-                                                    setScenes(prev => prev.map(s => s.id === scene.id ? { ...s, status: 'complete' } : s));
-                                                }} icon={<Check size={14} />} />
+                                                        setScenes(prev => prev.map(s => s.id === scene.id ? { ...s, status: 'complete' } : s));
+                                                    }} icon={<Check size={14} />} />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span style={styles.shotCount}>{sceneShots.length} shots</span>
+                                            <button onClick={(e) => handleOpenSceneModal(scene, e)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px' }} title="Edit Scene"><Edit2 size={14} /></button>
+                                            <button onClick={(e) => { e.stopPropagation(); handleDeleteScene(scene.id); }} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px' }} title="Delete Scene"><Trash2 size={14} /></button>
+                                        </div>
+                                    </div>
+
+                                    {isExpanded && (
+                                        <div style={{ padding: '0 16px 8px', background: 'transparent' }}>
+                                            <div style={{ width: '100%', height: '4px', background: '#374151', borderRadius: '2px', overflow: 'hidden', marginBottom: '4px' }}>
+                                                <div style={{ height: '100%', width: `${progressPct}%`, background: 'linear-gradient(90deg, #10b981 0%, #059669 100%)', transition: 'width 300ms ease' }}></div>
                                             </div>
-                                        )}
-                                    </div>
-
-                                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <span style={styles.shotCount}>{sceneShots.length} shots</span>
-                                        <button onClick={(e) => handleOpenSceneModal(scene, e)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px' }} title="Edit Scene"><Edit2 size={14} /></button>
-                                        <button onClick={(e) => { e.stopPropagation(); handleDeleteScene(scene.id); }} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px' }} title="Delete Scene"><Trash2 size={14} /></button>
-                                    </div>
+                                            <div style={{ fontSize: '10px', color: '#9ca3af', textAlign: 'right' }}>{completedShots}/{totalShots} complete</div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {isExpanded && (
-                                    <div style={{ padding: '0 16px 8px', background: 'transparent' }}>
-                                        <div style={{ width: '100%', height: '4px', background: '#374151', borderRadius: '2px', overflow: 'hidden', marginBottom: '4px' }}>
-                                            <div style={{ height: '100%', width: `${progressPct}%`, background: 'linear-gradient(90deg, #10b981 0%, #059669 100%)', transition: 'width 300ms ease' }}></div>
+                                    <div style={styles.contentArea}>
+                                        <div style={styles.grid}>
+                                            {sceneShots.length === 0 && (
+                                                <button onClick={() => handleOpenModal(scene.id)} style={{ ...styles.card, border: '2px dashed #4b5563', background: 'rgba(55, 65, 81, 0.3)', justifyContent: 'center', alignItems: 'center', minHeight: '120px', color: '#9ca3af', cursor: 'pointer', flexDirection: 'column', gap: '12px', transition: 'all 0.2s ease', width: '100%', gridColumn: '1 / -1' }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#60a5fa'; e.currentTarget.style.color = '#60a5fa'; e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#4b5563'; e.currentTarget.style.color = '#9ca3af'; e.currentTarget.style.background = 'rgba(55, 65, 81, 0.3)'; }}>
+                                                    <Plus size={32} />
+                                                    <span style={{ fontSize: '14px', fontWeight: '500' }}>Add First Shot</span>
+                                                </button>
+                                            )}
+                                            {getFilteredShots(sceneShots).map((shot) => {
+                                                const allVariants = shotImages[shot.id] || [];
+                                                // Only show actual uploaded images (not generated prompts which have no image_url)
+                                                const imageVariants = allVariants.filter(v => v.image_url);
+                                                const mainImage = imageVariants[0];
+                                                const imageUrl = mainImage?.image_url || null;
+                                                const currentStatus = shot.status || 'planning';
+                                                const isDropdownOpen = activeDropdownId === `shot-${shot.id}`;
+
+                                                const handleShotStatusChange = async (s: Shot, newStatus: Shot['status']) => {
+                                                    setActiveDropdownId(null);
+                                                    if (s.status === newStatus) return;
+                                                    try {
+                                                        const updatedShot = { ...s, status: newStatus };
+                                                        const updatedShots = sceneShots.map(shot => shot.id === s.id ? updatedShot : shot);
+                                                        setShotsByScene(prev => ({ ...prev, [scene.id]: updatedShots }));
+                                                        await updateShot(s.id, { status: newStatus });
+                                                        checkSceneCompletion(scene.id);
+
+                                                        // Sync: Downgrade scene if shot is not complete
+                                                        if ((newStatus === 'planning' || newStatus === 'in-progress') && scene.status === 'complete') {
+                                                            await updateScene(scene.id, { status: 'in-progress' });
+                                                            setScenes(prev => prev.map(sc => sc.id === scene.id ? { ...sc, status: 'in-progress' } : sc));
+                                                        }
+                                                    } catch (err) {
+                                                        console.error("Failed to update status", err);
+                                                        refreshSceneShots(scene.id);
+                                                    }
+                                                };
+
+                                                // Custom Insert Button Style
+                                                const insertBtnStyle: React.CSSProperties = {
+                                                    width: '32px',
+                                                    height: '32px', // Equal to width
+                                                    alignSelf: 'center', // Center vertically
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    borderRadius: '8px',
+                                                    cursor: 'pointer',
+                                                    backgroundColor: '#18181b', // Darker background for contrast
+                                                    border: '1px solid #3f3f46', // Visible border by default
+                                                    color: '#9ca3af',
+                                                    transition: 'all 0.2s ease',
+                                                    opacity: 1, // Full opacity
+                                                    margin: '0 4px'
+                                                };
+
+                                                return (
+                                                    <React.Fragment key={shot.id}>
+                                                        <ErrorBoundary>
+                                                            <div style={styles.card}>
+                                                                {/* Card Content ... (omitted for brevity, relying on replace to keep existing) */}
+                                                                {/* Actually I need to reproduce the whole card without copying it, I will target the Return block. */}
+                                                                <div style={styles.cardHeader}>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                        <span style={styles.shotBadge}>Shot {shot.shot_number}</span>
+                                                                        <QualityBadge tier={shot.quality_tier} score={shot.quality_percentage} />
+                                                                    </div>
+                                                                    <div style={{ position: 'relative' }} ref={isDropdownOpen ? dropdownRef : null}>
+                                                                        <button
+                                                                            className={`status-badge status-${currentStatus}`}
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setActiveDropdownId(isDropdownOpen ? null : `shot-${shot.id}`);
+                                                                            }}
+                                                                            title="Click to toggle status"
+                                                                        >
+                                                                            {currentStatus === 'planning' ? '📝 Planning' : currentStatus === 'in-progress' ? '🎬 In Progress' : '✅ Complete'}
+                                                                            <span style={{ fontSize: '10px', opacity: 0.8, marginLeft: '2px' }}>▼</span>
+                                                                        </button>
+
+                                                                        {isDropdownOpen && (
+                                                                            <div style={{ position: 'absolute', top: 'calc(100% + 4px)', right: '0', background: '#1f2937', border: '1px solid #374151', borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', zIndex: 100, minWidth: '140px', overflow: 'hidden' }}>
+                                                                                <DropdownOption label="Planning" isSelected={currentStatus === 'planning'} onClick={() => handleShotStatusChange(shot, 'planning')} icon={<FileText size={14} />} />
+                                                                                <DropdownOption label="In Progress" isSelected={currentStatus === 'in-progress'} onClick={() => handleShotStatusChange(shot, 'in-progress')} icon={<Clock size={14} />} />
+                                                                                <DropdownOption label="Complete" isSelected={currentStatus === 'complete'} onClick={() => handleShotStatusChange(shot, 'complete')} icon={<Check size={14} />} />
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                                <div style={styles.cardBody}>
+                                                                    <div style={styles.cardImage}>
+                                                                        {mainImage ? (
+                                                                            <>
+                                                                                <img src={imageUrl || ''} alt="" style={{ width: '100%', height: 'auto' }} />
+                                                                                <button onClick={() => handleDeleteImage(mainImage.id, shot.id)} style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', padding: '4px', borderRadius: '4px', color: 'white', border: 'none', cursor: 'pointer' }}>
+                                                                                    <Trash2 size={12} />
+                                                                                </button>
+                                                                            </>
+                                                                        ) : (
+                                                                            <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#6b7280' }}>
+                                                                                <ImageIcon size={24} />
+                                                                                <span style={{ fontSize: '10px' }}>Upload</span>
+                                                                                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleFileUpload(shot.id, e)} />
+                                                                            </label>
+                                                                        )}
+                                                                    </div>
+                                                                    <div style={{ marginTop: '12px' }}>
+                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                                            <span style={styles.shotType}>{shot.shot_type}</span>
+                                                                            <span style={{ fontSize: '10px', color: '#9ca3af' }}>{shot.camera_movement}</span>
+                                                                        </div>
+                                                                        <div style={{ fontSize: '12px', color: '#e5e7eb', lineHeight: '1.4' }}>{shot.description || 'No description'}</div>
+                                                                    </div>
+                                                                    <VariantList shotId={shot.id} />
+                                                                    <GeneratePromptButton
+                                                                        shotId={shot.id}
+                                                                        onQualityCheck={(result) => handleQualityCheck(shot, scene.id, result)}
+                                                                    />
+                                                                </div>
+                                                                <div style={styles.cardActions}>
+                                                                    <button onClick={() => handleOpenModal(scene.id, shot)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}><Edit2 size={14} /></button>
+                                                                    <button onClick={() => handleDelete(shot.id, scene.id)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Insert Button */}
+                                                            <button
+                                                                onClick={() => handleOpenModal(scene.id, undefined, shot)}
+                                                                style={insertBtnStyle}
+                                                                title="Insert Shot Here"
+                                                                onMouseEnter={(e) => {
+                                                                    e.currentTarget.style.backgroundColor = '#27272a'; // Lighter on hover
+                                                                    e.currentTarget.style.borderColor = '#60a5fa'; // Blue border
+                                                                    e.currentTarget.style.color = '#60a5fa';
+                                                                }}
+                                                                onMouseLeave={(e) => {
+                                                                    e.currentTarget.style.backgroundColor = '#18181b';
+                                                                    e.currentTarget.style.borderColor = '#3f3f46';
+                                                                    e.currentTarget.style.color = '#9ca3af';
+                                                                }}
+                                                            >
+                                                                <Plus size={20} />
+                                                            </button>
+                                                        </ErrorBoundary>
+                                                    </React.Fragment>
+                                                );
+                                            })}
                                         </div>
-                                        <div style={{ fontSize: '10px', color: '#9ca3af', textAlign: 'right' }}>{completedShots}/{totalShots} complete</div>
                                     </div>
                                 )}
                             </div>
+                        );
+                    })}
+                </div>
 
-                            {isExpanded && (
-                                <div style={styles.contentArea}>
-                                    <div style={styles.grid}>
-                                        {sceneShots.length === 0 && (
-                                            <button onClick={() => handleOpenModal(scene.id)} style={{ ...styles.card, border: '2px dashed #4b5563', background: 'rgba(55, 65, 81, 0.3)', justifyContent: 'center', alignItems: 'center', minHeight: '120px', color: '#9ca3af', cursor: 'pointer', flexDirection: 'column', gap: '12px', transition: 'all 0.2s ease', width: '100%', gridColumn: '1 / -1' }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#60a5fa'; e.currentTarget.style.color = '#60a5fa'; e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#4b5563'; e.currentTarget.style.color = '#9ca3af'; e.currentTarget.style.background = 'rgba(55, 65, 81, 0.3)'; }}>
-                                                <Plus size={32} />
-                                                <span style={{ fontSize: '14px', fontWeight: '500' }}>Add First Shot</span>
-                                            </button>
-                                        )}
-                                        {getFilteredShots(sceneShots).map((shot) => {
-                                            const allVariants = shotImages[shot.id] || [];
-                                            // Only show actual uploaded images (not generated prompts which have no image_url)
-                                            const imageVariants = allVariants.filter(v => v.image_url);
-                                            const mainImage = imageVariants[0];
-                                            const imageUrl = mainImage?.image_url || null;
-                                            const currentStatus = shot.status || 'planning';
-                                            const isDropdownOpen = activeDropdownId === `shot-${shot.id}`;
-
-                                            const handleShotStatusChange = async (s: Shot, newStatus: Shot['status']) => {
-                                                setActiveDropdownId(null);
-                                                if (s.status === newStatus) return;
-                                                try {
-                                                    const updatedShot = { ...s, status: newStatus };
-                                                    const updatedShots = sceneShots.map(shot => shot.id === s.id ? updatedShot : shot);
-                                                    setShotsByScene(prev => ({ ...prev, [scene.id]: updatedShots }));
-                                                    await updateShot(s.id, { status: newStatus });
-                                                    checkSceneCompletion(scene.id);
-
-                                                    // Sync: Downgrade scene if shot is not complete
-                                                    if ((newStatus === 'planning' || newStatus === 'in-progress') && scene.status === 'complete') {
-                                                        await updateScene(scene.id, { status: 'in-progress' });
-                                                        setScenes(prev => prev.map(sc => sc.id === scene.id ? { ...sc, status: 'in-progress' } : sc));
-                                                    }
-                                                } catch (err) {
-                                                    console.error("Failed to update status", err);
-                                                    refreshSceneShots(scene.id);
-                                                }
-                                            };
-
-                                            // Custom Insert Button Style
-                                            const insertBtnStyle: React.CSSProperties = {
-                                                width: '32px',
-                                                height: '32px', // Equal to width
-                                                alignSelf: 'center', // Center vertically
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                borderRadius: '8px',
-                                                cursor: 'pointer',
-                                                backgroundColor: '#18181b', // Darker background for contrast
-                                                border: '1px solid #3f3f46', // Visible border by default
-                                                color: '#9ca3af',
-                                                transition: 'all 0.2s ease',
-                                                opacity: 1, // Full opacity
-                                                margin: '0 4px'
-                                            };
-
-                                            return (
-                                                <React.Fragment key={shot.id}>
-                                                  <ErrorBoundary>
-                                                    <div style={styles.card}>
-                                                        {/* Card Content ... (omitted for brevity, relying on replace to keep existing) */}
-                                                        {/* Actually I need to reproduce the card content here or use a smaller replacement scope. */}
-                                                        {/* Since I can't easily reproduce the whole card without copying it, I will target the Return block. */}
-                                                        <div style={styles.cardHeader}>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                <span style={styles.shotBadge}>Shot {shot.shot_number}</span>
-                                                            </div>
-                                                            <div style={{ position: 'relative' }} ref={isDropdownOpen ? dropdownRef : null}>
-                                                                <button
-                                                                    className={`status-badge status-${currentStatus}`}
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setActiveDropdownId(isDropdownOpen ? null : `shot-${shot.id}`);
-                                                                    }}
-                                                                    title="Click to toggle status"
-                                                                >
-                                                                    {currentStatus === 'planning' ? '📝 Planning' : currentStatus === 'in-progress' ? '🎬 In Progress' : '✅ Complete'}
-                                                                    <span style={{ fontSize: '10px', opacity: 0.8, marginLeft: '2px' }}>▼</span>
-                                                                </button>
-
-                                                                {isDropdownOpen && (
-                                                                    <div style={{ position: 'absolute', top: 'calc(100% + 4px)', right: '0', background: '#1f2937', border: '1px solid #374151', borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', zIndex: 100, minWidth: '140px', overflow: 'hidden' }}>
-                                                                        <DropdownOption label="Planning" isSelected={currentStatus === 'planning'} onClick={() => handleShotStatusChange(shot, 'planning')} icon={<FileText size={14} />} />
-                                                                        <DropdownOption label="In Progress" isSelected={currentStatus === 'in-progress'} onClick={() => handleShotStatusChange(shot, 'in-progress')} icon={<Clock size={14} />} />
-                                                                        <DropdownOption label="Complete" isSelected={currentStatus === 'complete'} onClick={() => handleShotStatusChange(shot, 'complete')} icon={<Check size={14} />} />
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        <div style={styles.cardBody}>
-                                                            <div style={styles.cardImage}>
-                                                                {mainImage ? (
-                                                                    <>
-                                                                        <img src={imageUrl || ''} alt="" style={{ width: '100%', height: 'auto' }} />
-                                                                        <button onClick={() => handleDeleteImage(mainImage.id, shot.id)} style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', padding: '4px', borderRadius: '4px', color: 'white', border: 'none', cursor: 'pointer' }}>
-                                                                            <Trash2 size={12} />
-                                                                        </button>
-                                                                    </>
-                                                                ) : (
-                                                                    <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#6b7280' }}>
-                                                                        <ImageIcon size={24} />
-                                                                        <span style={{ fontSize: '10px' }}>Upload</span>
-                                                                        <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleFileUpload(shot.id, e)} />
-                                                                    </label>
-                                                                )}
-                                                            </div>
-                                                            <div style={{ marginTop: '12px' }}>
-                                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                                                    <span style={styles.shotType}>{shot.shot_type}</span>
-                                                                    <span style={{ fontSize: '10px', color: '#9ca3af' }}>{shot.camera_movement}</span>
-                                                                </div>
-                                                                <div style={{ fontSize: '12px', color: '#e5e7eb', lineHeight: '1.4' }}>{shot.description || 'No description'}</div>
-                                                            </div>
-                                                            <VariantList shotId={shot.id} />
-                                                            <GeneratePromptButton
-                                                                shotId={shot.id}
-                                                                onQualityCheck={(result) => handleQualityCheck(shot, scene.id, result)}
-                                                            />
-                                                        </div>
-                                                        <div style={styles.cardActions}>
-                                                            <button onClick={() => handleOpenModal(scene.id, shot)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}><Edit2 size={14} /></button>
-                                                            <button onClick={() => handleDelete(shot.id, scene.id)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}><Trash2 size={14} /></button>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Insert Button */}
-                                                    <button
-                                                        onClick={() => handleOpenModal(scene.id, undefined, shot)}
-                                                        style={insertBtnStyle}
-                                                        title="Insert Shot Here"
-                                                        onMouseEnter={(e) => {
-                                                            e.currentTarget.style.backgroundColor = '#27272a'; // Lighter on hover
-                                                            e.currentTarget.style.borderColor = '#60a5fa'; // Blue border
-                                                            e.currentTarget.style.color = '#60a5fa';
-                                                        }}
-                                                        onMouseLeave={(e) => {
-                                                            e.currentTarget.style.backgroundColor = '#18181b';
-                                                            e.currentTarget.style.borderColor = '#3f3f46';
-                                                            e.currentTarget.style.color = '#9ca3af';
-                                                        }}
-                                                    >
-                                                        <Plus size={20} />
-                                                    </button>
-                                                  </ErrorBoundary>
-                                                </React.Fragment>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            )}
+                {isModalOpen && (
+                    <div style={styles.modalOverlay}>
+                        <div style={styles.modal}>
+                            <h2 style={{ color: 'white', marginBottom: '20px' }}>{editingShot ? `Edit Shot ${editingShot.shot_number}` : 'New Shot'}</h2>
+                            <div style={styles.formGroup}>
+                                <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>SHOT NUMBER</label>
+                                <input name="shot_number" value={formData.shot_number || ''} onChange={handleChange} style={styles.input} />
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>SHOT TYPE</label>
+                                <select name="shot_type" value={formData.shot_type || 'Wide'} onChange={handleChange} style={styles.select}>
+                                    <option>Wide</option>
+                                    <option>Medium</option>
+                                    <option>Close-up</option>
+                                    <option>Extreme Close-up</option>
+                                </select>
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>MOVEMENT</label>
+                                <select name="camera_movement" value={formData.camera_movement || 'Static'} onChange={handleChange} style={styles.select}>
+                                    <option>Static</option>
+                                    <option>Pan</option>
+                                    <option>Tilt</option>
+                                    <option>Dolly</option>
+                                    <option>Handheld</option>
+                                </select>
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>CAMERA ANGLE</label>
+                                <select name="camera_angle" value={formData.camera_angle || ''} onChange={handleChange} style={styles.select}>
+                                    <option value="">-- Select --</option>
+                                    <option>Eye Level</option>
+                                    <option>Low Angle</option>
+                                    <option>High Angle</option>
+                                    <option>Bird's Eye</option>
+                                    <option>Dutch Angle</option>
+                                    <option>Worm's Eye</option>
+                                    <option>Over the Shoulder</option>
+                                </select>
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>FOCAL LENGTH</label>
+                                <input name="focal_length" placeholder="e.g. 50mm, 85mm, 24-70mm" value={formData.focal_length || ''} onChange={handleChange} style={styles.input} />
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>CAMERA LENS</label>
+                                <input name="camera_lens" placeholder="e.g. ARRI Signature Prime, Cooke S4/i" value={formData.camera_lens || ''} onChange={handleChange} style={styles.input} />
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>DESCRIPTION</label>
+                                <textarea name="description" placeholder="Action and details..." value={formData.description || ''} onChange={handleChange} style={{ ...styles.input, height: '80px', fontFamily: 'inherit' }} />
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>BLOCKING</label>
+                                <textarea name="blocking" placeholder="Actor/subject positioning and movement..." value={formData.blocking || ''} onChange={handleChange} style={{ ...styles.input, height: '60px', fontFamily: 'inherit' }} />
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>VFX NOTES</label>
+                                <textarea name="vfx_notes" placeholder="Green screen, CGI elements..." value={formData.vfx_notes || ''} onChange={handleChange} style={{ ...styles.input, height: '40px', fontFamily: 'inherit' }} />
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>SFX NOTES</label>
+                                <textarea name="sfx_notes" placeholder="Footsteps, ambience..." value={formData.sfx_notes || ''} onChange={handleChange} style={{ ...styles.input, height: '40px', fontFamily: 'inherit' }} />
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>GENERAL NOTES</label>
+                                <textarea name="notes" placeholder="Additional instructions..." value={formData.notes || ''} onChange={handleChange} style={{ ...styles.input, height: '40px', fontFamily: 'inherit' }} />
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+                                <button onClick={handleCloseModal} style={{ background: 'transparent', color: '#9ca3af', border: 'none', cursor: 'pointer' }}>Cancel</button>
+                                <button onClick={handleSave} style={{ backgroundColor: '#2563eb', color: 'white', padding: '8px 16px', borderRadius: '6px', border: 'none', cursor: 'pointer' }}>Save</button>
+                            </div>
                         </div>
-                    );
-                })}
+                    </div>
+                )}
+
+                {isSceneModalOpen && (
+                    <div style={styles.modalOverlay}>
+                        <div style={styles.modal}>
+                            <h2 style={{ color: 'white', marginBottom: '20px' }}>{editingScene ? 'Edit Scene' : 'Add New Scene'}</h2>
+                            <div style={styles.formGroup}>
+                                <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>SCENE NAME</label>
+                                <input name="name" value={sceneFormData.name || ''} onChange={handleSceneFormChange} style={styles.input} />
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>STATUS</label>
+                                <select name="status" value={sceneFormData.status || 'planning'} onChange={handleSceneFormChange} style={styles.select}>
+                                    <option value="planning">📝 Planning</option>
+                                    <option value="in-progress">🎬 In Progress</option>
+                                    <option value="complete">✅ Complete</option>
+                                </select>
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>DESCRIPTION</label>
+                                <textarea name="description" value={sceneFormData.description || ''} onChange={handleSceneFormChange} style={{ ...styles.input, height: '100px', fontFamily: 'inherit' }} />
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>LOCATION / SETTING</label>
+                                <input name="location_setting" placeholder="e.g. Downtown alley at night, sunlit kitchen interior" value={sceneFormData.location_setting || ''} onChange={handleSceneFormChange} style={styles.input} />
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>TIME OF DAY</label>
+                                <select name="time_of_day" value={sceneFormData.time_of_day || ''} onChange={handleSceneFormChange} style={styles.select}>
+                                    <option value="">-- Select --</option>
+                                    <option>Dawn</option>
+                                    <option>Morning</option>
+                                    <option>Midday</option>
+                                    <option>Afternoon</option>
+                                    <option>Golden Hour</option>
+                                    <option>Dusk / Twilight</option>
+                                    <option>Night</option>
+                                </select>
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>MOOD / TONE</label>
+                                <input name="mood_tone" placeholder="e.g. Tense and suspenseful, warm and nostalgic" value={sceneFormData.mood_tone || ''} onChange={handleSceneFormChange} style={styles.input} />
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>LIGHTING NOTES</label>
+                                <textarea name="lighting_notes" placeholder="e.g. Key light from window camera left, practical table lamp fill" value={sceneFormData.lighting_notes || ''} onChange={handleSceneFormChange} style={{ ...styles.input, height: '60px', fontFamily: 'inherit' }} />
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+                                <button onClick={handleCloseSceneModal} style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #3f3f46', background: 'transparent', color: '#9ca3af', cursor: 'pointer' }}>Cancel</button>
+                                <button onClick={handleSaveScene} style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: '#3b82f6', color: 'white', cursor: 'pointer' }}>Save</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {isProjectModalOpen && (
+                    <div style={styles.modalOverlay}>
+                        <div style={styles.modal}>
+                            <h2 style={{ color: 'white', marginBottom: '20px' }}>Project Settings</h2>
+                            <div style={styles.formGroup}>
+                                <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>STYLE / AESTHETIC</label>
+                                <textarea name="style_aesthetic" placeholder="e.g. Gritty neo-noir, warm golden tones, film grain..." value={projectFormData.style_aesthetic || ''} onChange={handleProjectFormChange} style={{ ...styles.input, height: '100px', fontFamily: 'inherit' }} />
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+                                <button onClick={handleCloseProjectModal} style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #3f3f46', background: 'transparent', color: '#9ca3af', cursor: 'pointer' }}>Cancel</button>
+                                <button onClick={handleSaveProject} style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: '#3b82f6', color: 'white', cursor: 'pointer' }}>Save</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {showSuggestion && suggestedScene && (
+                    <div style={{ position: 'fixed', top: '20px', right: '20px', maxWidth: '400px', background: '#1f2937', border: '1px solid #3b82f6', borderRadius: '8px', padding: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', zIndex: 2000, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                            <span style={{ fontSize: '20px' }}>💡</span>
+                            <div style={{ flex: '1' }}>
+                                <strong style={{ color: '#e5e7eb', fontSize: '14px' }}>All shots complete!</strong>
+                                <p style={{ color: '#9ca3af', fontSize: '13px', marginTop: '4px' }}>Mark "{suggestedScene.name}" as complete?</p>
+                            </div>
+                            <button onClick={dismissSuggestion} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '16px' }}>✕</button>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <button onClick={acceptSuggestion} style={{ padding: '8px 16px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '13px', fontWeight: '500', cursor: 'pointer' }}>Yes</button>
+                            <button onClick={dismissSuggestion} style={{ padding: '8px 16px', background: '#374151', color: '#e5e7eb', border: 'none', borderRadius: '4px', fontSize: '13px', fontWeight: '500', cursor: 'pointer' }}>Not Yet</button>
+                        </div>
+                    </div>
+                )}
+
+                {generateModalShot && (
+                    <RecommendationsDialog
+                        isOpen={isRecsDialogOpen}
+                        onClose={handleRecsClose}
+                        shotId={generateModalShot.id}
+                        sceneId={generateModalSceneId!}
+                        qualityScore={qualityContext.score}
+                        missingFields={recsMissingFields}
+                        onSkipGenerate={handleRecsSkipGenerate}
+                        onSaveAndGenerate={handleRecsSaveAndGenerate}
+                    />
+                )}
+
+                {generateModalShot && (
+                    <GeneratePromptModal
+                        isOpen={isGenerateModalOpen}
+                        onClose={handleGenerateModalClose}
+                        shotId={generateModalShot.id}
+                        shotContext={{
+                            shotNumber: generateModalShot.shot_number,
+                            sceneName: scenes.find(s => s.id === generateModalSceneId)?.name || '',
+                            shotType: generateModalShot.shot_type || '',
+                            shotDescription: generateModalShot.description || '',
+                            qualityTier: qualityContext.tier,
+                            qualityScore: qualityContext.score,
+                        }}
+                        currentCredits={userCredits}
+                        onGenerated={handleVariantGenerated}
+                    />
+                )}
             </div>
-
-            {isModalOpen && (
-                <div style={styles.modalOverlay}>
-                    <div style={styles.modal}>
-                        <h2 style={{ color: 'white', marginBottom: '20px' }}>{editingShot ? `Edit Shot ${editingShot.shot_number}` : 'New Shot'}</h2>
-                        <div style={styles.formGroup}>
-                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>SHOT NUMBER</label>
-                            <input name="shot_number" value={formData.shot_number || ''} onChange={handleChange} style={styles.input} />
-                        </div>
-                        <div style={styles.formGroup}>
-                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>SHOT TYPE</label>
-                            <select name="shot_type" value={formData.shot_type || 'Wide'} onChange={handleChange} style={styles.select}>
-                                <option>Wide</option>
-                                <option>Medium</option>
-                                <option>Close-up</option>
-                                <option>Extreme Close-up</option>
-                            </select>
-                        </div>
-                        <div style={styles.formGroup}>
-                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>MOVEMENT</label>
-                            <select name="camera_movement" value={formData.camera_movement || 'Static'} onChange={handleChange} style={styles.select}>
-                                <option>Static</option>
-                                <option>Pan</option>
-                                <option>Tilt</option>
-                                <option>Dolly</option>
-                                <option>Handheld</option>
-                            </select>
-                        </div>
-                        <div style={styles.formGroup}>
-                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>CAMERA ANGLE</label>
-                            <select name="camera_angle" value={formData.camera_angle || ''} onChange={handleChange} style={styles.select}>
-                                <option value="">-- Select --</option>
-                                <option>Eye Level</option>
-                                <option>Low Angle</option>
-                                <option>High Angle</option>
-                                <option>Bird's Eye</option>
-                                <option>Dutch Angle</option>
-                                <option>Worm's Eye</option>
-                                <option>Over the Shoulder</option>
-                            </select>
-                        </div>
-                        <div style={styles.formGroup}>
-                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>FOCAL LENGTH</label>
-                            <input name="focal_length" placeholder="e.g. 50mm, 85mm, 24-70mm" value={formData.focal_length || ''} onChange={handleChange} style={styles.input} />
-                        </div>
-                        <div style={styles.formGroup}>
-                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>CAMERA LENS</label>
-                            <input name="camera_lens" placeholder="e.g. ARRI Signature Prime, Cooke S4/i" value={formData.camera_lens || ''} onChange={handleChange} style={styles.input} />
-                        </div>
-                        <div style={styles.formGroup}>
-                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>DESCRIPTION</label>
-                            <textarea name="description" placeholder="Action and details..." value={formData.description || ''} onChange={handleChange} style={{ ...styles.input, height: '80px', fontFamily: 'inherit' }} />
-                        </div>
-                        <div style={styles.formGroup}>
-                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>BLOCKING</label>
-                            <textarea name="blocking" placeholder="Actor/subject positioning and movement..." value={formData.blocking || ''} onChange={handleChange} style={{ ...styles.input, height: '60px', fontFamily: 'inherit' }} />
-                        </div>
-                        <div style={styles.formGroup}>
-                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>VFX NOTES</label>
-                            <textarea name="vfx_notes" placeholder="Green screen, CGI elements..." value={formData.vfx_notes || ''} onChange={handleChange} style={{ ...styles.input, height: '40px', fontFamily: 'inherit' }} />
-                        </div>
-                        <div style={styles.formGroup}>
-                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>SFX NOTES</label>
-                            <textarea name="sfx_notes" placeholder="Footsteps, ambience..." value={formData.sfx_notes || ''} onChange={handleChange} style={{ ...styles.input, height: '40px', fontFamily: 'inherit' }} />
-                        </div>
-                        <div style={styles.formGroup}>
-                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>GENERAL NOTES</label>
-                            <textarea name="notes" placeholder="Additional instructions..." value={formData.notes || ''} onChange={handleChange} style={{ ...styles.input, height: '40px', fontFamily: 'inherit' }} />
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-                            <button onClick={handleCloseModal} style={{ background: 'transparent', color: '#9ca3af', border: 'none', cursor: 'pointer' }}>Cancel</button>
-                            <button onClick={handleSave} style={{ backgroundColor: '#2563eb', color: 'white', padding: '8px 16px', borderRadius: '6px', border: 'none', cursor: 'pointer' }}>Save</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {isSceneModalOpen && (
-                <div style={styles.modalOverlay}>
-                    <div style={styles.modal}>
-                        <h2 style={{ color: 'white', marginBottom: '20px' }}>{editingScene ? 'Edit Scene' : 'Add New Scene'}</h2>
-                        <div style={styles.formGroup}>
-                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>SCENE NAME</label>
-                            <input name="name" value={sceneFormData.name || ''} onChange={handleSceneFormChange} style={styles.input} />
-                        </div>
-                        <div style={styles.formGroup}>
-                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>STATUS</label>
-                            <select name="status" value={sceneFormData.status || 'planning'} onChange={handleSceneFormChange} style={styles.select}>
-                                <option value="planning">📝 Planning</option>
-                                <option value="in-progress">🎬 In Progress</option>
-                                <option value="complete">✅ Complete</option>
-                            </select>
-                        </div>
-                        <div style={styles.formGroup}>
-                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>DESCRIPTION</label>
-                            <textarea name="description" value={sceneFormData.description || ''} onChange={handleSceneFormChange} style={{ ...styles.input, height: '100px', fontFamily: 'inherit' }} />
-                        </div>
-                        <div style={styles.formGroup}>
-                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>LOCATION / SETTING</label>
-                            <input name="location_setting" placeholder="e.g. Downtown alley at night, sunlit kitchen interior" value={sceneFormData.location_setting || ''} onChange={handleSceneFormChange} style={styles.input} />
-                        </div>
-                        <div style={styles.formGroup}>
-                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>TIME OF DAY</label>
-                            <select name="time_of_day" value={sceneFormData.time_of_day || ''} onChange={handleSceneFormChange} style={styles.select}>
-                                <option value="">-- Select --</option>
-                                <option>Dawn</option>
-                                <option>Morning</option>
-                                <option>Midday</option>
-                                <option>Afternoon</option>
-                                <option>Golden Hour</option>
-                                <option>Dusk / Twilight</option>
-                                <option>Night</option>
-                            </select>
-                        </div>
-                        <div style={styles.formGroup}>
-                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>MOOD / TONE</label>
-                            <input name="mood_tone" placeholder="e.g. Tense and suspenseful, warm and nostalgic" value={sceneFormData.mood_tone || ''} onChange={handleSceneFormChange} style={styles.input} />
-                        </div>
-                        <div style={styles.formGroup}>
-                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>LIGHTING NOTES</label>
-                            <textarea name="lighting_notes" placeholder="e.g. Key light from window camera left, practical table lamp fill" value={sceneFormData.lighting_notes || ''} onChange={handleSceneFormChange} style={{ ...styles.input, height: '60px', fontFamily: 'inherit' }} />
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-                            <button onClick={handleCloseSceneModal} style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #3f3f46', background: 'transparent', color: '#9ca3af', cursor: 'pointer' }}>Cancel</button>
-                            <button onClick={handleSaveScene} style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: '#3b82f6', color: 'white', cursor: 'pointer' }}>Save</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {isProjectModalOpen && (
-                <div style={styles.modalOverlay}>
-                    <div style={styles.modal}>
-                        <h2 style={{ color: 'white', marginBottom: '20px' }}>Project Settings</h2>
-                        <div style={styles.formGroup}>
-                            <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>STYLE / AESTHETIC</label>
-                            <textarea name="style_aesthetic" placeholder="e.g. Gritty neo-noir, warm golden tones, film grain..." value={projectFormData.style_aesthetic || ''} onChange={handleProjectFormChange} style={{ ...styles.input, height: '100px', fontFamily: 'inherit' }} />
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-                            <button onClick={handleCloseProjectModal} style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #3f3f46', background: 'transparent', color: '#9ca3af', cursor: 'pointer' }}>Cancel</button>
-                            <button onClick={handleSaveProject} style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: '#3b82f6', color: 'white', cursor: 'pointer' }}>Save</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {showSuggestion && suggestedScene && (
-                <div style={{ position: 'fixed', top: '20px', right: '20px', maxWidth: '400px', background: '#1f2937', border: '1px solid #3b82f6', borderRadius: '8px', padding: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', zIndex: 2000, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                        <span style={{ fontSize: '20px' }}>💡</span>
-                        <div style={{ flex: '1' }}>
-                            <strong style={{ color: '#e5e7eb', fontSize: '14px' }}>All shots complete!</strong>
-                            <p style={{ color: '#9ca3af', fontSize: '13px', marginTop: '4px' }}>Mark "{suggestedScene.name}" as complete?</p>
-                        </div>
-                        <button onClick={dismissSuggestion} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '16px' }}>✕</button>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                        <button onClick={acceptSuggestion} style={{ padding: '8px 16px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '13px', fontWeight: '500', cursor: 'pointer' }}>Yes</button>
-                        <button onClick={dismissSuggestion} style={{ padding: '8px 16px', background: '#374151', color: '#e5e7eb', border: 'none', borderRadius: '4px', fontSize: '13px', fontWeight: '500', cursor: 'pointer' }}>Not Yet</button>
-                    </div>
-                </div>
-            )}
-
-            {generateModalShot && (
-                <RecommendationsDialog
-                    isOpen={isRecsDialogOpen}
-                    onClose={handleRecsClose}
-                    shotId={generateModalShot.id}
-                    sceneId={generateModalSceneId!}
-                    qualityScore={qualityContext.score}
-                    missingFields={recsMissingFields}
-                    onSkipGenerate={handleRecsSkipGenerate}
-                    onSaveAndGenerate={handleRecsSaveAndGenerate}
-                />
-            )}
-
-            {generateModalShot && (
-                <GeneratePromptModal
-                    isOpen={isGenerateModalOpen}
-                    onClose={handleGenerateModalClose}
-                    shotId={generateModalShot.id}
-                    shotContext={{
-                        shotNumber: generateModalShot.shot_number,
-                        sceneName: scenes.find(s => s.id === generateModalSceneId)?.name || '',
-                        shotType: generateModalShot.shot_type || '',
-                        shotDescription: generateModalShot.description || '',
-                        qualityTier: qualityContext.tier,
-                        qualityScore: qualityContext.score,
-                    }}
-                    currentCredits={userCredits}
-                    onGenerated={handleVariantGenerated}
-                />
-            )}
-        </div>
         </ErrorBoundary>
     );
 };
