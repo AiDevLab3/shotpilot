@@ -100,7 +100,9 @@ export interface UserCredits {
 }
 
 export interface AIModel {
-    id: string;
     name: string;
+    displayName: string;
     type: 'image' | 'video';
+    description?: string;
+    capabilities?: string;
 }

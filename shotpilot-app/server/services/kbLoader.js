@@ -10,42 +10,54 @@ const KB_ROOT = path.join(__dirname, '../../kb');
 const LITE_MODELS = {
     'higgsfield': {
         stub: '02_Model_Higgsfield_Cinema_Studio.md',
-        name: 'Higgsfield Cinema Studio V1.5',
+        name: 'Higgsfield Cinema Studio',
         type: 'image',
-    },
-    'midjourney': {
-        stub: '02_Model_Midjourney.md',
-        name: 'Midjourney',
-        type: 'image',
-    },
-    'nano-banana': {
-        stub: '02_Model_Nano_Banana_Pro.md',
-        name: 'Nano Banana Pro',
-        type: 'image',
-    },
-    'gpt-image': {
-        stub: '02_Model_GPT_Image.md',
-        name: 'GPT Image 1.5',
-        type: 'image',
+        description: 'Photorealistic humans & natural lighting',
+        capabilities: 'Best for: Character close-ups, realistic portraits, natural expressions'
     },
     'veo-3.1': {
         stub: '02_Model_VEO_31.md',
         name: 'VEO 3.1',
         type: 'video',
+        description: 'Advanced cinematography & camera movement',
+        capabilities: 'Best for: Complex camera work, dynamic scenes, professional cinematography'
+    },
+    'midjourney': {
+        stub: '02_Model_Midjourney.md',
+        name: 'Midjourney',
+        type: 'image',
+        description: 'Artistic & stylized imagery',
+        capabilities: 'Best for: Concept art, stylized aesthetics, creative interpretations'
     },
     'kling-2.6': {
         stub: '02_Model_Kling_26.md',
         name: 'Kling 2.6',
         type: 'video',
+        description: 'Fast iteration & consistency',
+        capabilities: 'Best for: Quick drafts, scene consistency, reliable output'
     },
+    'gpt-image': {
+        stub: '02_Model_GPT_Image.md',
+        name: 'GPT Image (DALL-E 3)',
+        type: 'image',
+        description: 'Text interpretation & creative concepts',
+        capabilities: 'Best for: Abstract ideas, text-heavy prompts, conceptual imagery'
+    },
+    'nano-banana-pro': { // Updated key to match
+        stub: '02_Model_Nano_Banana_Pro.md',
+        name: 'Nano Banana Pro',
+        type: 'image',
+        description: 'Natural language image editing & generation',
+        capabilities: 'Best for: Image iteration, natural language edits, style refinement'
+    }
 };
 
 // Supplementary packs (condensed, optimized versions)
 const PACK_FILES = {
-    character_consistency:  '03_Pack_Character_Consistency.md',
-    quality_control:        '03_Pack_Quality_Control.md',
-    motion_readiness:       '03_Pack_Motion_Readiness.md',
-    spatial_composition:    '03_Pack_Spatial_Composition.md',
+    character_consistency: '03_Pack_Character_Consistency.md',
+    quality_control: '03_Pack_Quality_Control.md',
+    motion_readiness: '03_Pack_Motion_Readiness.md',
+    spatial_composition: '03_Pack_Spatial_Composition.md',
 };
 
 // KB file cache with TTL (re-reads files if modified on disk)
@@ -127,9 +139,11 @@ function loadKBForModel(modelName) {
 
 function getAvailableModels() {
     return Object.entries(LITE_MODELS).map(([id, info]) => ({
-        id,
-        name: info.name,
+        name: id, // Frontend uses 'name' as the ID key based on user request example
+        displayName: info.name,
         type: info.type,
+        description: info.description,
+        capabilities: info.capabilities
     }));
 }
 

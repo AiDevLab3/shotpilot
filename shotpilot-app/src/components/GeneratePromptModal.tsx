@@ -37,8 +37,8 @@ export const GeneratePromptModal: React.FC<GeneratePromptModalProps> = ({
     currentCredits,
     onGenerated,
 }) => {
-    const [models, setModels] = useState<AIModel[]>([]);
-    const [selectedModel, setSelectedModel] = useState('');
+    const [availableModels, setAvailableModels] = useState<AIModel[]>([]);
+    const [selectedModel, setSelectedModel] = useState<string>('higgsfield');
     const [loadingModels, setLoadingModels] = useState(true);
     const [generating, setGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -62,8 +62,18 @@ export const GeneratePromptModal: React.FC<GeneratePromptModalProps> = ({
             console.log('[MODAL] Fetching models...');
             const fetched = await getAvailableModels();
             console.log('[MODAL] Models data:', fetched);
-            setModels(fetched);
-            if (fetched.length > 0) setSelectedModel(fetched[0].id);
+
+            // CRITICAL: Filter to IMAGE models only
+            const imageModels = fetched.filter(m => m.type === 'image');
+            setAvailableModels(imageModels);
+
+            // Default to Higgsfield if available
+            const defaultModel = imageModels.find(m => m.name === 'higgsfield');
+            if (defaultModel) {
+                setSelectedModel('higgsfield');
+            } else if (imageModels.length > 0) {
+                setSelectedModel(imageModels[0].name);
+            }
         } catch (err) {
             console.error('[MODAL] Failed to load models:', err);
             setError('Failed to load models');
@@ -78,11 +88,11 @@ export const GeneratePromptModal: React.FC<GeneratePromptModalProps> = ({
         setError(null);
         try {
             const res = await generatePrompt(shotId, selectedModel);
-            const modelObj = models.find(m => m.id === selectedModel);
+            const modelObj = availableModels.find(m => m.name === selectedModel);
             setResult({
                 prompt: res.generated_prompt || res.prompt_used || '',
                 assumptions: res.assumptions || '',
-                modelName: modelObj?.name || selectedModel,
+                modelName: modelObj?.displayName || selectedModel,
                 qualityTier: res.quality_tier || shotContext.qualityTier,
                 creditsRemaining: res.credits_remaining ?? (currentCredits - 1),
             });
@@ -138,9 +148,6 @@ export const GeneratePromptModal: React.FC<GeneratePromptModalProps> = ({
     };
 
     if (!isOpen) return null;
-
-    const imageModels = models.filter(m => m.type === 'image');
-    const videoModels = models.filter(m => m.type === 'video');
 
     const tierColor = shotContext.qualityTier === 'production' ? '#10b981' : '#fbbf24';
     const tierLabel = shotContext.qualityTier === 'production' ? 'Production' : 'Draft';
@@ -199,34 +206,99 @@ export const GeneratePromptModal: React.FC<GeneratePromptModalProps> = ({
                             </div>
                         </div>
 
-                        {/* Model selector */}
-                        <div style={styles.formGroup}>
-                            <label style={styles.label}>Select Model</label>
+                        {/* Model Selection Dropdown */}
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{
+                                display: 'block',
+                                marginBottom: '8px',
+                                fontSize: '12px',
+                                fontWeight: 'bold',
+                                color: '#d1d5db',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                            }}>
+                                📸 STORYBOARD MODEL
+                            </label>
+
                             {loadingModels ? (
-                                <div style={{ ...styles.select, display: 'flex', alignItems: 'center', gap: '8px', color: '#6b7280' }}>
+                                <div style={{
+                                    padding: '10px',
+                                    color: '#9ca3af',
+                                    fontSize: '14px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px'
+                                }}>
                                     <Loader2 size={14} className="spin" /> Loading models...
                                 </div>
+                            ) : availableModels.length === 0 ? (
+                                <div style={{
+                                    padding: '10px',
+                                    color: '#ef4444',
+                                    fontSize: '14px'
+                                }}>
+                                    No image models available
+                                </div>
                             ) : (
-                                <select
-                                    value={selectedModel}
-                                    onChange={e => setSelectedModel(e.target.value)}
-                                    style={styles.select}
-                                >
-                                    {imageModels.length > 0 && (
-                                        <optgroup label="Image Models">
-                                            {imageModels.map(m => (
-                                                <option key={m.id} value={m.id}>{m.name}</option>
-                                            ))}
-                                        </optgroup>
+                                <>
+                                    <select
+                                        value={selectedModel}
+                                        onChange={(e) => setSelectedModel(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            backgroundColor: '#27272a',
+                                            border: '1px solid #3f3f46',
+                                            padding: '10px 12px',
+                                            color: 'white',
+                                            borderRadius: '6px',
+                                            fontSize: '14px',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.borderColor = '#06b6d4';  // Teal accent
+                                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(6, 182, 212, 0.1)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.borderColor = '#3f3f46';
+                                            e.currentTarget.style.boxShadow = 'none';
+                                        }}
+                                    >
+                                        {availableModels.map(model => (
+                                            <option key={model.name} value={model.name}>
+                                                {model.displayName}
+                                                {model.description ? ` - ${model.description}` : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    {/* Show capabilities for selected model */}
+                                    {selectedModel && availableModels.find(m => m.name === selectedModel)?.capabilities && (
+                                        <div style={{
+                                            marginTop: '10px',
+                                            padding: '10px 12px',
+                                            backgroundColor: 'rgba(6, 182, 212, 0.08)',  // Subtle teal background
+                                            border: '1px solid rgba(6, 182, 212, 0.2)',
+                                            borderRadius: '6px',
+                                            fontSize: '12px',
+                                            color: '#9ca3af',
+                                            lineHeight: '1.5'
+                                        }}>
+                                            <span style={{ marginRight: '6px' }}>💡</span>
+                                            {availableModels.find(m => m.name === selectedModel)?.capabilities}
+                                        </div>
                                     )}
-                                    {videoModels.length > 0 && (
-                                        <optgroup label="Video Models">
-                                            {videoModels.map(m => (
-                                                <option key={m.id} value={m.id}>{m.name}</option>
-                                            ))}
-                                        </optgroup>
-                                    )}
-                                </select>
+
+                                    {/* Helper text */}
+                                    <div style={{
+                                        marginTop: '8px',
+                                        fontSize: '11px',
+                                        color: '#6b7280',
+                                        fontStyle: 'italic'
+                                    }}>
+                                        Generating storyboard image for visual planning
+                                    </div>
+                                </>
                             )}
                         </div>
 
@@ -256,11 +328,11 @@ export const GeneratePromptModal: React.FC<GeneratePromptModalProps> = ({
                             </button>
                             <button
                                 onClick={handleGenerate}
-                                disabled={generating || currentCredits < 1 || loadingModels}
+                                disabled={generating || currentCredits < 1 || loadingModels || !selectedModel}
                                 style={{
                                     ...styles.generateBtn,
-                                    opacity: (generating || currentCredits < 1 || loadingModels) ? 0.6 : 1,
-                                    cursor: (generating || currentCredits < 1 || loadingModels) ? 'not-allowed' : 'pointer',
+                                    opacity: (generating || currentCredits < 1 || loadingModels || !selectedModel) ? 0.6 : 1,
+                                    cursor: (generating || currentCredits < 1 || loadingModels || !selectedModel) ? 'not-allowed' : 'pointer',
                                 }}
                             >
                                 {generating ? (
