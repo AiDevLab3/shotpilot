@@ -43,6 +43,13 @@ const LITE_MODELS = {
         description: 'Text interpretation & creative concepts',
         capabilities: 'Best for: Abstract ideas, text-heavy prompts, conceptual imagery'
     },
+    'kling-3.0': {
+        stub: 'models/kling-3.0.md',
+        name: 'Kling 3.0',
+        type: 'video',
+        description: 'Multi-shot intelligence & 15s duration',
+        capabilities: 'Best for: Multi-character dialogue, complete narrative arcs, character-driven stories with Elements 3.0'
+    },
     'nano-banana-pro': { // Updated key to match
         stub: '02_Model_Nano_Banana_Pro.md',
         name: 'Nano Banana Pro',
