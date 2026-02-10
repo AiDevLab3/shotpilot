@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import type { Project, Scene, Shot, ImageVariant } from '../types/schema';
 import { getScenes, getShots, createShot, updateShot, deleteShot, updateScene, createScene, deleteScene, getAllProjects, updateProject, fileToBase64, createImageVariant, getImageVariants, deleteImageVariant, getUserCredits } from '../services/api';
-import { GripVertical, Plus, Image as ImageIcon, Check, Video, Edit2, Trash2, ChevronDown, ChevronRight, FileText, Clock, Maximize2, Minimize2, Sparkles, Settings } from 'lucide-react';
-import { GeneratePromptButton } from '../components/GeneratePromptButton';
+import { Plus, Image as ImageIcon, Check, Video, Edit2, Trash2, ChevronDown, ChevronRight, FileText, Clock, Maximize2, Minimize2, Sparkles, Settings } from 'lucide-react';
+
 import { GeneratePromptModal } from '../components/GeneratePromptModal';
 import { RecommendationsDialog } from '../components/RecommendationsDialog';
 import { VariantList } from '../components/VariantList';
@@ -75,6 +75,8 @@ const ShotBoardPage: React.FC = () => {
     const [generateModalSceneId, setGenerateModalSceneId] = useState<number | null>(null);
     const [qualityContext, setQualityContext] = useState<{ tier: string; score: number }>({ tier: 'draft', score: 0 });
 
+    const [generateModalType, setGenerateModalType] = useState<'image' | 'video'>('image');
+
     // Recommendations Dialog State
     const [isRecsDialogOpen, setIsRecsDialogOpen] = useState(false);
     const [recsMissingFields, setRecsMissingFields] = useState<any[]>([]);
@@ -84,6 +86,7 @@ const ShotBoardPage: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalSceneId, setModalSceneId] = useState<number | null>(null);
     const [editingShot, setEditingShot] = useState<Shot | null>(null);
+
     const [insertAfterShot, setInsertAfterShot] = useState<Shot | null>(null);
     const [formData, setFormData] = useState<Partial<Shot>>({});
 
@@ -272,7 +275,8 @@ const ShotBoardPage: React.FC = () => {
         }
     };
 
-    const handleDelete = async (shotId: number, sceneId: number) => {
+    const handleDelete = async (shotId: number, sceneId: number, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
         if (confirm('Delete this shot?')) {
             await deleteShot(shotId);
             refreshSceneShots(sceneId);
@@ -299,7 +303,8 @@ const ShotBoardPage: React.FC = () => {
         }
     };
 
-    const handleDeleteImage = async (imageId: number, shotId: number) => {
+    const handleDeleteImage = async (imageId: number, shotId: number, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
         if (confirm("Delete this image?")) {
             await deleteImageVariant(imageId);
             const variants = await getImageVariants(shotId);
@@ -427,21 +432,7 @@ const ShotBoardPage: React.FC = () => {
         }
     };
 
-    const handleQualityCheck = (shot: Shot, sceneId: number, result: any) => {
-        const score = result.percentage ?? result.score ?? 0;
-        const tier = result.tier || 'draft';
-        setQualityContext({ tier, score });
-        setGenerateModalShot(shot);
-        setGenerateModalSceneId(sceneId);
 
-        if (tier === 'production') {
-            setIsGenerateModalOpen(true);
-        } else {
-            // Draft tier — show recommendations dialog
-            setRecsMissingFields(result.allMissing || []);
-            setIsRecsDialogOpen(true);
-        }
-    };
 
     const handleRecsClose = () => {
         setIsRecsDialogOpen(false);
@@ -703,10 +694,8 @@ const ShotBoardPage: React.FC = () => {
                                                 return (
                                                     <React.Fragment key={shot.id}>
                                                         <ErrorBoundary>
-                                                            <div style={styles.card}>
-                                                                {/* Card Content ... (omitted for brevity, relying on replace to keep existing) */}
-                                                                {/* Actually I need to reproduce the whole card without copying it, I will target the Return block. */}
-                                                                <div style={styles.cardHeader}>
+                                                            <div style={{ ...styles.card, minHeight: '600px', maxHeight: '600px', display: 'flex', flexDirection: 'column' }}>
+                                                                <div style={{ ...styles.cardHeader, flexShrink: 0 }}>
                                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                                         <span style={styles.shotBadge}>Shot {shot.shot_number}</span>
                                                                         <QualityBadge tier={shot.quality_tier} score={shot.quality_percentage} />
@@ -733,39 +722,102 @@ const ShotBoardPage: React.FC = () => {
                                                                         )}
                                                                     </div>
                                                                 </div>
-                                                                <div style={styles.cardBody}>
-                                                                    <div style={styles.cardImage}>
-                                                                        {mainImage ? (
-                                                                            <>
-                                                                                <img src={imageUrl || ''} alt="" style={{ width: '100%', height: 'auto' }} />
-                                                                                <button onClick={() => handleDeleteImage(mainImage.id, shot.id)} style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', padding: '4px', borderRadius: '4px', color: 'white', border: 'none', cursor: 'pointer' }}>
-                                                                                    <Trash2 size={12} />
-                                                                                </button>
-                                                                            </>
-                                                                        ) : (
-                                                                            <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#6b7280' }}>
-                                                                                <ImageIcon size={24} />
-                                                                                <span style={{ fontSize: '10px' }}>Upload</span>
-                                                                                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleFileUpload(shot.id, e)} />
-                                                                            </label>
-                                                                        )}
-                                                                    </div>
-                                                                    <div style={{ marginTop: '12px' }}>
-                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                                                            <span style={styles.shotType}>{shot.shot_type}</span>
-                                                                            <span style={{ fontSize: '10px', color: '#9ca3af' }}>{shot.camera_movement}</span>
+                                                                <div style={{ ...styles.cardBody, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                                                                    <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px', marginBottom: '12px' }}>
+                                                                        <div style={styles.cardImage}>
+                                                                            {mainImage ? (
+                                                                                <>
+                                                                                    <img src={imageUrl || ''} alt="" style={{ width: '100%', height: 'auto' }} />
+                                                                                    <button onClick={(e) => handleDeleteImage(mainImage.id, shot.id, e)} style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', padding: '4px', borderRadius: '4px', color: 'white', border: 'none', cursor: 'pointer' }}>
+                                                                                        <Trash2 size={12} />
+                                                                                    </button>
+                                                                                </>
+                                                                            ) : (
+                                                                                <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#6b7280' }}>
+                                                                                    <ImageIcon size={24} />
+                                                                                    <span style={{ fontSize: '10px' }}>Upload</span>
+                                                                                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleFileUpload(shot.id, e)} />
+                                                                                </label>
+                                                                            )}
                                                                         </div>
-                                                                        <div style={{ fontSize: '12px', color: '#e5e7eb', lineHeight: '1.4' }}>{shot.description || 'No description'}</div>
+                                                                        <div style={{ marginTop: '12px' }}>
+                                                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                                                <span style={styles.shotType}>{shot.shot_type}</span>
+                                                                                <span style={{ fontSize: '10px', color: '#9ca3af' }}>{shot.camera_movement}</span>
+                                                                            </div>
+                                                                            <div style={{ fontSize: '12px', color: '#e5e7eb', lineHeight: '1.4' }}>{shot.description || 'No description'}</div>
+                                                                        </div>
+                                                                        <VariantList shotId={shot.id} />
                                                                     </div>
-                                                                    <VariantList shotId={shot.id} />
-                                                                    <GeneratePromptButton
-                                                                        shotId={shot.id}
-                                                                        onQualityCheck={(result) => handleQualityCheck(shot, scene.id, result)}
-                                                                    />
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', flexShrink: 0 }}>
+                                                                        {/* Image Prompt Button - Top */}
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setGenerateModalShot(shot);
+                                                                                setGenerateModalSceneId(scene.id);
+                                                                                setGenerateModalType('image');
+                                                                                setIsGenerateModalOpen(true);
+                                                                            }}
+                                                                            style={{
+                                                                                width: '100%',
+                                                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                                                                padding: '8px 12px',
+                                                                                backgroundColor: 'rgba(20, 184, 166, 0.1)',
+                                                                                border: '1px solid rgba(20, 184, 166, 0.3)',
+                                                                                borderRadius: '6px',
+                                                                                color: '#2dd4bf',
+                                                                                fontSize: '13px', fontWeight: 600,
+                                                                                cursor: 'pointer',
+                                                                                transition: 'all 0.2s'
+                                                                            }}
+                                                                            onMouseEnter={e => {
+                                                                                e.currentTarget.style.backgroundColor = 'rgba(20, 184, 166, 0.2)';
+                                                                                e.currentTarget.style.transform = 'translateY(-1px)';
+                                                                            }}
+                                                                            onMouseLeave={e => {
+                                                                                e.currentTarget.style.backgroundColor = 'rgba(20, 184, 166, 0.1)';
+                                                                                e.currentTarget.style.transform = 'none';
+                                                                            }}
+                                                                        >
+                                                                            <ImageIcon size={16} /> Image Prompt
+                                                                        </button>
+
+                                                                        {/* Video Prompt Button - Bottom */}
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setGenerateModalShot(shot);
+                                                                                setGenerateModalSceneId(scene.id);
+                                                                                setGenerateModalType('video');
+                                                                                setIsGenerateModalOpen(true);
+                                                                            }}
+                                                                            style={{
+                                                                                width: '100%',
+                                                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                                                                padding: '8px 12px',
+                                                                                backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                                                                                border: '1px solid rgba(168, 85, 247, 0.3)',
+                                                                                borderRadius: '6px',
+                                                                                color: '#a78bfa',
+                                                                                fontSize: '13px', fontWeight: 600,
+                                                                                cursor: 'pointer',
+                                                                                transition: 'all 0.2s'
+                                                                            }}
+                                                                            onMouseEnter={e => {
+                                                                                e.currentTarget.style.backgroundColor = 'rgba(168, 85, 247, 0.2)';
+                                                                                e.currentTarget.style.transform = 'translateY(-1px)';
+                                                                            }}
+                                                                            onMouseLeave={e => {
+                                                                                e.currentTarget.style.backgroundColor = 'rgba(168, 85, 247, 0.1)';
+                                                                                e.currentTarget.style.transform = 'none';
+                                                                            }}
+                                                                        >
+                                                                            <Video size={16} /> Video Prompt
+                                                                        </button>
+                                                                    </div>
                                                                 </div>
-                                                                <div style={styles.cardActions}>
+                                                                <div style={{ ...styles.cardActions, flexShrink: 0, marginTop: '12px' }}>
                                                                     <button onClick={() => handleOpenModal(scene.id, shot)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}><Edit2 size={14} /></button>
-                                                                    <button onClick={() => handleDelete(shot.id, scene.id)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                                                    <button onClick={(e) => handleDelete(shot.id, scene.id, e)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}><Trash2 size={14} /></button>
                                                                 </div>
                                                             </div>
 
@@ -978,16 +1030,10 @@ const ShotBoardPage: React.FC = () => {
                     <GeneratePromptModal
                         isOpen={isGenerateModalOpen}
                         onClose={handleGenerateModalClose}
-                        shotId={generateModalShot.id}
-                        shotContext={{
-                            shotNumber: generateModalShot.shot_number,
-                            sceneName: scenes.find(s => s.id === generateModalSceneId)?.name || '',
-                            shotType: generateModalShot.shot_type || '',
-                            shotDescription: generateModalShot.description || '',
-                            qualityTier: qualityContext.tier,
-                            qualityScore: qualityContext.score,
-                        }}
-                        currentCredits={userCredits}
+                        shot={generateModalShot}
+                        scene={scenes.find(s => s.id === generateModalSceneId)!}
+                        project={project!}
+                        modelType={generateModalType}
                         onGenerated={handleVariantGenerated}
                     />
                 )}

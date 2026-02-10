@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { getAvailableModels, generatePrompt } from '../services/api';
-import type { AIModel } from '../types/schema';
-import { Wand2, X, Sparkles, Loader2, Copy, Check } from 'lucide-react';
+import type { AIModel, Shot, Scene, Project } from '../types/schema';
+import { X, Sparkles, Loader2, Copy, Check, Clapperboard, Camera } from 'lucide-react';
+import { getAvailableModels, generatePrompt, checkShotQuality } from '../services/api';
+// Assuming api export issues, adapting to imports. 
+// If api is a default export object in service, verify. 
+// Based on previous file, it was `import { getAvailableModels... } from '../services/api'`.
 
-interface ShotContext {
-    shotNumber: string;
-    sceneName: string;
-    shotType: string;
-    shotDescription: string;
-    qualityTier: string;
-    qualityScore?: number;
+interface QualityScore {
+    score: number;
+    tier: 'draft' | 'production';
 }
 
 interface GenerationResult {
@@ -23,419 +22,308 @@ interface GenerationResult {
 interface GeneratePromptModalProps {
     isOpen: boolean;
     onClose: () => void;
-    shotId: number;
-    shotContext: ShotContext;
-    currentCredits: number;
+    shot: Shot;
+    scene: Scene; // Derived from props in parent
+    project: Project; // Derived from props in parent
+    modelType?: 'image' | 'video';
     onGenerated?: () => void;
+    // Legacy props support if needed during refactor, but we prefer the new structure
+    shotId?: number;
+    shotContext?: any;
+    currentCredits?: number;
 }
 
-export const GeneratePromptModal: React.FC<GeneratePromptModalProps> = ({
+export function GeneratePromptModal({
     isOpen,
     onClose,
-    shotId,
-    shotContext,
-    currentCredits,
+    shot,
+    scene,
+    project,
+    modelType = 'image',
     onGenerated,
-}) => {
+    // Fallbacks
+    currentCredits = 0,
+}: GeneratePromptModalProps) {
     const [availableModels, setAvailableModels] = useState<AIModel[]>([]);
-    const [selectedModel, setSelectedModel] = useState<string>('higgsfield');
-    const [loadingModels, setLoadingModels] = useState(true);
+    const [model, setModel] = useState<string>('');
+    const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [result, setResult] = useState<GenerationResult | null>(null);
     const [copied, setCopied] = useState(false);
-    const [didGenerate, setDidGenerate] = useState(false);
+    const [qualityScore, setQualityScore] = useState<QualityScore | null>(null);
+
+    // Dynamic UI
+    const isVideoMode = modelType === 'video';
+    const Icon = isVideoMode ? Clapperboard : Camera;
+    const modelLabel = isVideoMode ? 'VIDEO MODEL' : 'STORYBOARD MODEL';
+
+    // Theme Colors
+    const theme = isVideoMode ? {
+        accent: '#a855f7', // purple-500
+        bg: '#581c87', // purple-900
+        border: 'rgba(168, 85, 247, 0.3)',
+        hover: '#7e22ce', // purple-700
+    } : {
+        accent: '#14b8a6', // teal-500
+        bg: '#0f766e', // teal-700
+        border: 'rgba(20, 184, 166, 0.3)',
+        hover: '#0d9488', // teal-600
+    };
 
     useEffect(() => {
         if (isOpen) {
-            setResult(null);
-            setError(null);
-            setCopied(false);
-            setDidGenerate(false);
-            loadModels();
+            resetState();
+            fetchData();
         }
-    }, [isOpen]);
+    }, [isOpen, modelType, shot?.id]);
 
-    const loadModels = async () => {
-        setLoadingModels(true);
+    const resetState = () => {
+        setResult(null);
+        setError(null);
+        setCopied(false);
+        setLoading(true);
+    };
+
+    const fetchData = async () => {
         try {
-            console.log('[MODAL] Fetching models...');
-            const fetched = await getAvailableModels();
-            console.log('[MODAL] Models data:', fetched);
+            // Models
+            const models = await getAvailableModels();
+            const filtered = models.filter(m => m.type === modelType);
+            setAvailableModels(filtered);
 
-            // CRITICAL: Filter to IMAGE models only
-            const imageModels = fetched.filter(m => m.type === 'image');
-            setAvailableModels(imageModels);
-
-            // Default to Higgsfield if available
-            const defaultModel = imageModels.find(m => m.name === 'higgsfield');
-            if (defaultModel) {
-                setSelectedModel('higgsfield');
-            } else if (imageModels.length > 0) {
-                setSelectedModel(imageModels[0].name);
+            // Default selection
+            if (filtered.length > 0) {
+                const defaultName = isVideoMode ? 'veo-3.1' : 'higgsfield';
+                const hasDefault = filtered.find(m => m.name === defaultName);
+                setModel(hasDefault ? defaultName : filtered[0].name);
+            } else {
+                setModel('');
             }
+
+            // Quality Score
+            if (shot?.id) {
+                const qs = await checkShotQuality(shot.id).catch(e => {
+                    console.warn('Failed to load quality score', e);
+                    return null;
+                });
+                if (qs) setQualityScore(qs);
+            }
+
         } catch (err) {
-            console.error('[MODAL] Failed to load models:', err);
-            setError('Failed to load models');
+            console.error('Failed to load modal data:', err);
+            setError('Failed to load available models.');
         } finally {
-            setLoadingModels(false);
+            setLoading(false);
         }
     };
 
     const handleGenerate = async () => {
-        if (!selectedModel || currentCredits < 1) return;
+        if (!model) return;
         setGenerating(true);
         setError(null);
+
         try {
-            const res = await generatePrompt(shotId, selectedModel);
-            const modelObj = availableModels.find(m => m.name === selectedModel);
+            // Use shot.id from props
+            const res = await generatePrompt(shot.id, model);
+
+            const modelObj = availableModels.find(m => m.name === model);
             setResult({
-                prompt: res.generated_prompt || res.prompt_used || '',
+                prompt: res.generated_prompt || '',
                 assumptions: res.assumptions || '',
-                modelName: modelObj?.displayName || selectedModel,
-                qualityTier: res.quality_tier || shotContext.qualityTier,
-                creditsRemaining: res.credits_remaining ?? (currentCredits - 1),
+                modelName: modelObj?.displayName || model,
+                qualityTier: res.quality_tier || 'draft',
+                creditsRemaining: res.credits_remaining || 0,
             });
-            setDidGenerate(true);
 
-            // Notify header CreditBadge
-            window.dispatchEvent(new CustomEvent('creditUpdate', {
-                detail: { credits: res.credits_remaining ?? (currentCredits - 1) }
-            }));
-
-            // Notify VariantList to refresh
-            window.dispatchEvent(new CustomEvent('variantCreated', {
-                detail: { shotId }
-            }));
+            if (onGenerated) onGenerated();
         } catch (err: any) {
-            const msg = err.message || '';
-            if (msg.includes('403') || msg.toLowerCase().includes('forbidden')) {
-                setError('Insufficient credits to generate a prompt.');
-            } else if (msg.includes('500') || msg.toLowerCase().includes('internal')) {
-                setError('Generation failed. Your credit has been refunded.');
-            } else {
-                setError('Connection lost. Please retry.');
-            }
+            console.error('Generation Error:', err);
+            setError(err.message || 'Failed to generate prompt');
         } finally {
             setGenerating(false);
         }
     };
 
-    const handleCopy = async () => {
-        if (!result) return;
-        try {
-            await navigator.clipboard.writeText(result.prompt);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        } catch {
-            // Fallback
-            const textarea = document.createElement('textarea');
-            textarea.value = result.prompt;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
+    const handleCopy = () => {
+        if (result?.prompt) {
+            navigator.clipboard.writeText(result.prompt);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         }
-    };
-
-    const handleClose = () => {
-        if (didGenerate && onGenerated) {
-            onGenerated();
-        }
-        onClose();
     };
 
     if (!isOpen) return null;
 
-    const tierColor = shotContext.qualityTier === 'production' ? '#10b981' : '#fbbf24';
-    const tierLabel = shotContext.qualityTier === 'production' ? 'Production' : 'Draft';
-
     return (
-        <div style={styles.overlay} onClick={handleClose}>
-            <div style={styles.modal} onClick={e => e.stopPropagation()}>
+        <div style={styles.overlay}>
+            <div style={styles.modal}>
                 {/* Header */}
                 <div style={styles.header}>
-                    <h2 style={styles.title}>
-                        {result ? (
-                            <><Check size={20} color="#10b981" /> Prompt Generated!</>
-                        ) : (
-                            <><Wand2 size={20} color="#8b5cf6" /> Generate Prompt</>
-                        )}
-                    </h2>
-                    <button onClick={handleClose} style={styles.closeBtn}>
-                        <X size={18} />
-                    </button>
+                    <h3 style={styles.title}>
+                        <Icon size={20} color={theme.accent} />
+                        {isVideoMode ? 'Generate Video Prompt' : 'Generate Image Prompt'}
+                    </h3>
+                    <button onClick={onClose} style={styles.closeBtn}><X size={20} /></button>
                 </div>
 
                 <div style={styles.divider} />
 
-                {!result ? (
-                    /* --- Pre-generation view --- */
-                    <div style={styles.body}>
-                        {/* Shot context */}
-                        <div style={styles.contextBox}>
-                            <div style={styles.contextLabel}>Shot Context:</div>
-                            <div style={styles.contextRow}>
-                                <span style={{ color: '#e5e7eb', fontWeight: 600 }}>
-                                    Shot #{shotContext.shotNumber}: {shotContext.shotType}
-                                </span>
-                            </div>
-                            {shotContext.sceneName && (
+                {/* Body */}
+                <div style={styles.body}>
+                    {!result ? (
+                        /* Configuration View */
+                        <>
+                            {/* Context Summary */}
+                            <div style={styles.contextBox}>
+                                <div style={styles.contextLabel}>CONTEXT</div>
                                 <div style={styles.contextRow}>
-                                    <span style={{ color: '#9ca3af' }}>Scene: </span>
-                                    <span style={{ color: '#d1d5db' }}>{shotContext.sceneName}</span>
+                                    <span style={{ color: '#6b7280' }}>Shot:</span> <span style={{ color: 'white', fontWeight: 600 }}>{shot.shot_number}</span>
                                 </div>
-                            )}
-                            {shotContext.shotDescription && (
                                 <div style={styles.contextRow}>
-                                    <span style={{ color: '#9ca3af' }}>Description: </span>
-                                    <span style={{ color: '#d1d5db' }}>{shotContext.shotDescription}</span>
+                                    <span style={{ color: '#6b7280' }}>Scene:</span> <span style={{ color: 'white' }}>{scene?.name || 'Unknown'}</span>
                                 </div>
-                            )}
-                            <div style={styles.contextRow}>
-                                <span style={{ color: '#9ca3af' }}>Quality: </span>
-                                <span style={{
-                                    color: tierColor,
-                                    fontWeight: 600,
-                                }}>
-                                    {tierLabel}
-                                    {shotContext.qualityScore != null && ` (${Math.round(shotContext.qualityScore)}%)`}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Model Selection Dropdown */}
-                        <div style={{ marginBottom: '20px' }}>
-                            <label style={{
-                                display: 'block',
-                                marginBottom: '8px',
-                                fontSize: '12px',
-                                fontWeight: 'bold',
-                                color: '#d1d5db',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.5px'
-                            }}>
-                                📸 STORYBOARD MODEL
-                            </label>
-
-                            {loadingModels ? (
-                                <div style={{
-                                    padding: '10px',
-                                    color: '#9ca3af',
-                                    fontSize: '14px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px'
-                                }}>
-                                    <Loader2 size={14} className="spin" /> Loading models...
-                                </div>
-                            ) : availableModels.length === 0 ? (
-                                <div style={{
-                                    padding: '10px',
-                                    color: '#ef4444',
-                                    fontSize: '14px'
-                                }}>
-                                    No image models available
-                                </div>
-                            ) : (
-                                <>
-                                    <select
-                                        value={selectedModel}
-                                        onChange={(e) => setSelectedModel(e.target.value)}
-                                        style={{
-                                            width: '100%',
-                                            backgroundColor: '#27272a',
-                                            border: '1px solid #3f3f46',
-                                            padding: '10px 12px',
-                                            color: 'white',
-                                            borderRadius: '6px',
-                                            fontSize: '14px',
-                                            cursor: 'pointer',
-                                            transition: 'all 0.2s ease'
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            e.currentTarget.style.borderColor = '#06b6d4';  // Teal accent
-                                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(6, 182, 212, 0.1)';
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.currentTarget.style.borderColor = '#3f3f46';
-                                            e.currentTarget.style.boxShadow = 'none';
-                                        }}
-                                    >
-                                        {availableModels.map(model => (
-                                            <option key={model.name} value={model.name}>
-                                                {model.displayName}
-                                                {model.description ? ` - ${model.description}` : ''}
-                                            </option>
-                                        ))}
-                                    </select>
-
-                                    {/* Show capabilities for selected model */}
-                                    {selectedModel && availableModels.find(m => m.name === selectedModel)?.capabilities && (
-                                        <div style={{
-                                            marginTop: '10px',
-                                            padding: '10px 12px',
-                                            backgroundColor: 'rgba(6, 182, 212, 0.08)',  // Subtle teal background
-                                            border: '1px solid rgba(6, 182, 212, 0.2)',
-                                            borderRadius: '6px',
-                                            fontSize: '12px',
-                                            color: '#9ca3af',
-                                            lineHeight: '1.5'
+                                {qualityScore && (
+                                    <div style={{ ...styles.contextRow, marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span style={{ color: '#6b7280' }}>Quality Score:</span>
+                                        <span style={{
+                                            color: qualityScore.tier === 'production' ? '#10b981' : '#fbbf24',
+                                            fontWeight: 700
                                         }}>
-                                            <span style={{ marginRight: '6px' }}>💡</span>
-                                            {availableModels.find(m => m.name === selectedModel)?.capabilities}
-                                        </div>
-                                    )}
-
-                                    {/* Helper text */}
-                                    <div style={{
-                                        marginTop: '8px',
-                                        fontSize: '11px',
-                                        color: '#6b7280',
-                                        fontStyle: 'italic'
-                                    }}>
-                                        Generating storyboard image for visual planning
+                                            {qualityScore.score} / 100 ({qualityScore.tier.toUpperCase()})
+                                        </span>
                                     </div>
-                                </>
-                            )}
-                        </div>
-
-                        {/* Credit info */}
-                        <div style={styles.creditInfo}>
-                            <div style={styles.creditRow}>
-                                <span style={{ color: '#9ca3af' }}>Credit Balance:</span>
-                                <span style={{ color: currentCredits > 50 ? '#10b981' : currentCredits >= 10 ? '#fbbf24' : '#ef4444', fontWeight: 600 }}>
-                                    {currentCredits} Credits
-                                </span>
-                            </div>
-                            <div style={styles.creditRow}>
-                                <span style={{ color: '#9ca3af' }}>Generation Cost:</span>
-                                <span style={{ color: '#d1d5db' }}>1 Credit</span>
-                            </div>
-                        </div>
-
-                        {/* Error */}
-                        {error && (
-                            <div style={styles.error}>{error}</div>
-                        )}
-
-                        {/* Footer buttons */}
-                        <div style={styles.footer}>
-                            <button onClick={handleClose} style={styles.cancelBtn}>
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleGenerate}
-                                disabled={generating || currentCredits < 1 || loadingModels || !selectedModel}
-                                style={{
-                                    ...styles.generateBtn,
-                                    opacity: (generating || currentCredits < 1 || loadingModels || !selectedModel) ? 0.6 : 1,
-                                    cursor: (generating || currentCredits < 1 || loadingModels || !selectedModel) ? 'not-allowed' : 'pointer',
-                                }}
-                            >
-                                {generating ? (
-                                    <><Loader2 size={16} className="spin" /> Generating...</>
-                                ) : (
-                                    <><Sparkles size={16} /> Generate (1 Credit)</>
                                 )}
-                            </button>
-                        </div>
-                    </div>
-                ) : (
-                    /* --- Post-generation success view --- */
-                    <div style={styles.body}>
-                        {/* Model + quality */}
-                        <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', fontSize: '14px' }}>
-                            <div>
-                                <span style={{ color: '#9ca3af' }}>Model: </span>
-                                <span style={{ color: '#e5e7eb', fontWeight: 600 }}>{result.modelName}</span>
                             </div>
-                            <div>
-                                <span style={{ color: '#9ca3af' }}>Quality: </span>
-                                <span style={{ color: result.qualityTier === 'production' ? '#10b981' : '#fbbf24', fontWeight: 600 }}>
-                                    {result.qualityTier === 'production' ? 'Production' : 'Draft'}
-                                </span>
-                            </div>
-                        </div>
 
-                        {/* Generated prompt */}
-                        <div style={{ marginBottom: '16px' }}>
-                            <label style={styles.label}>Generated Prompt:</label>
-                            <div style={styles.promptBox}>
-                                {result.prompt}
-                            </div>
-                            <button
-                                onClick={handleCopy}
-                                style={{
-                                    ...styles.copyBtn,
-                                    color: copied ? '#10b981' : '#9ca3af',
-                                    borderColor: copied ? '#10b981' : '#3f3f46',
-                                }}
-                            >
-                                {copied ? <><Check size={14} /> Copied!</> : <><Copy size={14} /> Copy to Clipboard</>}
-                            </button>
-                        </div>
+                            {/* Model Selection */}
+                            <div style={styles.formGroup}>
+                                <label style={{ ...styles.label, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <Icon size={14} color={theme.accent} />
+                                    <span style={{ color: theme.accent }}>{modelLabel}</span>
+                                </label>
 
-                        {/* Assumptions */}
-                        {result.assumptions && (
-                            <div style={styles.assumptions}>
-                                <div style={{ fontWeight: 600, color: '#d1d5db', marginBottom: '4px', fontSize: '13px' }}>
-                                    AI Assumptions:
+                                {loading ? (
+                                    <div style={{ color: '#6b7280', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <Loader2 size={16} className="spin" /> Loading models...
+                                    </div>
+                                ) : (
+                                    <>
+                                        <select
+                                            value={model}
+                                            onChange={(e) => setModel(e.target.value)}
+                                            style={{ ...styles.select, borderColor: theme.border }}
+                                        >
+                                            {availableModels.map(m => (
+                                                <option key={m.name} value={m.name}>{m.displayName}</option>
+                                            ))}
+                                        </select>
+
+                                        {/* Capabilities */}
+                                        {model && (
+                                            <div style={{
+                                                marginTop: '8px',
+                                                fontSize: '12px',
+                                                color: '#9ca3af',
+                                                background: 'rgba(255,255,255,0.03)',
+                                                padding: '8px',
+                                                borderRadius: '4px'
+                                            }}>
+                                                💡 {availableModels.find(m => m.name === model)?.capabilities || availableModels.find(m => m.name === model)?.description}
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Error */}
+                            {error && <div style={styles.error}>{error}</div>}
+
+                            {/* Action Buttons */}
+                            <div style={styles.footer}>
+                                <button onClick={onClose} style={styles.cancelBtn}>Cancel</button>
+                                <button
+                                    onClick={handleGenerate}
+                                    disabled={loading || generating || !model}
+                                    style={{
+                                        ...styles.generateBtn,
+                                        backgroundColor: loading || generating || !model ? '#4b5563' : theme.bg,
+                                        cursor: loading || generating || !model ? 'not-allowed' : 'pointer'
+                                    }}
+                                >
+                                    {generating ? (
+                                        <><Loader2 size={16} className="spin" /> Generating...</>
+                                    ) : (
+                                        <><Sparkles size={16} /> Generate Prompt</>
+                                    )}
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        /* Result View */
+                        <>
+                            <div style={styles.formGroup}>
+                                <label style={styles.label}>Generated Prompt</label>
+                                <div style={styles.promptBox}>
+                                    {result.prompt}
                                 </div>
-                                <div style={{ whiteSpace: 'pre-wrap' }}>{result.assumptions}</div>
+                                <button onClick={handleCopy} style={{ ...styles.copyBtn, color: copied ? '#10b981' : '#9ca3af', borderColor: copied ? '#10b981' : '#3f3f46' }}>
+                                    {copied ? <><Check size={14} /> Copied</> : <><Copy size={14} /> Copy to Clipboard</>}
+                                </button>
                             </div>
-                        )}
 
-                        {/* Credits remaining */}
-                        <div style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '20px' }}>
-                            Credits Remaining: <span style={{ color: '#e5e7eb', fontWeight: 600 }}>{result.creditsRemaining}</span>
-                        </div>
+                            {result.assumptions && (
+                                <div style={styles.assumptions}>
+                                    <strong>Assumptions:</strong><br />
+                                    {result.assumptions}
+                                </div>
+                            )}
 
-                        {/* Close button */}
-                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                            <button onClick={handleClose} style={styles.doneBtn}>Close</button>
-                        </div>
-                    </div>
-                )}
+                            <div style={styles.footer}>
+                                <button onClick={onClose} style={{ ...styles.generateBtn, backgroundColor: '#2563eb' }}>Done</button>
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
         </div>
     );
-};
+}
 
 const styles: Record<string, React.CSSProperties> = {
     overlay: {
         position: 'fixed',
         top: 0, left: 0, right: 0, bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.8)',
-        zIndex: 1000,
+        backgroundColor: 'rgba(0,0,0,0.85)',
+        zIndex: 2000,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        backdropFilter: 'blur(4px)'
     },
     modal: {
         backgroundColor: '#18181b',
         borderRadius: '12px',
-        width: '100%',
-        maxWidth: '600px',
+        width: '90%',
+        maxWidth: '550px',
         border: '1px solid #27272a',
-        maxHeight: '90vh',
-        overflow: 'auto',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+        overflow: 'hidden',
     },
     header: {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: '20px 24px',
+        padding: '16px 20px',
+        backgroundColor: '#18181b',
     },
     title: {
         color: 'white',
-        fontSize: '18px',
-        fontWeight: 700,
+        fontSize: '16px',
+        fontWeight: 600,
         display: 'flex',
         alignItems: 'center',
-        gap: '8px',
+        gap: '10px',
         margin: 0,
     },
     closeBtn: {
@@ -444,35 +332,32 @@ const styles: Record<string, React.CSSProperties> = {
         color: '#6b7280',
         cursor: 'pointer',
         padding: '4px',
-        borderRadius: '4px',
         display: 'flex',
-        alignItems: 'center',
     },
     divider: {
         height: '1px',
         backgroundColor: '#27272a',
     },
     body: {
-        padding: '20px 24px',
+        padding: '20px',
     },
     contextBox: {
         backgroundColor: '#27272a',
         borderRadius: '8px',
-        padding: '14px 16px',
+        padding: '12px',
         marginBottom: '20px',
-        fontSize: '13px',
     },
     contextLabel: {
         color: '#9ca3af',
-        fontSize: '11px',
+        fontSize: '10px',
         fontWeight: 700,
-        textTransform: 'uppercase' as const,
+        textTransform: 'uppercase',
         letterSpacing: '0.05em',
         marginBottom: '8px',
     },
     contextRow: {
+        fontSize: '13px',
         marginBottom: '4px',
-        lineHeight: '1.5',
     },
     formGroup: {
         marginBottom: '20px',
@@ -483,37 +368,25 @@ const styles: Record<string, React.CSSProperties> = {
         marginBottom: '8px',
         fontSize: '12px',
         fontWeight: 700,
-        textTransform: 'uppercase' as const,
-        letterSpacing: '0.03em',
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
     },
     select: {
         width: '100%',
-        backgroundColor: '#27272a',
+        backgroundColor: '#09090b',
         border: '1px solid #3f3f46',
-        padding: '10px 12px',
+        padding: '10px',
         color: 'white',
         borderRadius: '6px',
         fontSize: '14px',
-    },
-    creditInfo: {
-        backgroundColor: '#1f1f23',
-        border: '1px solid #27272a',
-        borderRadius: '8px',
-        padding: '12px 16px',
-        marginBottom: '20px',
-    },
-    creditRow: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        fontSize: '14px',
-        padding: '2px 0',
+        outline: 'none',
     },
     error: {
         backgroundColor: 'rgba(239, 68, 68, 0.1)',
-        border: '1px solid rgba(239, 68, 68, 0.3)',
-        borderRadius: '6px',
-        padding: '10px 14px',
+        border: '1px solid rgba(239, 68, 68, 0.2)',
         color: '#ef4444',
+        padding: '10px',
+        borderRadius: '6px',
         fontSize: '13px',
         marginBottom: '16px',
     },
@@ -521,20 +394,20 @@ const styles: Record<string, React.CSSProperties> = {
         display: 'flex',
         justifyContent: 'flex-end',
         gap: '12px',
-        marginTop: '4px',
+        marginTop: '10px',
     },
     cancelBtn: {
         background: 'transparent',
         color: '#9ca3af',
         border: 'none',
         cursor: 'pointer',
-        padding: '10px 16px',
+        padding: '8px 16px',
         fontSize: '14px',
+        fontWeight: 500,
     },
     generateBtn: {
-        backgroundColor: '#8b5cf6',
         color: 'white',
-        padding: '10px 20px',
+        padding: '8px 20px',
         borderRadius: '6px',
         border: 'none',
         fontSize: '14px',
@@ -542,50 +415,38 @@ const styles: Record<string, React.CSSProperties> = {
         display: 'flex',
         alignItems: 'center',
         gap: '8px',
+        transition: 'background 0.2s',
     },
     promptBox: {
-        backgroundColor: '#0f172a',
-        padding: '16px',
+        backgroundColor: '#09090b',
+        border: '1px solid #27272a',
         borderRadius: '8px',
-        border: '1px solid #1e293b',
-        color: '#e2e8f0',
+        padding: '12px',
+        color: '#e4e4e7',
         fontSize: '14px',
-        whiteSpace: 'pre-wrap' as const,
         lineHeight: '1.6',
-        maxHeight: '250px',
-        overflowY: 'auto' as const,
+        whiteSpace: 'pre-wrap',
+        maxHeight: '200px',
+        overflowY: 'auto'
     },
     copyBtn: {
         marginTop: '8px',
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '6px',
         background: 'transparent',
         border: '1px solid #3f3f46',
         borderRadius: '6px',
         padding: '6px 12px',
         fontSize: '12px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
         cursor: 'pointer',
-        transition: 'all 0.2s',
     },
     assumptions: {
-        backgroundColor: '#1f1f23',
-        border: '1px solid #27272a',
+        backgroundColor: '#27272a',
+        padding: '12px',
         borderRadius: '6px',
-        padding: '12px 14px',
-        marginBottom: '16px',
         fontSize: '12px',
-        color: '#94a3b8',
-        fontStyle: 'italic',
-    },
-    doneBtn: {
-        backgroundColor: '#2563eb',
-        color: 'white',
-        padding: '10px 20px',
-        borderRadius: '6px',
-        border: 'none',
-        cursor: 'pointer',
-        fontSize: '14px',
-        fontWeight: 600,
-    },
+        color: '#a1a1aa',
+        marginBottom: '16px',
+    }
 };

@@ -12,6 +12,7 @@ export const VariantList: React.FC<VariantListProps> = ({ shotId }) => {
     const [variants, setVariants] = useState<ImageVariant[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isExpanded, setIsExpanded] = useState(false);
 
     const loadVariants = async () => {
         setLoading(true);
@@ -27,8 +28,21 @@ export const VariantList: React.FC<VariantListProps> = ({ shotId }) => {
             // Filter to only show variants with generated prompts
             const generated = data.filter(v => v && (v.generated_prompt || v.model_used || (v as any).model_name));
             console.log('[VARIANT-LIST] Filtered generated:', generated.length);
-            // Sort newest first (backend already does this, but ensure)
+            // Sort: Image models first, then Video models, then by date (newest first)
+            const imageModels = ['midjourney', 'higgsfield', 'higgsfield-cinema-studio', 'gpt-image', 'nano-banana-pro', 'dall-e-3'];
+
             generated.sort((a, b) => {
+                const aName = (a as any).model_name || a.model_used || '';
+                const bName = (b as any).model_name || b.model_used || '';
+
+                const aIsImage = imageModels.some(m => aName.toLowerCase().includes(m));
+                const bIsImage = imageModels.some(m => bName.toLowerCase().includes(m));
+
+                // Primary Sort: Image vs Video
+                if (aIsImage && !bIsImage) return -1;
+                if (!aIsImage && bIsImage) return 1;
+
+                // Secondary Sort: Date (Newest first)
                 const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
                 const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
                 return (isNaN(timeB) ? 0 : timeB) - (isNaN(timeA) ? 0 : timeA);
@@ -100,28 +114,34 @@ export const VariantList: React.FC<VariantListProps> = ({ shotId }) => {
         );
     }
 
+    // List Render
     return (
         <div style={styles.container}>
-            <div style={styles.header}>
-                Generated Variants ({variants.length})
+            <div
+                style={{ ...styles.header, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                onClick={() => setIsExpanded(!isExpanded)}
+            >
+                <span>{isExpanded ? '▼' : '▶'}</span> GENERATED PROMPTS ({variants.length})
             </div>
-            <div style={styles.list}>
-                {variants.map(v => (
-                    <VariantCard
-                        key={v.id}
-                        variant={{
-                            id: v.id,
-                            model_name: (v as any).model_name || v.model_used,
-                            prompt_used: v.prompt_used,
-                            generated_prompt: v.generated_prompt,
-                            quality_tier: v.quality_tier,
-                            quality_percentage: v.quality_percentage,
-                            created_at: v.created_at,
-                        }}
-                        onDelete={handleDelete}
-                    />
-                ))}
-            </div>
+            {isExpanded && (
+                <div style={styles.list}>
+                    {variants.map(v => (
+                        <VariantCard
+                            key={v.id}
+                            variant={{
+                                id: v.id,
+                                model_name: (v as any).model_name || v.model_used,
+                                prompt_used: v.prompt_used,
+                                generated_prompt: v.generated_prompt,
+                                quality_tier: v.quality_tier,
+                                quality_percentage: v.quality_percentage,
+                                created_at: v.created_at,
+                            }}
+                            onDelete={handleDelete}
+                        />
+                    ))}
+                </div>
+            )}
         </div>
     );
 };
