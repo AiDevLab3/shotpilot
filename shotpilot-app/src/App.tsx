@@ -131,12 +131,10 @@ const App: React.FC = () => {
                 <main style={{ flex: '1 1 auto', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                     <Routes>
                         <Route path="/" element={<IndexRedirect />} />
-                        <Route path="/projects/:id" element={<ProjectInfoPage />} />
+                        <Route path="/projects/:id" element={<CreativeDirectorPage />} />
                         <Route path="/projects/:id/characters" element={<CharacterBiblePage />} />
                         <Route path="/projects/:id/objects" element={<ObjectBiblePage />} />
                         <Route path="/projects/:id/scenes" element={<ShotBoardPage />} />
-                        <Route path="/projects/:id/script" element={<ScriptAnalyzerPage />} />
-                        <Route path="/projects/:id/creative-director" element={<CreativeDirectorPage />} />
                     </Routes>
                 </main>
             </div>

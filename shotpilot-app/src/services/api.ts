@@ -351,10 +351,11 @@ export const creativeDirectorChat = async (
     history: { role: string; content: string }[],
     scriptContent: string,
     mode: string,
+    imageUrl?: string,
 ): Promise<{ response: string; projectUpdates: any; scriptUpdates: string | null }> => {
     return apiCall(`/projects/${projectId}/creative-director`, {
         method: 'POST',
-        body: JSON.stringify({ message, history, scriptContent, mode }),
+        body: JSON.stringify({ message, history, scriptContent, mode, imageUrl }),
     });
 };
 

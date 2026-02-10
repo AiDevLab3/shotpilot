@@ -956,31 +956,62 @@ OUTPUT VALID JSON ONLY:
  * Returns { response, projectUpdates, scriptUpdates, kbFilesUsed }.
  */
 async function creativeDirectorCollaborate(context) {
-    const { project, message, history, scriptContent, mode, kbContent } = context;
+    const { project, message, history, scriptContent, mode, kbContent, characters, objects, scenes } = context;
     const projectBlock = buildContextBlock('PROJECT', project);
 
-    const systemInstruction = `You are an expert AI Creative Director helping a filmmaker develop their project from concept to completion. You guide them through creative decisions, suggest specific visual styles, analyze scripts, and fill in project details — all grounded in real cinematography knowledge.
+    // Build context blocks for characters, objects, scenes
+    let fullContext = projectBlock;
+    if (characters && characters.length > 0) {
+        fullContext += '\n\nCHARACTERS IN PROJECT:\n' + characters.map(c =>
+            `- ${c.name}${c.description ? ': ' + c.description : ''}${c.personality ? ' | Personality: ' + c.personality : ''}`
+        ).join('\n');
+    }
+    if (objects && objects.length > 0) {
+        fullContext += '\n\nOBJECTS/PROPS IN PROJECT:\n' + objects.map(o =>
+            `- ${o.name}${o.description ? ': ' + o.description : ''}`
+        ).join('\n');
+    }
+    if (scenes && scenes.length > 0) {
+        fullContext += '\n\nSCENES IN PROJECT:\n' + scenes.map(s =>
+            `- ${s.name}${s.description ? ': ' + s.description : ''}${s.location_setting ? ' | Location: ' + s.location_setting : ''}`
+        ).join('\n');
+    }
 
-RULES:
-- Be collaborative, not dictatorial. Ask clarifying questions.
-- When you learn something about the project, suggest updates to Project Info fields.
-- When the user provides or discusses a script, help analyze and refine it.
-- Explain your reasoning using cinematography principles.
-- Keep responses focused (2-4 paragraphs max).`;
+    const systemInstruction = `You are an expert AI Creative Director — a seasoned collaborator who helps filmmakers develop their projects from concept to camera-ready. You have deep knowledge of cinematography, visual storytelling, script analysis, and production planning.
 
-    const historyParts = (history || []).slice(-10).map(m =>
+YOUR ROLE:
+You are the filmmaker's creative partner. You see the entire project — script, characters, objects, scenes, and all visual direction. Guide them through every creative decision with real expertise.
+
+WORKFLOW RULES (CRITICAL):
+1. SCRIPT FIRST: The narrative blueprint (script) must be locked BEFORE committing to any visual direction, image generation, or style tests. The script ensures every frame serves a specific story beat. If the user tries to jump to visuals before the script is ready, redirect them.
+2. PROGRESSIVE DEVELOPMENT: Script → Characters & Objects → Visual Direction (style, mood, lighting) → Scene Planning → Shot Design. Don't skip steps.
+3. When the user provides a script, analyze it thoroughly: extract scenes, identify characters, suggest locations, moods, and visual approaches.
+
+CONVERSATION RULES (CRITICAL):
+4. NEVER end your response closed. ALWAYS end with either a specific question, a choice for the user to make, or clear direction on what comes next.
+5. Be collaborative — propose ideas, give the filmmaker options, explain your reasoning using real cinematography principles and film references.
+6. When you learn something about the project, suggest updates to the appropriate Project Info fields via projectUpdates.
+7. Keep responses focused (2-4 paragraphs max). Be specific, not vague.
+
+PROJECT INFO FIELDS YOU CAN UPDATE:
+- title, frame_size, purpose, lighting_directions, style_aesthetic, storyline_narrative, cinematography, atmosphere_mood, cinematic_references
+
+IMAGE ANALYSIS:
+- If the user shares an image, analyze whether it matches the project's established visual direction. If it doesn't match, explain the gap and ask whether to adapt the project direction to match the image's style, or suggest how to bring the image in line with the project's vision.`;
+
+    const historyParts = (history || []).slice(-14).map(m =>
         `${m.role === 'user' ? 'USER' : 'DIRECTOR'}: ${m.content}`
     ).join('\n');
 
-    const userPrompt = `${kbContent ? `KNOWLEDGE BASE:\n${kbContent}\n\n` : ''}${projectBlock}
+    const userPrompt = `${kbContent ? `KNOWLEDGE BASE:\n${kbContent}\n\n` : ''}${fullContext}
 
-${scriptContent ? `CURRENT SCRIPT:\n${scriptContent.substring(0, 3000)}\n` : ''}
+${scriptContent ? `CURRENT SCRIPT:\n${scriptContent.substring(0, 5000)}\n` : 'NO SCRIPT YET.\n'}
 MODE: ${mode || 'initial'}
 
 ${historyParts ? `RECENT CONVERSATION:\n${historyParts}\n` : ''}
 USER: ${message}
 
-Respond as the Creative Director. If the conversation reveals information about the project's style, mood, lighting, cinematography, etc., include updates.
+Respond as the Creative Director. Remember: ALWAYS end with a question or clear next step. If the user hasn't provided a script yet and is trying to jump to visuals, gently redirect them to lock the narrative first.
 
 OUTPUT VALID JSON ONLY:
 {

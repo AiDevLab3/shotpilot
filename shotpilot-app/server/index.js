@@ -487,14 +487,25 @@ app.post('/api/projects/:projectId/refine-content', requireAuth, async (req, res
 app.post('/api/projects/:projectId/creative-director', requireAuth, async (req, res) => {
     try {
         const { projectId } = req.params;
-        const { message, history, scriptContent, mode } = req.body;
+        const { message, history, scriptContent, mode, imageUrl } = req.body;
 
         if (!message) return res.status(400).json({ error: 'message required' });
 
         const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId);
         if (!project) return res.status(404).json({ error: 'Project not found' });
 
-        const kbFiles = ['01_Core_Realism_Principles.md', '03_Pack_Spatial_Composition.md', '03_Pack_Quality_Control.md', '03_Pack_Character_Consistency.md'];
+        // Load full project context: characters, objects, scenes
+        const characters = db.prepare('SELECT * FROM characters WHERE project_id = ?').all(projectId);
+        const objects = db.prepare('SELECT * FROM objects WHERE project_id = ?').all(projectId);
+        const scenes = db.prepare('SELECT * FROM scenes WHERE project_id = ?').all(projectId);
+
+        const kbFiles = [
+            '01_Core_Realism_Principles.md',
+            '03_Pack_Spatial_Composition.md',
+            '03_Pack_Quality_Control.md',
+            '03_Pack_Character_Consistency.md',
+            '03_Pack_Motion_Readiness.md',
+        ];
 
         let kbContent = '';
         try {
@@ -505,6 +516,7 @@ app.post('/api/projects/:projectId/creative-director', requireAuth, async (req, 
 
         const result = await creativeDirectorCollaborate({
             project, message, history, scriptContent, mode, kbContent,
+            characters, objects, scenes, imageUrl,
         });
 
         logAIFeatureUsage(db, req.session.userId, 'creative_director', projectId);
