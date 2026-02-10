@@ -72,6 +72,20 @@ vi.mock('../server/services/geminiService.js', () => ({
     generatePrompt: vi.fn().mockResolvedValue({ prompt: 'test prompt' }),
     analyzeQuality: vi.fn().mockResolvedValue({}),
     buildContextBlock: vi.fn().mockReturnValue(''),
+    refineContent: vi.fn().mockResolvedValue({
+        response: 'I\'ve made the character younger with a more casual look.',
+        contentUpdate: {
+            description: 'A young detective in his early 30s with bright eyes.',
+            personality: 'Energetic, optimistic, quick-witted',
+            referencePrompt: 'young male detective, bright eyes, casual jacket',
+            consistencyTips: ['Keep youthful appearance', 'Maintain bright eye color'],
+        },
+    }),
+    creativeDirectorCollaborate: vi.fn().mockResolvedValue({
+        response: 'Great concept! A noir thriller set in a rain-soaked city gives us rich visual material to work with.',
+        projectUpdates: { style_aesthetic: 'Neo-noir realism', atmosphere_mood: 'Tense, rain-soaked melancholy' },
+        scriptUpdates: null,
+    }),
 }));
 
 let request;
@@ -140,6 +154,25 @@ beforeAll(async () => {
     // Create test object
     await request.post(`/api/projects/${testProjectId}/objects`)
         .send({ name: 'Pocket Watch', description: 'An old brass pocket watch' });
+});
+
+// Clean up test data after all tests complete
+afterAll(async () => {
+    if (!request) return;
+    try {
+        // Get all projects and delete test ones (keep only user's real projects)
+        const res = await request.get('/api/projects');
+        if (res.status === 200 && Array.isArray(res.body)) {
+            const testTitles = ['Test Noir Film', 'Integration Test Film'];
+            for (const proj of res.body) {
+                if (testTitles.includes(proj.title)) {
+                    await request.delete(`/api/projects/${proj.id}`);
+                }
+            }
+        }
+    } catch (err) {
+        console.warn('[TEST CLEANUP] Could not clean up test data:', err.message);
+    }
 });
 
 // ===================================================================
@@ -826,7 +859,135 @@ describe('Error Handling & Edge Cases', () => {
 });
 
 // ===================================================================
-// TEST 11: CRUD Foundation Verification
+// TEST 11: Content Refinement (Conversational)
+// ===================================================================
+describe('Content Refinement (Conversational)', () => {
+    it('should refine character suggestions', async () => {
+        const res = await request
+            .post(`/api/projects/${testProjectId}/refine-content`)
+            .send({
+                type: 'character',
+                currentContent: { description: 'An old detective', personality: 'Gruff' },
+                message: 'Make him younger',
+                history: [],
+            });
+
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveProperty('response');
+        expect(res.body).toHaveProperty('contentUpdate');
+        expect(res.body).toHaveProperty('kbFilesUsed');
+    });
+
+    it('should refine object suggestions', async () => {
+        const res = await request
+            .post(`/api/projects/${testProjectId}/refine-content`)
+            .send({
+                type: 'object',
+                currentContent: { description: 'A brass watch' },
+                message: 'Make it more worn',
+                history: [],
+            });
+
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveProperty('response');
+    });
+
+    it('should require message parameter', async () => {
+        const res = await request
+            .post(`/api/projects/${testProjectId}/refine-content`)
+            .send({ type: 'character', currentContent: {} });
+
+        expect(res.status).toBe(400);
+    });
+
+    it('should require valid type', async () => {
+        const res = await request
+            .post(`/api/projects/${testProjectId}/refine-content`)
+            .send({ type: 'invalid', currentContent: {}, message: 'test' });
+
+        expect(res.status).toBe(400);
+    });
+
+    it('should return 404 for non-existent project', async () => {
+        const res = await request
+            .post('/api/projects/99999/refine-content')
+            .send({ type: 'character', currentContent: {}, message: 'test' });
+
+        expect(res.status).toBe(404);
+    });
+});
+
+// ===================================================================
+// TEST 12: Creative Director Workspace
+// ===================================================================
+describe('Creative Director Workspace', () => {
+    it('should respond to a creative director message', async () => {
+        const res = await request
+            .post(`/api/projects/${testProjectId}/creative-director`)
+            .send({
+                message: 'I want to make a noir thriller',
+                history: [],
+                scriptContent: '',
+                mode: 'idea-first',
+            });
+
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveProperty('response');
+        expect(res.body).toHaveProperty('kbFilesUsed');
+    });
+
+    it('should return project updates when relevant', async () => {
+        const res = await request
+            .post(`/api/projects/${testProjectId}/creative-director`)
+            .send({
+                message: 'The style should be neo-noir with rain-soaked visuals',
+                history: [],
+                scriptContent: '',
+                mode: 'idea-first',
+            });
+
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveProperty('projectUpdates');
+    });
+
+    it('should require message parameter', async () => {
+        const res = await request
+            .post(`/api/projects/${testProjectId}/creative-director`)
+            .send({ history: [], scriptContent: '', mode: 'initial' });
+
+        expect(res.status).toBe(400);
+    });
+
+    it('should return 404 for non-existent project', async () => {
+        const res = await request
+            .post('/api/projects/99999/creative-director')
+            .send({ message: 'test', history: [], scriptContent: '', mode: 'initial' });
+
+        expect(res.status).toBe(404);
+    });
+
+    it('should support conversation history', async () => {
+        const history = [
+            { role: 'user', content: 'I want a noir film' },
+            { role: 'assistant', content: 'Great choice! Tell me more.' },
+        ];
+
+        const res = await request
+            .post(`/api/projects/${testProjectId}/creative-director`)
+            .send({
+                message: 'Set in 1940s Los Angeles',
+                history,
+                scriptContent: '',
+                mode: 'idea-first',
+            });
+
+        expect(res.status).toBe(200);
+        expect(typeof res.body.response).toBe('string');
+    });
+});
+
+// ===================================================================
+// TEST 13: CRUD Foundation Verification
 // ===================================================================
 describe('CRUD Foundation (Phase 2 non-regression)', () => {
     it('should list projects', async () => {

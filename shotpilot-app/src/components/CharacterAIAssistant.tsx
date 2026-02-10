@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Sparkles, Loader2, Check, Copy, ChevronDown } from 'lucide-react';
+import { Sparkles, Loader2, Check, Copy, ChevronDown, Send, MessageCircle } from 'lucide-react';
 import type { CharacterSuggestions } from '../types/schema';
-import { getCharacterSuggestions } from '../services/api';
+import { getCharacterSuggestions, refineContent } from '../services/api';
 
 interface CharacterAIAssistantProps {
     projectId: number;
@@ -28,6 +28,10 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
     const [personalityApplied, setPersonalityApplied] = useState(false);
     const [promptCopied, setPromptCopied] = useState(false);
     const [tipsExpanded, setTipsExpanded] = useState(false);
+    const [chatOpen, setChatOpen] = useState(false);
+    const [chatInput, setChatInput] = useState('');
+    const [chatHistory, setChatHistory] = useState<{ role: string; content: string }[]>([]);
+    const [refining, setRefining] = useState(false);
 
     const nameIsEmpty = !characterName || characterName.trim().length === 0;
 
@@ -86,6 +90,37 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
             }
         }
     };
+
+    const handleRefine = async (msg?: string) => {
+        const text = msg || chatInput.trim();
+        if (!text || refining || !suggestions) return;
+        setChatInput('');
+        setRefining(true);
+        const newHistory = [...chatHistory, { role: 'user', content: text }];
+        setChatHistory(newHistory);
+        try {
+            const result = await refineContent(projectId, 'character', suggestions, text, newHistory);
+            if (result.contentUpdate) {
+                setSuggestions(prev => prev ? { ...prev, ...result.contentUpdate } : prev);
+                setDescriptionApplied(false);
+                setPersonalityApplied(false);
+            }
+            setChatHistory([...newHistory, { role: 'assistant', content: result.response }]);
+        } catch (err: any) {
+            setChatHistory([...newHistory, { role: 'assistant', content: 'Sorry, something went wrong. Try again.' }]);
+        } finally {
+            setRefining(false);
+        }
+    };
+
+    const quickActions = [
+        'Make younger (early 30s)',
+        'Make older (late 50s)',
+        'More intimidating appearance',
+        'Softer, more approachable look',
+        'Change wardrobe to formal attire',
+        'Regenerate completely',
+    ];
 
     // Not yet loaded -- show trigger button
     if (!hasLoaded && !loading) {
@@ -255,6 +290,107 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
                             )}
                         </div>
                     )}
+
+                    {/* Conversational Refinement */}
+                    <div style={{ backgroundColor: '#1f1f23', borderLeft: '3px solid #6d28d9', padding: '10px 12px' }}>
+                        <button
+                            onClick={() => setChatOpen(prev => !prev)}
+                            style={{ ...styles.tipsToggle, padding: '0' }}
+                        >
+                            <span style={{ ...styles.tipsToggleText, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <MessageCircle size={13} /> Refine with AI
+                            </span>
+                            <ChevronDown size={14} style={{ transform: chatOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+                        </button>
+                        {chatOpen && (
+                            <div style={{ marginTop: '10px' }}>
+                                {/* Quick Actions */}
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
+                                    {quickActions.map((action, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => handleRefine(action)}
+                                            disabled={refining}
+                                            style={{
+                                                padding: '3px 8px',
+                                                backgroundColor: '#27272a',
+                                                border: '1px solid #3f3f46',
+                                                borderRadius: '4px',
+                                                color: '#a78bfa',
+                                                fontSize: '10px',
+                                                cursor: refining ? 'not-allowed' : 'pointer',
+                                                opacity: refining ? 0.5 : 1,
+                                            }}
+                                        >
+                                            {action}
+                                        </button>
+                                    ))}
+                                </div>
+                                {/* Chat History */}
+                                {chatHistory.length > 0 && (
+                                    <div style={{ maxHeight: '150px', overflowY: 'auto', marginBottom: '8px', padding: '6px', backgroundColor: '#18181b', borderRadius: '4px' }}>
+                                        {chatHistory.map((msg, i) => (
+                                            <div key={i} style={{
+                                                padding: '4px 8px',
+                                                marginBottom: '4px',
+                                                borderRadius: '4px',
+                                                backgroundColor: msg.role === 'user' ? '#27272a' : '#1a2a2a',
+                                                color: msg.role === 'user' ? '#d1d5db' : '#a7f3d0',
+                                                fontSize: '11px',
+                                                lineHeight: '1.4',
+                                                marginLeft: msg.role === 'user' ? '20%' : '0',
+                                                marginRight: msg.role === 'user' ? '0' : '20%',
+                                            }}>
+                                                {msg.content}
+                                            </div>
+                                        ))}
+                                        {refining && (
+                                            <div style={{ padding: '4px 8px', color: '#a78bfa', fontSize: '11px' }}>
+                                                <Loader2 size={11} className="spin" style={{ display: 'inline' }} /> Refining...
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                {/* Chat Input */}
+                                <div style={{ display: 'flex', gap: '4px' }}>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Make hair longer, add a scar..."
+                                        value={chatInput}
+                                        onChange={(e) => setChatInput(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleRefine()}
+                                        disabled={refining}
+                                        style={{
+                                            flex: 1,
+                                            padding: '6px 8px',
+                                            backgroundColor: '#18181b',
+                                            border: '1px solid #3f3f46',
+                                            borderRadius: '4px',
+                                            color: '#e5e7eb',
+                                            fontSize: '12px',
+                                            outline: 'none',
+                                        }}
+                                    />
+                                    <button
+                                        onClick={() => handleRefine()}
+                                        disabled={!chatInput.trim() || refining}
+                                        style={{
+                                            padding: '6px 10px',
+                                            backgroundColor: chatInput.trim() && !refining ? '#8b5cf6' : '#3f3f46',
+                                            border: 'none',
+                                            borderRadius: '4px',
+                                            color: 'white',
+                                            cursor: chatInput.trim() && !refining ? 'pointer' : 'not-allowed',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                        }}
+                                    >
+                                        <Send size={12} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             ) : null}
         </div>

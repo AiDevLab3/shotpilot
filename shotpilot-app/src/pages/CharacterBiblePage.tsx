@@ -180,19 +180,21 @@ export const CharacterBiblePage: React.FC = () => {
             bottom: 0,
             backgroundColor: 'rgba(0, 0, 0, 0.7)',
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             justifyContent: 'center',
             zIndex: 1000,
-            padding: '16px'
+            padding: '24px 16px',
+            overflowY: 'auto' as const,
         },
         modalContent: {
             backgroundColor: '#27272a',
             border: '1px solid #3f3f46',
             borderRadius: '12px',
             width: '100%',
-            maxWidth: '500px',
+            maxWidth: '560px',
             padding: '24px',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            margin: 'auto 0',
         },
         formGroup: {
             marginBottom: '16px'

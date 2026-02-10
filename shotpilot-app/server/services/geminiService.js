@@ -493,20 +493,27 @@ async function generateAestheticSuggestions(context) {
 
     const systemInstruction = `You are an expert cinematographer and visual storyteller. Based on the project context, suggest aesthetic values for empty or weak fields. Ground suggestions in real cinematography principles. Be specific — name actual film references, lighting techniques, and visual styles. Each suggestion should feel like advice from a seasoned director of photography.`;
 
-    // Determine which fields need suggestions
-    const fieldsToSuggest = [];
-    if (!project.style_aesthetic || project.style_aesthetic.trim() === '') {
-        fieldsToSuggest.push({ field: 'style_aesthetic', label: 'Style & Aesthetic', hint: 'Visual style, color palette, texture, film stock look' });
-    }
-    if (!project.atmosphere_mood || project.atmosphere_mood.trim() === '') {
-        fieldsToSuggest.push({ field: 'atmosphere_mood', label: 'Atmosphere & Mood', hint: 'Emotional tone, tension level, viewer feeling' });
-    }
-    if (!project.lighting_directions || project.lighting_directions.trim() === '') {
-        fieldsToSuggest.push({ field: 'lighting_directions', label: 'Lighting Directions', hint: 'Key light style, practical vs motivated, color temperature' });
-    }
-    if (!project.cinematic_references || project.cinematic_references.trim() === '') {
-        fieldsToSuggest.push({ field: 'cinematic_references', label: 'Cinematic References', hint: 'Reference films, directors, specific scenes to emulate' });
-    }
+    // Define ALL Project Info fields to check
+    const allProjectFields = [
+        { field: 'frame_size', label: 'Frame Size (Aspect Ratio)', hint: 'Aspect ratio like 16:9, 2.39:1, 4:3' },
+        { field: 'style_aesthetic', label: 'Style & Aesthetic', hint: 'Visual style, color palette, texture, film stock look' },
+        { field: 'atmosphere_mood', label: 'Atmosphere & Mood', hint: 'Emotional tone, tension level, viewer feeling' },
+        { field: 'lighting_directions', label: 'Lighting Directions', hint: 'Key light style, practical vs motivated, color temperature' },
+        { field: 'purpose', label: 'Purpose', hint: 'Project intent: commercial, narrative film, music video, documentary' },
+        { field: 'storyline_narrative', label: 'Storyline / Narrative', hint: 'Core story arc, theme, narrative structure' },
+        { field: 'cinematography', label: 'Cinematography', hint: 'Camera philosophy, lens choices, movement style' },
+        { field: 'cinematic_references', label: 'Cinematic References', hint: 'Reference films, directors, specific scenes to emulate' },
+    ];
+
+    // Find empty fields — treat null, undefined, empty string, and placeholder defaults as empty
+    const isFieldEmpty = (value) => {
+        if (!value || String(value).trim() === '') return true;
+        const v = String(value).trim().toLowerCase();
+        if (v === 'select aspect ratio' || v.startsWith('describe ') || v.startsWith('outline ') || v.startsWith('camera angles')) return true;
+        return false;
+    };
+
+    const fieldsToSuggest = allProjectFields.filter(f => isFieldEmpty(project[f.field]));
 
     if (fieldsToSuggest.length === 0) {
         return [];
@@ -887,6 +894,128 @@ OUTPUT VALID JSON ONLY:
     }
 }
 
+/**
+ * Refine character or object suggestions through conversation.
+ * Returns { response, contentUpdate, kbFilesUsed }.
+ */
+async function refineContent(context) {
+    const { type, currentContent, message, history, project, kbContent } = context;
+    const projectBlock = buildContextBlock('PROJECT', project);
+
+    const systemInstruction = `You are refining a ${type} for an AI filmmaking project through conversation with the user. Listen carefully and update ONLY what they ask for. Keep everything else unchanged.`;
+
+    const historyParts = (history || []).map(m =>
+        `${m.role === 'user' ? 'USER' : 'ASSISTANT'}: ${m.content}`
+    ).join('\n');
+
+    const userPrompt = `${kbContent ? `KNOWLEDGE BASE:\n${kbContent}\n\n` : ''}${projectBlock}
+
+CURRENT ${type.toUpperCase()}:
+${JSON.stringify(currentContent, null, 2)}
+
+${historyParts ? `CONVERSATION SO FAR:\n${historyParts}\n` : ''}
+USER REQUEST: ${message}
+
+Respond conversationally (1-3 sentences acknowledging the change), then provide the COMPLETE updated ${type} as JSON.
+
+OUTPUT VALID JSON ONLY:
+{
+  "response": "Your conversational reply about the changes made",
+  "contentUpdate": { <the full updated ${type} object with all fields, reflecting the requested changes> }
+}`;
+
+    try {
+        const text = await callGemini({
+            parts: [{ text: userPrompt }],
+            systemInstruction,
+            thinkingLevel: 'medium',
+            responseMimeType: 'application/json',
+            maxOutputTokens: 2048,
+        });
+
+        let parsed;
+        try {
+            parsed = JSON.parse(text);
+        } catch (e) {
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                parsed = JSON.parse(jsonMatch[0]);
+            } else {
+                return { response: text, contentUpdate: null };
+            }
+        }
+        return parsed;
+    } catch (error) {
+        console.error(`[gemini] ${type} refinement error:`, error);
+        throw error;
+    }
+}
+
+/**
+ * Phase 3 Creative Director: conversational project development.
+ * Returns { response, projectUpdates, scriptUpdates, kbFilesUsed }.
+ */
+async function creativeDirectorCollaborate(context) {
+    const { project, message, history, scriptContent, mode, kbContent } = context;
+    const projectBlock = buildContextBlock('PROJECT', project);
+
+    const systemInstruction = `You are an expert AI Creative Director helping a filmmaker develop their project from concept to completion. You guide them through creative decisions, suggest specific visual styles, analyze scripts, and fill in project details — all grounded in real cinematography knowledge.
+
+RULES:
+- Be collaborative, not dictatorial. Ask clarifying questions.
+- When you learn something about the project, suggest updates to Project Info fields.
+- When the user provides or discusses a script, help analyze and refine it.
+- Explain your reasoning using cinematography principles.
+- Keep responses focused (2-4 paragraphs max).`;
+
+    const historyParts = (history || []).slice(-10).map(m =>
+        `${m.role === 'user' ? 'USER' : 'DIRECTOR'}: ${m.content}`
+    ).join('\n');
+
+    const userPrompt = `${kbContent ? `KNOWLEDGE BASE:\n${kbContent}\n\n` : ''}${projectBlock}
+
+${scriptContent ? `CURRENT SCRIPT:\n${scriptContent.substring(0, 3000)}\n` : ''}
+MODE: ${mode || 'initial'}
+
+${historyParts ? `RECENT CONVERSATION:\n${historyParts}\n` : ''}
+USER: ${message}
+
+Respond as the Creative Director. If the conversation reveals information about the project's style, mood, lighting, cinematography, etc., include updates.
+
+OUTPUT VALID JSON ONLY:
+{
+  "response": "Your creative director response (markdown supported)",
+  "projectUpdates": null or { "field_name": "suggested value", ... },
+  "scriptUpdates": null or "updated script text if relevant"
+}`;
+
+    try {
+        const text = await callGemini({
+            parts: [{ text: userPrompt }],
+            systemInstruction,
+            thinkingLevel: 'high',
+            responseMimeType: 'application/json',
+            maxOutputTokens: 3072,
+        });
+
+        let parsed;
+        try {
+            parsed = JSON.parse(text);
+        } catch (e) {
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                parsed = JSON.parse(jsonMatch[0]);
+            } else {
+                return { response: text, projectUpdates: null, scriptUpdates: null };
+            }
+        }
+        return parsed;
+    } catch (error) {
+        console.error('[gemini] Creative director error:', error);
+        throw error;
+    }
+}
+
 export {
     generateRecommendations,
     generatePrompt,
@@ -898,4 +1027,6 @@ export {
     analyzeScript,
     generateObjectSuggestions,
     buildContextBlock,
+    refineContent,
+    creativeDirectorCollaborate,
 };

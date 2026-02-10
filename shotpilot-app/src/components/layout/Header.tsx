@@ -201,6 +201,17 @@ export const Header: React.FC = () => {
                 >
                     Script
                 </NavLink>
+                <NavLink
+                    to={`/projects/${pid}/creative-director`}
+                    style={({ isActive }) => ({
+                        ...styles.navLink,
+                        ...(isActive ? styles.activeNavLink : {}),
+                        color: isActive ? '#8b5cf6' : '#8A8A8A',
+                        borderBottomColor: isActive ? '#8b5cf6' : 'transparent',
+                    })}
+                >
+                    Creative Director
+                </NavLink>
             </nav>
         </header>
     );
