@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { Project } from '../types/schema';
 import { updateProject, createProject, getAllProjects } from '../services/api';
+import { AestheticSuggestionsPanel } from '../components/AestheticSuggestionsPanel';
 
 export const ProjectInfoPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
@@ -48,6 +49,10 @@ export const ProjectInfoPage: React.FC = () => {
             console.error("Failed to save project", error);
             alert('Failed to save project.');
         }
+    };
+
+    const handleAcceptSuggestion = (field: string, value: string) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
     };
 
     if (loading) return <div style={{ padding: '32px', color: 'white' }}>Loading project...</div>;
@@ -304,6 +309,14 @@ export const ProjectInfoPage: React.FC = () => {
                         />
                     </div>
                 </div>
+
+                {/* AI Aesthetic Suggestions */}
+                {projectId && (
+                    <AestheticSuggestionsPanel
+                        projectId={projectId}
+                        onAccept={handleAcceptSuggestion}
+                    />
+                )}
             </div>
 
             <button

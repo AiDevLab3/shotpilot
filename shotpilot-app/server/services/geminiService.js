@@ -469,9 +469,113 @@ OUTPUT FORMAT:
     }
 }
 
+/**
+ * Generate aesthetic suggestions for a project based on its context.
+ * Returns AI-driven suggestions for style_aesthetic, atmosphere_mood,
+ * lighting_directions, and cinematic_references.
+ */
+async function generateAestheticSuggestions(context) {
+    const { project, scenes, kbContent } = context;
+
+    const projectBlock = buildContextBlock('PROJECT', project);
+
+    let scenesBlock = '';
+    if (scenes && scenes.length > 0) {
+        scenesBlock = 'SCENES:\n' + scenes.map(s => {
+            const parts = [`  - ${s.name || 'Untitled'}`];
+            if (s.location_setting) parts.push(`location: ${s.location_setting}`);
+            if (s.mood_tone) parts.push(`mood: ${s.mood_tone}`);
+            if (s.time_of_day) parts.push(`time: ${s.time_of_day}`);
+            if (s.weather_atmosphere) parts.push(`weather: ${s.weather_atmosphere}`);
+            return parts.join(', ');
+        }).join('\n');
+    }
+
+    const systemInstruction = `You are an expert cinematographer and visual storyteller. Based on the project context, suggest aesthetic values for empty or weak fields. Ground suggestions in real cinematography principles. Be specific — name actual film references, lighting techniques, and visual styles. Each suggestion should feel like advice from a seasoned director of photography.`;
+
+    // Determine which fields need suggestions
+    const fieldsToSuggest = [];
+    if (!project.style_aesthetic || project.style_aesthetic.trim() === '') {
+        fieldsToSuggest.push({ field: 'style_aesthetic', label: 'Style & Aesthetic', hint: 'Visual style, color palette, texture, film stock look' });
+    }
+    if (!project.atmosphere_mood || project.atmosphere_mood.trim() === '') {
+        fieldsToSuggest.push({ field: 'atmosphere_mood', label: 'Atmosphere & Mood', hint: 'Emotional tone, tension level, viewer feeling' });
+    }
+    if (!project.lighting_directions || project.lighting_directions.trim() === '') {
+        fieldsToSuggest.push({ field: 'lighting_directions', label: 'Lighting Directions', hint: 'Key light style, practical vs motivated, color temperature' });
+    }
+    if (!project.cinematic_references || project.cinematic_references.trim() === '') {
+        fieldsToSuggest.push({ field: 'cinematic_references', label: 'Cinematic References', hint: 'Reference films, directors, specific scenes to emulate' });
+    }
+
+    if (fieldsToSuggest.length === 0) {
+        return [];
+    }
+
+    let kbSection = '';
+    if (kbContent) {
+        kbSection = `\nUse these cinematography principles:\n${kbContent}\n`;
+    }
+
+    const userPrompt = `Based on this project, generate aesthetic suggestions for missing fields.
+${kbSection}
+${projectBlock}
+
+${scenesBlock}
+
+FIELDS NEEDING SUGGESTIONS:
+${fieldsToSuggest.map(f => `- "${f.field}" (${f.label}): ${f.hint}`).join('\n')}
+
+For each field, provide a specific, actionable suggestion grounded in real cinematography.
+
+OUTPUT VALID JSON ARRAY ONLY:
+[
+  {
+    "field": "style_aesthetic",
+    "value": "neo-noir realism",
+    "reasoning": "Brief explanation of why this aesthetic fits the project (2-3 sentences)",
+    "alternatives": ["alternative 1", "alternative 2"]
+  }
+]`;
+
+    try {
+        const text = await callGemini({
+            parts: [{ text: userPrompt }],
+            systemInstruction,
+            thinkingLevel: 'medium',
+            responseMimeType: 'application/json',
+            maxOutputTokens: 2048,
+        });
+
+        let parsed;
+        try {
+            parsed = JSON.parse(text);
+        } catch (e) {
+            const jsonMatch = text.match(/\[[\s\S]*\]/);
+            if (jsonMatch) {
+                parsed = JSON.parse(jsonMatch[0]);
+            } else {
+                throw new Error('Could not parse aesthetic suggestions JSON');
+            }
+        }
+
+        // Validate: only return suggestions for fields we asked about
+        const validFields = new Set(fieldsToSuggest.map(f => f.field));
+        if (Array.isArray(parsed)) {
+            parsed = parsed.filter(s => validFields.has(s.field));
+        }
+
+        return parsed;
+    } catch (error) {
+        console.error('[gemini] Aesthetic suggestions error:', error);
+        throw error;
+    }
+}
+
 export {
     generateRecommendations,
     generatePrompt,
     analyzeQuality,
+    generateAestheticSuggestions,
     buildContextBlock,
 };

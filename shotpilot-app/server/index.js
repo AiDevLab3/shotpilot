@@ -10,7 +10,7 @@ import { setupAuth, requireAuth, checkCredits } from './middleware/auth.js';
 import { deductCredit, getUserCredits, getUsageStats } from './services/creditService.js';
 import { loadKBForModel, getAvailableModels, readKBFile } from './services/kbLoader.js';
 import { calculateCompleteness, checkQualityWithKB } from './services/qualityCheck.js';
-import { generateRecommendations, generatePrompt, analyzeQuality } from './services/geminiService.js';
+import { generateRecommendations, generatePrompt, analyzeQuality, generateAestheticSuggestions } from './services/geminiService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -237,6 +237,37 @@ app.post('/api/shots/:shotId/get-recommendations', requireAuth, async (req, res)
         res.json(recommendations);
     } catch (error) {
         console.error('Recommendations error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get aesthetic suggestions for a project (free - no credit cost)
+app.post('/api/projects/:projectId/aesthetic-suggestions', requireAuth, async (req, res) => {
+    try {
+        const { projectId } = req.params;
+
+        const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId);
+        if (!project) return res.status(404).json({ error: 'Project not found' });
+
+        const scenes = db.prepare('SELECT * FROM scenes WHERE project_id = ? ORDER BY order_index ASC').all(projectId);
+
+        // Load KB content for context-aware suggestions
+        let kbContent = '';
+        try {
+            const coreKB = readKBFile('01_Core_Realism_Principles.md');
+            const qualityKB = readKBFile('03_Pack_Quality_Control.md');
+            kbContent = [coreKB, qualityKB].filter(Boolean).join('\n\n');
+        } catch (err) {
+            console.warn('[aesthetic-suggestions] Could not load KB:', err.message);
+        }
+
+        const suggestions = await generateAestheticSuggestions({
+            project, scenes, kbContent
+        });
+
+        res.json(suggestions);
+    } catch (error) {
+        console.error('Aesthetic suggestions error:', error);
         res.status(500).json({ error: error.message });
     }
 });

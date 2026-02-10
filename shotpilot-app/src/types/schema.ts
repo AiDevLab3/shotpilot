@@ -106,3 +106,10 @@ export interface AIModel {
     description?: string;
     capabilities?: string;
 }
+
+export interface AestheticSuggestion {
+    field: string;
+    value: string;
+    reasoning: string;
+    alternatives?: string[];
+}

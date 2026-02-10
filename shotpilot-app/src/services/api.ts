@@ -1,4 +1,4 @@
-import type { Project, Character, ObjectItem, Scene, Shot, ImageVariant } from '../types/schema';
+import type { Project, Character, ObjectItem, Scene, Shot, ImageVariant, AestheticSuggestion } from '../types/schema';
 
 // v3: Module-level fingerprint to verify this version loaded in browser
 console.log('[API v3] api.ts loaded — has 401 interceptor + eager login');
@@ -270,6 +270,13 @@ export const updateVariant = async (id: number, data: Partial<ImageVariant>): Pr
     return apiCall(`/variants/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data)
+    });
+};
+
+// AESTHETIC SUGGESTIONS
+export const getAestheticSuggestions = async (projectId: number): Promise<AestheticSuggestion[]> => {
+    return apiCall(`/projects/${projectId}/aesthetic-suggestions`, {
+        method: 'POST',
     });
 };
 
