@@ -110,8 +110,7 @@ export const updateProject = async (id: number, data: Partial<Project>): Promise
 };
 
 export const deleteProject = async (id: number): Promise<void> => {
-    // Missing server endpoint, but not used in UI yet
-    console.log('Delete project', id);
+    await apiCall(`/projects/${id}`, { method: 'DELETE' });
 };
 
 // CHARACTERS

@@ -731,6 +731,12 @@ app.put('/api/projects/:id', (req, res) => {
     res.json({ success: true });
 });
 
+app.delete('/api/projects/:id', (req, res) => {
+    const { id } = req.params;
+    db.prepare('DELETE FROM projects WHERE id = ?').run(id);
+    res.json({ success: true });
+});
+
 // Characters
 app.get('/api/projects/:id/characters', (req, res) => {
     const { id } = req.params;

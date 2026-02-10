@@ -156,6 +156,25 @@ beforeAll(async () => {
         .send({ name: 'Pocket Watch', description: 'An old brass pocket watch' });
 });
 
+// Clean up test data after all tests complete
+afterAll(async () => {
+    if (!request) return;
+    try {
+        // Get all projects and delete test ones (keep only user's real projects)
+        const res = await request.get('/api/projects');
+        if (res.status === 200 && Array.isArray(res.body)) {
+            const testTitles = ['Test Noir Film', 'Integration Test Film'];
+            for (const proj of res.body) {
+                if (testTitles.includes(proj.title)) {
+                    await request.delete(`/api/projects/${proj.id}`);
+                }
+            }
+        }
+    } catch (err) {
+        console.warn('[TEST CLEANUP] Could not clean up test data:', err.message);
+    }
+});
+
 // ===================================================================
 // TEST 1: Phase 3.1 — Aesthetic Suggestions
 // ===================================================================
