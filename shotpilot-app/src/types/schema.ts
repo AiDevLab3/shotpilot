@@ -113,3 +113,56 @@ export interface AestheticSuggestion {
     reasoning: string;
     alternatives?: string[];
 }
+
+export interface CharacterSuggestions {
+    description: string;
+    personality: string;
+    referencePrompt: string;
+    consistencyTips: string[];
+}
+
+export interface ShotPlanShot {
+    shot_number: string;
+    shot_type: string;
+    camera_angle?: string;
+    camera_movement?: string;
+    focal_length?: string;
+    description: string;
+    blocking?: string;
+    purpose: string;
+}
+
+export interface ShotPlan {
+    shots: ShotPlanShot[];
+    sequenceReasoning: string;
+}
+
+export interface QualityDialogueResponse {
+    response: string;
+}
+
+export interface ScriptScene {
+    name: string;
+    description: string;
+    location_setting?: string;
+    time_of_day?: string;
+    mood_tone?: string;
+    suggestedShots: {
+        shot_type: string;
+        camera_angle?: string;
+        description: string;
+        purpose: string;
+    }[];
+}
+
+export interface ScriptAnalysis {
+    scenes: ScriptScene[];
+    characters: { name: string; description: string }[];
+    summary: string;
+}
+
+export interface ObjectSuggestions {
+    description: string;
+    referencePrompt: string;
+    consistencyTips: string[];
+}

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { Character } from '../types/schema';
 import { getCharacters, createCharacter, updateCharacter, deleteCharacter, getAllProjects, fileToBase64 } from '../services/api';
+import { CharacterAIAssistant } from '../components/CharacterAIAssistant';
 
 export const CharacterBiblePage: React.FC = () => {
     const [characters, setCharacters] = useState<Character[]>([]);
@@ -405,6 +406,20 @@ export const CharacterBiblePage: React.FC = () => {
                                 placeholder="Personality traits..."
                             />
                         </div>
+                        {/* AI Character Assistant */}
+                        {projectId && (
+                            <div style={styles.formGroup}>
+                                <CharacterAIAssistant
+                                    projectId={projectId}
+                                    characterName={formData.name || ''}
+                                    currentDescription={formData.description}
+                                    currentPersonality={formData.personality}
+                                    onAcceptDescription={(desc) => setFormData(prev => ({ ...prev, description: desc }))}
+                                    onAcceptPersonality={(pers) => setFormData(prev => ({ ...prev, personality: pers }))}
+                                />
+                            </div>
+                        )}
+
                         <div style={styles.formGroup}>
                             <label style={styles.label}>Reference Image</label>
                             {formData.reference_image_url ? (

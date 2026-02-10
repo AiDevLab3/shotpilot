@@ -6,6 +6,7 @@ import { CharacterBiblePage } from './pages/CharacterBiblePage';
 import { ObjectBiblePage } from './pages/ObjectBiblePage';
 
 import ShotBoardPage from './pages/ShotBoardPage';
+import { ScriptAnalyzerPage } from './pages/ScriptAnalyzerPage';
 import { getAllProjects, createProject } from './services/api';
 
 // Auto-login: MVP has no login page, so authenticate on mount
@@ -133,6 +134,7 @@ const App: React.FC = () => {
                         <Route path="/projects/:id/characters" element={<CharacterBiblePage />} />
                         <Route path="/projects/:id/objects" element={<ObjectBiblePage />} />
                         <Route path="/projects/:id/scenes" element={<ShotBoardPage />} />
+                        <Route path="/projects/:id/script" element={<ScriptAnalyzerPage />} />
                     </Routes>
                 </main>
             </div>

@@ -192,6 +192,15 @@ export const Header: React.FC = () => {
                 >
                     Scene Manager
                 </NavLink>
+                <NavLink
+                    to={`/projects/${pid}/script`}
+                    style={({ isActive }) => ({
+                        ...styles.navLink,
+                        ...(isActive ? styles.activeNavLink : {})
+                    })}
+                >
+                    Script
+                </NavLink>
             </nav>
         </header>
     );

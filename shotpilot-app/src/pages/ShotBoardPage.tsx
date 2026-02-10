@@ -1,13 +1,15 @@
 import React, { useEffect, useState, useRef } from 'react';
 import type { Project, Scene, Shot, ImageVariant } from '../types/schema';
 import { getScenes, getShots, createShot, updateShot, deleteShot, updateScene, createScene, deleteScene, getAllProjects, updateProject, fileToBase64, createImageVariant, getImageVariants, deleteImageVariant, getUserCredits } from '../services/api';
-import { Plus, Image as ImageIcon, Check, Video, Edit2, Trash2, ChevronDown, ChevronRight, FileText, Clock, Maximize2, Minimize2, Sparkles, Settings } from 'lucide-react';
+import { Plus, Image as ImageIcon, Check, Video, Edit2, Trash2, ChevronDown, ChevronRight, FileText, Clock, Maximize2, Minimize2, Sparkles, Settings, MessageCircle, Film } from 'lucide-react';
 
 import { GeneratePromptModal } from '../components/GeneratePromptModal';
 import { RecommendationsDialog } from '../components/RecommendationsDialog';
 import { VariantList } from '../components/VariantList';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { QualityBadge } from '../components/QualityBadge';
+import { ShotPlanningPanel } from '../components/ShotPlanningPanel';
+import { QualityDialogue } from '../components/QualityDialogue';
 
 // Specialized Dropdown Option Component
 const DropdownOption = ({
@@ -102,6 +104,16 @@ const ShotBoardPage: React.FC = () => {
     // Smart Suggestions
     const [suggestedScene, setSuggestedScene] = useState<Scene | null>(null);
     const [showSuggestion, setShowSuggestion] = useState(false);
+
+    // Phase 3.3: Shot Planning
+    const [isShotPlanOpen, setIsShotPlanOpen] = useState(false);
+    const [shotPlanSceneId, setShotPlanSceneId] = useState<number | null>(null);
+    const [shotPlanSceneName, setShotPlanSceneName] = useState('');
+
+    // Phase 3.4: Quality Dialogue
+    const [isQualityDialogueOpen, setIsQualityDialogueOpen] = useState(false);
+    const [qualityDialogueShotId, setQualityDialogueShotId] = useState<number | null>(null);
+    const [qualityDialogueScore, setQualityDialogueScore] = useState(0);
 
     // Initial Load
     useEffect(() => {
@@ -434,6 +446,30 @@ const ShotBoardPage: React.FC = () => {
 
 
 
+    // Phase 3.3: Shot Planning handlers
+    const handleOpenShotPlan = (scene: Scene, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        setShotPlanSceneId(scene.id);
+        setShotPlanSceneName(scene.name);
+        setIsShotPlanOpen(true);
+    };
+
+    const handleCreatePlannedShots = async (shots: Array<{ shot_number: string; shot_type: string; camera_angle?: string; camera_movement?: string; focal_length?: string; description: string; blocking?: string }>) => {
+        if (!shotPlanSceneId) return;
+        for (const shot of shots) {
+            await createShot(shotPlanSceneId, shot);
+        }
+        refreshSceneShots(shotPlanSceneId);
+        setIsShotPlanOpen(false);
+    };
+
+    // Phase 3.4: Quality Dialogue handlers
+    const handleOpenQualityDialogue = (shotId: number, score: number) => {
+        setQualityDialogueShotId(shotId);
+        setQualityDialogueScore(score);
+        setIsQualityDialogueOpen(true);
+    };
+
     const handleRecsClose = () => {
         setIsRecsDialogOpen(false);
     };
@@ -619,6 +655,7 @@ const ShotBoardPage: React.FC = () => {
 
                                         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             <span style={styles.shotCount}>{sceneShots.length} shots</span>
+                                            <button onClick={(e) => handleOpenShotPlan(scene, e)} style={{ background: 'none', border: 'none', color: '#8b5cf6', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', gap: '2px', fontSize: '11px', fontWeight: 600 }} title="AI Plan Shots"><Film size={14} /> Plan</button>
                                             <button onClick={(e) => handleOpenSceneModal(scene, e)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px' }} title="Edit Scene"><Edit2 size={14} /></button>
                                             <button onClick={(e) => { e.stopPropagation(); handleDeleteScene(scene.id); }} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px' }} title="Delete Scene"><Trash2 size={14} /></button>
                                         </div>
@@ -699,6 +736,7 @@ const ShotBoardPage: React.FC = () => {
                                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                                         <span style={styles.shotBadge}>Shot {shot.shot_number}</span>
                                                                         <QualityBadge tier={shot.quality_tier} score={shot.quality_percentage} />
+                                                                        <button onClick={(e) => { e.stopPropagation(); handleOpenQualityDialogue(shot.id, shot.quality_percentage || 0); }} style={{ background: 'none', border: 'none', color: '#8b5cf6', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }} title="Ask AI about quality"><MessageCircle size={14} /></button>
                                                                     </div>
                                                                     <div style={{ position: 'relative' }} ref={isDropdownOpen ? dropdownRef : null}>
                                                                         <button
@@ -1035,6 +1073,27 @@ const ShotBoardPage: React.FC = () => {
                         project={project!}
                         modelType={generateModalType}
                         onGenerated={handleVariantGenerated}
+                    />
+                )}
+
+                {/* Phase 3.3: Shot Planning Modal */}
+                {shotPlanSceneId && (
+                    <ShotPlanningPanel
+                        isOpen={isShotPlanOpen}
+                        onClose={() => setIsShotPlanOpen(false)}
+                        sceneId={shotPlanSceneId}
+                        sceneName={shotPlanSceneName}
+                        onCreateShots={handleCreatePlannedShots}
+                    />
+                )}
+
+                {/* Phase 3.4: Quality Dialogue Modal */}
+                {qualityDialogueShotId && (
+                    <QualityDialogue
+                        isOpen={isQualityDialogueOpen}
+                        onClose={() => setIsQualityDialogueOpen(false)}
+                        shotId={qualityDialogueShotId}
+                        qualityScore={qualityDialogueScore}
                     />
                 )}
             </div>

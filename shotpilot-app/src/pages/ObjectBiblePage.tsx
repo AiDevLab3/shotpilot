@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { ObjectItem } from '../types/schema';
 import { getObjects, createObject, updateObject, deleteObject, getAllProjects, fileToBase64 } from '../services/api';
+import { ObjectAIAssistant } from '../components/ObjectAIAssistant';
 
 export const ObjectBiblePage: React.FC = () => {
     const [objects, setObjects] = useState<ObjectItem[]>([]);
@@ -395,6 +396,19 @@ export const ObjectBiblePage: React.FC = () => {
                                 placeholder="Object details..."
                             />
                         </div>
+
+                        {/* AI Object Assistant */}
+                        {projectId && (
+                            <div style={styles.formGroup}>
+                                <ObjectAIAssistant
+                                    projectId={projectId}
+                                    objectName={formData.name || ''}
+                                    currentDescription={formData.description}
+                                    onAcceptDescription={(desc) => setFormData(prev => ({ ...prev, description: desc }))}
+                                />
+                            </div>
+                        )}
+
                         <div style={styles.formGroup}>
                             <label style={styles.label}>Reference Image</label>
                             {formData.reference_image_url ? (

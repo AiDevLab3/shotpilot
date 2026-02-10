@@ -572,10 +572,330 @@ OUTPUT VALID JSON ARRAY ONLY:
     }
 }
 
+/**
+ * Phase 3.2: Generate detailed character bible suggestions.
+ * Uses Character Consistency Pack to produce prompt-ready descriptions.
+ */
+async function generateCharacterSuggestions(context) {
+    const { character, project, kbContent } = context;
+
+    const projectBlock = buildContextBlock('PROJECT', project);
+
+    const systemInstruction = `You are an expert character designer for AI-generated cinematography. Using the Character Consistency Pack, generate detailed character bible entries that will produce consistent results across AI image/video models. Every detail should be specific enough to reproduce exactly — no vague descriptions.`;
+
+    const userPrompt = `Generate a detailed character bible for an AI filmmaking project.
+
+${kbContent ? `Use these KB principles:\n${kbContent}\n` : ''}
+${projectBlock}
+
+CHARACTER NAME: ${character.name || 'Unnamed Character'}
+${character.description ? `EXISTING DESCRIPTION: ${character.description}` : ''}
+${character.personality ? `EXISTING PERSONALITY: ${character.personality}` : ''}
+
+Generate comprehensive, prompt-ready character details following the Character Bible Checklist.
+
+OUTPUT VALID JSON ONLY:
+{
+  "description": "Detailed physical description covering: face (eye color, nose shape, jawline, distinguishing marks), age & skin (specific age range, skin tone with undertones), hair (style, color, length, texture), build & posture (body type, posture habits), wardrobe (default clothing, accessories). Written as a dense paragraph optimized for AI image generation prompts.",
+  "personality": "2-3 core personality traits with behavioral mannerisms. Written to guide expression and body language in generated images.",
+  "referencePrompt": "A suggested prompt to generate a master reference image for this character using Midjourney or Nano Banana Pro. Include specific physical details, lighting, and framing.",
+  "consistencyTips": ["Tip 1 for maintaining this character across shots", "Tip 2", "Tip 3"]
+}`;
+
+    try {
+        const text = await callGemini({
+            parts: [{ text: userPrompt }],
+            systemInstruction,
+            thinkingLevel: 'medium',
+            responseMimeType: 'application/json',
+            maxOutputTokens: 2048,
+        });
+
+        let parsed;
+        try {
+            parsed = JSON.parse(text);
+        } catch (e) {
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                parsed = JSON.parse(jsonMatch[0]);
+            } else {
+                throw new Error('Could not parse character suggestions JSON');
+            }
+        }
+        return parsed;
+    } catch (error) {
+        console.error('[gemini] Character suggestions error:', error);
+        throw error;
+    }
+}
+
+/**
+ * Phase 3.3: Generate shot plan for a scene.
+ * Returns a sequence of recommended shots with cinematography guidance.
+ */
+async function generateShotPlan(context) {
+    const { scene, project, existingShots, kbContent } = context;
+
+    const projectBlock = buildContextBlock('PROJECT', project);
+    const sceneBlock = buildContextBlock('SCENE', scene);
+
+    let existingShotsBlock = '';
+    if (existingShots && existingShots.length > 0) {
+        existingShotsBlock = '\nEXISTING SHOTS:\n' + existingShots.map((s, i) =>
+            `  ${i + 1}. ${s.shot_type || 'unset'} — ${s.description || 'no description'}`
+        ).join('\n');
+    }
+
+    const systemInstruction = `You are an expert cinematographer planning shot sequences. Use the Storyboard Shot Sequence framework (Opening Hook → Establishing → Detail → Action → Resolution) and Spatial Composition principles. Suggest shots that flow cinematically and cover the scene effectively. Each shot should be specific and actionable.`;
+
+    const userPrompt = `Plan a shot sequence for this scene.
+
+${kbContent ? `Use these KB principles:\n${kbContent}\n` : ''}
+${projectBlock}
+
+${sceneBlock}
+${existingShotsBlock}
+
+${existingShots && existingShots.length > 0
+    ? 'Suggest additional shots to complement the existing ones. Do NOT duplicate what already exists.'
+    : 'Suggest a complete shot sequence (3-7 shots) for this scene.'}
+
+OUTPUT VALID JSON ONLY:
+{
+  "shots": [
+    {
+      "shot_number": "1",
+      "shot_type": "Wide Shot",
+      "camera_angle": "Eye Level",
+      "camera_movement": "Static",
+      "focal_length": "24mm",
+      "description": "Specific description of what the shot captures",
+      "blocking": "Character/object positions and actions",
+      "purpose": "Why this shot exists in the sequence (e.g., establishing, detail, action)"
+    }
+  ],
+  "sequenceReasoning": "Brief explanation of why this sequence works cinematically"
+}`;
+
+    try {
+        const text = await callGemini({
+            parts: [{ text: userPrompt }],
+            systemInstruction,
+            thinkingLevel: 'medium',
+            responseMimeType: 'application/json',
+            maxOutputTokens: 3072,
+        });
+
+        let parsed;
+        try {
+            parsed = JSON.parse(text);
+        } catch (e) {
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                parsed = JSON.parse(jsonMatch[0]);
+            } else {
+                throw new Error('Could not parse shot plan JSON');
+            }
+        }
+        return parsed;
+    } catch (error) {
+        console.error('[gemini] Shot plan error:', error);
+        throw error;
+    }
+}
+
+/**
+ * Phase 3.4: Quality check dialogue — answer user questions about quality.
+ * Supports multi-turn conversation about shot quality with KB context.
+ */
+async function qualityDialogue(context) {
+    const { project, scene, shot, characters, objects, userMessage, history, qualityData, kbContent } = context;
+
+    const projectBlock = buildContextBlock('PROJECT', project);
+    const sceneBlock = buildContextBlock('SCENE', scene);
+    const shotBlock = buildContextBlock('SHOT', shot);
+
+    let historyBlock = '';
+    if (history && history.length > 0) {
+        historyBlock = '\nCONVERSATION HISTORY:\n' + history.map(h =>
+            `${h.role === 'user' ? 'USER' : 'AI'}: ${h.content}`
+        ).join('\n');
+    }
+
+    let qualityBlock = '';
+    if (qualityData) {
+        qualityBlock = `\nCURRENT QUALITY: ${qualityData.percentage}% (${qualityData.tier})`;
+        if (qualityData.missingFields && qualityData.missingFields.length > 0) {
+            qualityBlock += '\nMISSING FIELDS: ' + qualityData.missingFields.map(f => f.label || f.field).join(', ');
+        }
+    }
+
+    const systemInstruction = `You are an expert cinematographer discussing shot quality with a filmmaker. Use KB knowledge to explain WHY things matter, discuss trade-offs, and suggest alternatives. Be conversational but authoritative. Reference specific KB principles when relevant. Keep responses concise (2-4 sentences for simple questions, up to a paragraph for complex ones).`;
+
+    const userPrompt = `${kbContent ? `KB CONTEXT:\n${kbContent}\n` : ''}
+${projectBlock}
+${sceneBlock}
+${shotBlock}
+${qualityBlock}
+${historyBlock}
+
+USER QUESTION: ${userMessage}
+
+Respond as an expert cinematographer. Reference KB principles where relevant. Be helpful and specific.`;
+
+    try {
+        const text = await callGemini({
+            parts: [{ text: userPrompt }],
+            systemInstruction,
+            thinkingLevel: 'low',
+            maxOutputTokens: 1024,
+        });
+
+        return { response: text.trim() };
+    } catch (error) {
+        console.error('[gemini] Quality dialogue error:', error);
+        throw error;
+    }
+}
+
+/**
+ * Phase 3.5: Analyze a script and extract scenes/shots.
+ */
+async function analyzeScript(context) {
+    const { scriptText, project, kbContent } = context;
+
+    const projectBlock = buildContextBlock('PROJECT', project);
+
+    const systemInstruction = `You are an expert script supervisor and cinematographer. Analyze the script text and identify scenes, key moments, and recommended shot coverage. Extract structured data that can be used to create scenes and shots in a storyboard application.`;
+
+    const userPrompt = `Analyze this script and extract a structured scene/shot breakdown.
+
+${kbContent ? `Use these cinematography principles:\n${kbContent}\n` : ''}
+${projectBlock}
+
+SCRIPT:
+${scriptText.substring(0, 8000)}
+
+Extract scenes and suggest shot coverage for each. Follow the Storyboard Shot Sequence framework.
+
+OUTPUT VALID JSON ONLY:
+{
+  "scenes": [
+    {
+      "name": "Scene name/slug",
+      "description": "Brief scene description",
+      "location_setting": "Where the scene takes place",
+      "time_of_day": "Day/Night/Dawn/Dusk",
+      "mood_tone": "Emotional tone",
+      "suggestedShots": [
+        {
+          "shot_type": "Wide Shot",
+          "camera_angle": "Eye Level",
+          "description": "What this shot captures",
+          "purpose": "Why this shot is needed"
+        }
+      ]
+    }
+  ],
+  "characters": [
+    {
+      "name": "Character name from script",
+      "description": "Brief physical/role description inferred from script"
+    }
+  ],
+  "summary": "Brief overall analysis of the script's visual needs"
+}`;
+
+    try {
+        const text = await callGemini({
+            parts: [{ text: userPrompt }],
+            systemInstruction,
+            thinkingLevel: 'high',
+            responseMimeType: 'application/json',
+            maxOutputTokens: 4096,
+        });
+
+        let parsed;
+        try {
+            parsed = JSON.parse(text);
+        } catch (e) {
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                parsed = JSON.parse(jsonMatch[0]);
+            } else {
+                throw new Error('Could not parse script analysis JSON');
+            }
+        }
+        return parsed;
+    } catch (error) {
+        console.error('[gemini] Script analysis error:', error);
+        throw error;
+    }
+}
+
+/**
+ * Phase 3.6: Generate detailed object/prop suggestions.
+ */
+async function generateObjectSuggestions(context) {
+    const { object, project, kbContent } = context;
+
+    const projectBlock = buildContextBlock('PROJECT', project);
+
+    const systemInstruction = `You are an expert prop master and production designer for AI-generated cinematography. Generate detailed object/prop descriptions that will produce consistent results across AI image/video models. Focus on material, color, condition, scale, and contextual placement.`;
+
+    const userPrompt = `Generate a detailed object/prop description for an AI filmmaking project.
+
+${kbContent ? `Use these KB principles:\n${kbContent}\n` : ''}
+${projectBlock}
+
+OBJECT NAME: ${object.name || 'Unnamed Object'}
+${object.description ? `EXISTING DESCRIPTION: ${object.description}` : ''}
+
+Generate comprehensive, prompt-ready object details.
+
+OUTPUT VALID JSON ONLY:
+{
+  "description": "Detailed physical description covering: material, color, texture, condition (new/worn/damaged), dimensions/scale relative to human, distinctive features, contextual placement. Written as a dense paragraph optimized for AI image generation prompts.",
+  "referencePrompt": "A suggested prompt to generate a master reference image for this object. Include specific material details, lighting, and framing.",
+  "consistencyTips": ["Tip 1 for maintaining this object across shots", "Tip 2"]
+}`;
+
+    try {
+        const text = await callGemini({
+            parts: [{ text: userPrompt }],
+            systemInstruction,
+            thinkingLevel: 'medium',
+            responseMimeType: 'application/json',
+            maxOutputTokens: 1536,
+        });
+
+        let parsed;
+        try {
+            parsed = JSON.parse(text);
+        } catch (e) {
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                parsed = JSON.parse(jsonMatch[0]);
+            } else {
+                throw new Error('Could not parse object suggestions JSON');
+            }
+        }
+        return parsed;
+    } catch (error) {
+        console.error('[gemini] Object suggestions error:', error);
+        throw error;
+    }
+}
+
 export {
     generateRecommendations,
     generatePrompt,
     analyzeQuality,
     generateAestheticSuggestions,
+    generateCharacterSuggestions,
+    generateShotPlan,
+    qualityDialogue,
+    analyzeScript,
+    generateObjectSuggestions,
     buildContextBlock,
 };

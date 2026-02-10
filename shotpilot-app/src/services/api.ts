@@ -1,4 +1,4 @@
-import type { Project, Character, ObjectItem, Scene, Shot, ImageVariant, AestheticSuggestion } from '../types/schema';
+import type { Project, Character, ObjectItem, Scene, Shot, ImageVariant, AestheticSuggestion, CharacterSuggestions, ShotPlan, QualityDialogueResponse, ScriptAnalysis, ObjectSuggestions } from '../types/schema';
 
 // v3: Module-level fingerprint to verify this version loaded in browser
 console.log('[API v3] api.ts loaded — has 401 interceptor + eager login');
@@ -275,9 +275,60 @@ export const updateVariant = async (id: number, data: Partial<ImageVariant>): Pr
 
 // AESTHETIC SUGGESTIONS
 export const getAestheticSuggestions = async (projectId: number): Promise<AestheticSuggestion[]> => {
-    return apiCall(`/projects/${projectId}/aesthetic-suggestions`, {
+    const res = await apiCall(`/projects/${projectId}/aesthetic-suggestions`, {
         method: 'POST',
     });
+    return res.suggestions || res;
+};
+
+// Phase 3.2: Character AI assistant
+export const getCharacterSuggestions = async (projectId: number, character: { name?: string; description?: string; personality?: string }): Promise<CharacterSuggestions> => {
+    const res = await apiCall(`/projects/${projectId}/character-suggestions`, {
+        method: 'POST',
+        body: JSON.stringify(character),
+    });
+    // Response has kbFilesUsed at top level merged with CharacterSuggestions fields
+    return res;
+};
+
+// Phase 3.3: Scene shot planning
+export const getShotPlan = async (sceneId: number): Promise<ShotPlan> => {
+    const res = await apiCall(`/scenes/${sceneId}/shot-plan`, {
+        method: 'POST',
+    });
+    return res;
+};
+
+// Phase 3.4: Quality dialogue
+export const sendQualityDialogue = async (shotId: number, message: string, history: { role: string; content: string }[]): Promise<QualityDialogueResponse> => {
+    const res = await apiCall(`/shots/${shotId}/quality-dialogue`, {
+        method: 'POST',
+        body: JSON.stringify({ message, history }),
+    });
+    return res;
+};
+
+// Phase 3.5: Script analysis
+export const analyzeScriptText = async (projectId: number, scriptText: string): Promise<ScriptAnalysis> => {
+    const res = await apiCall(`/projects/${projectId}/analyze-script`, {
+        method: 'POST',
+        body: JSON.stringify({ scriptText }),
+    });
+    return res;
+};
+
+// Phase 3.6: Object AI assistant
+export const getObjectSuggestions = async (projectId: number, object: { name?: string; description?: string }): Promise<ObjectSuggestions> => {
+    const res = await apiCall(`/projects/${projectId}/object-suggestions`, {
+        method: 'POST',
+        body: JSON.stringify(object),
+    });
+    return res;
+};
+
+// Phase 3.7: Usage stats
+export const getUsageStats = async (): Promise<any> => {
+    return apiCall('/usage/stats');
 };
 
 // Deprecated or Unused in Server Mode

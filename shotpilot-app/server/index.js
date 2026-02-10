@@ -7,10 +7,10 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { db, initDatabase } from './database.js';
 import { setupAuth, requireAuth, checkCredits } from './middleware/auth.js';
-import { deductCredit, getUserCredits, getUsageStats } from './services/creditService.js';
+import { deductCredit, getUserCredits, getUsageStats, logAIFeatureUsage, getAIUsageStats } from './services/creditService.js';
 import { loadKBForModel, getAvailableModels, readKBFile } from './services/kbLoader.js';
 import { calculateCompleteness, checkQualityWithKB } from './services/qualityCheck.js';
-import { generateRecommendations, generatePrompt, analyzeQuality, generateAestheticSuggestions } from './services/geminiService.js';
+import { generateRecommendations, generatePrompt, analyzeQuality, generateAestheticSuggestions, generateCharacterSuggestions, generateShotPlan, qualityDialogue, analyzeScript, generateObjectSuggestions } from './services/geminiService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -265,9 +265,195 @@ app.post('/api/projects/:projectId/aesthetic-suggestions', requireAuth, async (r
             project, scenes, kbContent
         });
 
-        res.json(suggestions);
+        logAIFeatureUsage(db, req.session.userId, 'aesthetic_suggestions', projectId);
+        res.json({ suggestions, kbFilesUsed: ['01_Core_Realism_Principles.md', '03_Pack_Quality_Control.md'] });
     } catch (error) {
         console.error('Aesthetic suggestions error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Phase 3.2: Character AI assistant (free - no credit cost)
+app.post('/api/projects/:projectId/character-suggestions', requireAuth, async (req, res) => {
+    try {
+        const { projectId } = req.params;
+        const { name, description, personality } = req.body;
+
+        const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId);
+        if (!project) return res.status(404).json({ error: 'Project not found' });
+
+        let kbContent = '';
+        try {
+            const charKB = readKBFile('03_Pack_Character_Consistency.md');
+            const coreKB = readKBFile('01_Core_Realism_Principles.md');
+            kbContent = [charKB, coreKB].filter(Boolean).join('\n\n');
+        } catch (err) {
+            console.warn('[character-suggestions] Could not load KB:', err.message);
+        }
+
+        const suggestions = await generateCharacterSuggestions({
+            character: { name, description, personality },
+            project,
+            kbContent,
+        });
+
+        logAIFeatureUsage(db, req.session.userId, 'character_suggestions', projectId);
+        res.json({ ...suggestions, kbFilesUsed: ['03_Pack_Character_Consistency.md', '01_Core_Realism_Principles.md'] });
+    } catch (error) {
+        console.error('Character suggestions error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Phase 3.3: Scene shot planning (free - no credit cost)
+app.post('/api/scenes/:sceneId/shot-plan', requireAuth, async (req, res) => {
+    try {
+        const { sceneId } = req.params;
+
+        const scene = db.prepare('SELECT * FROM scenes WHERE id = ?').get(sceneId);
+        if (!scene) return res.status(404).json({ error: 'Scene not found' });
+
+        const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(scene.project_id);
+        const existingShots = db.prepare('SELECT * FROM shots WHERE scene_id = ? ORDER BY order_index ASC').all(sceneId);
+
+        let kbContent = '';
+        try {
+            const motionKB = readKBFile('03_Pack_Motion_Readiness.md');
+            const spatialKB = readKBFile('03_Pack_Spatial_Composition.md');
+            const coreKB = readKBFile('01_Core_Realism_Principles.md');
+            kbContent = [motionKB, spatialKB, coreKB].filter(Boolean).join('\n\n');
+        } catch (err) {
+            console.warn('[shot-plan] Could not load KB:', err.message);
+        }
+
+        const plan = await generateShotPlan({
+            scene, project, existingShots, kbContent,
+        });
+
+        logAIFeatureUsage(db, req.session.userId, 'shot_planning', sceneId);
+        res.json({ ...plan, kbFilesUsed: ['03_Pack_Motion_Readiness.md', '03_Pack_Spatial_Composition.md', '01_Core_Realism_Principles.md'] });
+    } catch (error) {
+        console.error('Shot plan error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Phase 3.4: Quality dialogue (free - no credit cost)
+app.post('/api/shots/:shotId/quality-dialogue', requireAuth, async (req, res) => {
+    try {
+        const { shotId } = req.params;
+        const { message, history } = req.body;
+
+        if (!message) return res.status(400).json({ error: 'message required' });
+
+        const shot = db.prepare('SELECT * FROM shots WHERE id = ?').get(shotId);
+        if (!shot) return res.status(404).json({ error: 'Shot not found' });
+
+        const scene = db.prepare('SELECT * FROM scenes WHERE id = ?').get(shot.scene_id);
+        const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(scene.project_id);
+        const characters = db.prepare('SELECT * FROM characters WHERE project_id = ?').all(scene.project_id);
+        const objects = db.prepare('SELECT * FROM objects WHERE project_id = ?').all(scene.project_id);
+
+        // Get current quality data
+        const qualityData = calculateCompleteness(project, scene, shot);
+
+        let kbContent = '';
+        try {
+            const qualityKB = readKBFile('03_Pack_Quality_Control.md');
+            const coreKB = readKBFile('01_Core_Realism_Principles.md');
+            const spatialKB = readKBFile('03_Pack_Spatial_Composition.md');
+            kbContent = [qualityKB, coreKB, spatialKB].filter(Boolean).join('\n\n');
+        } catch (err) {
+            console.warn('[quality-dialogue] Could not load KB:', err.message);
+        }
+
+        const result = await qualityDialogue({
+            project, scene, shot, characters, objects,
+            userMessage: message,
+            history: history || [],
+            qualityData,
+            kbContent,
+        });
+
+        logAIFeatureUsage(db, req.session.userId, 'quality_dialogue', shotId);
+        res.json({ ...result, kbFilesUsed: ['03_Pack_Quality_Control.md', '01_Core_Realism_Principles.md', '03_Pack_Spatial_Composition.md'] });
+    } catch (error) {
+        console.error('Quality dialogue error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Phase 3.5: Script analysis (free - no credit cost)
+app.post('/api/projects/:projectId/analyze-script', requireAuth, async (req, res) => {
+    try {
+        const { projectId } = req.params;
+        const { scriptText } = req.body;
+
+        if (!scriptText || !scriptText.trim()) {
+            return res.status(400).json({ error: 'scriptText required' });
+        }
+
+        const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId);
+        if (!project) return res.status(404).json({ error: 'Project not found' });
+
+        let kbContent = '';
+        try {
+            const motionKB = readKBFile('03_Pack_Motion_Readiness.md');
+            const coreKB = readKBFile('01_Core_Realism_Principles.md');
+            kbContent = [motionKB, coreKB].filter(Boolean).join('\n\n');
+        } catch (err) {
+            console.warn('[analyze-script] Could not load KB:', err.message);
+        }
+
+        const analysis = await analyzeScript({
+            scriptText, project, kbContent,
+        });
+
+        logAIFeatureUsage(db, req.session.userId, 'script_analysis', projectId);
+        res.json({ ...analysis, kbFilesUsed: ['03_Pack_Motion_Readiness.md', '01_Core_Realism_Principles.md'] });
+    } catch (error) {
+        console.error('Script analysis error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Phase 3.6: Object AI assistant (free - no credit cost)
+app.post('/api/projects/:projectId/object-suggestions', requireAuth, async (req, res) => {
+    try {
+        const { projectId } = req.params;
+        const { name, description } = req.body;
+
+        const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId);
+        if (!project) return res.status(404).json({ error: 'Project not found' });
+
+        let kbContent = '';
+        try {
+            const coreKB = readKBFile('01_Core_Realism_Principles.md');
+            kbContent = coreKB || '';
+        } catch (err) {
+            console.warn('[object-suggestions] Could not load KB:', err.message);
+        }
+
+        const suggestions = await generateObjectSuggestions({
+            object: { name, description },
+            project,
+            kbContent,
+        });
+
+        logAIFeatureUsage(db, req.session.userId, 'object_suggestions', projectId);
+        res.json({ ...suggestions, kbFilesUsed: ['01_Core_Realism_Principles.md'] });
+    } catch (error) {
+        console.error('Object suggestions error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Phase 3.7: Comprehensive AI usage tracking
+app.get('/api/usage/stats', requireAuth, (req, res) => {
+    try {
+        const stats = getAIUsageStats(db, req.session.userId);
+        res.json(stats);
+    } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });

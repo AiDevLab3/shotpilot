@@ -79,9 +79,66 @@ function getUsageStats(db, userId, days = 30) {
     return stats;
 }
 
+/**
+ * Phase 3.7: Log AI feature usage (free features, no credit deduction)
+ */
+function logAIFeatureUsage(db, userId, feature, contextId = null) {
+    try {
+        db.prepare(`
+            INSERT INTO usage_log (user_id, action, model_name, shot_id, credits_used)
+            VALUES (?, ?, 'gemini-flash', ?, 0)
+        `).run(userId, feature, contextId);
+    } catch (error) {
+        console.warn('[creditService] Failed to log AI feature usage:', error.message);
+    }
+}
+
+/**
+ * Phase 3.7: Get comprehensive AI usage stats
+ */
+function getAIUsageStats(db, userId) {
+    const featureStats = db.prepare(`
+        SELECT
+            action,
+            COUNT(*) as count,
+            MAX(created_at) as last_used
+        FROM usage_log
+        WHERE user_id = ?
+        GROUP BY action
+        ORDER BY count DESC
+    `).all(userId);
+
+    const recentActivity = db.prepare(`
+        SELECT action, created_at, model_name
+        FROM usage_log
+        WHERE user_id = ?
+        ORDER BY created_at DESC
+        LIMIT 20
+    `).all(userId);
+
+    const totalGenerations = db.prepare(`
+        SELECT COUNT(*) as count FROM usage_log
+        WHERE user_id = ? AND action = 'generate_prompt'
+    `).get(userId);
+
+    const totalAIAssists = db.prepare(`
+        SELECT COUNT(*) as count FROM usage_log
+        WHERE user_id = ? AND action != 'generate_prompt' AND action != 'purchase'
+    `).get(userId);
+
+    return {
+        featureBreakdown: featureStats,
+        recentActivity,
+        totalGenerations: totalGenerations?.count || 0,
+        totalAIAssists: totalAIAssists?.count || 0,
+    };
+}
+
 export {
     deductCredit,
     addCredits,
     getUserCredits,
-    getUsageStats
+    getUsageStats,
+    logAIFeatureUsage,
+    getAIUsageStats,
 };
