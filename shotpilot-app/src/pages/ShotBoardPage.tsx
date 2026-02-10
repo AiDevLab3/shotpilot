@@ -75,13 +75,13 @@ const ShotBoardPage: React.FC = () => {
     const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
     const [generateModalShot, setGenerateModalShot] = useState<Shot | null>(null);
     const [generateModalSceneId, setGenerateModalSceneId] = useState<number | null>(null);
-    const [qualityContext, setQualityContext] = useState<{ tier: string; score: number }>({ tier: 'draft', score: 0 });
+    const [qualityContext] = useState<{ tier: string; score: number }>({ tier: 'draft', score: 0 });
 
     const [generateModalType, setGenerateModalType] = useState<'image' | 'video'>('image');
 
     // Recommendations Dialog State
     const [isRecsDialogOpen, setIsRecsDialogOpen] = useState(false);
-    const [recsMissingFields, setRecsMissingFields] = useState<any[]>([]);
+    const [recsMissingFields] = useState<any[]>([]);
 
 
     // Modal State

@@ -38,11 +38,10 @@ export function GeneratePromptModal({
     onClose,
     shot,
     scene,
-    project,
+
     modelType = 'image',
     onGenerated,
     // Fallbacks
-    currentCredits = 0,
 }: GeneratePromptModalProps) {
     const [availableModels, setAvailableModels] = useState<AIModel[]>([]);
     const [model, setModel] = useState<string>('');

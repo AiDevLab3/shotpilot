@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Sparkles, Loader2, Check, Plus, X, Film } from 'lucide-react';
-import type { ShotPlan, ShotPlanShot } from '../types/schema';
+import type { ShotPlan } from '../types/schema';
 import { getShotPlan } from '../services/api';
 
 interface ShotPlanningPanelProps {

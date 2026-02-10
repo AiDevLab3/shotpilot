@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getAllProjects, createScene, createShot, createCharacter } from '../services/api';
+import { getAllProjects, createScene, createCharacter } from '../services/api';
 import { ScriptAnalyzer } from '../components/ScriptAnalyzer';
 
 export const ScriptAnalyzerPage: React.FC = () => {
@@ -47,7 +47,7 @@ export const ScriptAnalyzerPage: React.FC = () => {
                 });
                 // We need to get the created scene ID. Since createScene doesn't return it,
                 // we'll get all scenes and find the latest one.
-                const allProjects = await getAllProjects();
+                // const allProjects = await getAllProjects();
                 // For now, shots will need to be added from Scene Manager after scenes are created
             }
             setStatus(`Created ${scenes.length} scene(s). Open Scene Manager to add shots.`);
