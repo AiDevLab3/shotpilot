@@ -331,5 +331,33 @@ export const getUsageStats = async (): Promise<any> => {
     return apiCall('/usage/stats');
 };
 
+// Content refinement (conversational)
+export const refineContent = async (
+    projectId: number,
+    type: 'character' | 'object',
+    currentContent: any,
+    message: string,
+    history: { role: string; content: string }[]
+): Promise<{ response: string; contentUpdate: any }> => {
+    return apiCall(`/projects/${projectId}/refine-content`, {
+        method: 'POST',
+        body: JSON.stringify({ type, currentContent, message, history }),
+    });
+};
+
+// Creative Director
+export const creativeDirectorChat = async (
+    projectId: number,
+    message: string,
+    history: { role: string; content: string }[],
+    scriptContent: string,
+    mode: string,
+): Promise<{ response: string; projectUpdates: any; scriptUpdates: string | null }> => {
+    return apiCall(`/projects/${projectId}/creative-director`, {
+        method: 'POST',
+        body: JSON.stringify({ message, history, scriptContent, mode }),
+    });
+};
+
 // Deprecated or Unused in Server Mode
 export const saveDB = async () => { };

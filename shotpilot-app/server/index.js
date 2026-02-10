@@ -10,7 +10,7 @@ import { setupAuth, requireAuth, checkCredits } from './middleware/auth.js';
 import { deductCredit, getUserCredits, getUsageStats, logAIFeatureUsage, getAIUsageStats } from './services/creditService.js';
 import { loadKBForModel, getAvailableModels, readKBFile } from './services/kbLoader.js';
 import { calculateCompleteness, checkQualityWithKB } from './services/qualityCheck.js';
-import { generateRecommendations, generatePrompt, analyzeQuality, generateAestheticSuggestions, generateCharacterSuggestions, generateShotPlan, qualityDialogue, analyzeScript, generateObjectSuggestions } from './services/geminiService.js';
+import { generateRecommendations, generatePrompt, analyzeQuality, generateAestheticSuggestions, generateCharacterSuggestions, generateShotPlan, qualityDialogue, analyzeScript, generateObjectSuggestions, refineContent, creativeDirectorCollaborate } from './services/geminiService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -444,6 +444,73 @@ app.post('/api/projects/:projectId/object-suggestions', requireAuth, async (req,
         res.json({ ...suggestions, kbFilesUsed: ['01_Core_Realism_Principles.md'] });
     } catch (error) {
         console.error('Object suggestions error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Character/Object refinement (conversational) (free - no credit cost)
+app.post('/api/projects/:projectId/refine-content', requireAuth, async (req, res) => {
+    try {
+        const { projectId } = req.params;
+        const { type, currentContent, message, history } = req.body;
+
+        if (!message) return res.status(400).json({ error: 'message required' });
+        if (!type || !['character', 'object'].includes(type)) return res.status(400).json({ error: 'type must be "character" or "object"' });
+
+        const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId);
+        if (!project) return res.status(404).json({ error: 'Project not found' });
+
+        const kbFiles = type === 'character'
+            ? ['03_Pack_Character_Consistency.md', '01_Core_Realism_Principles.md']
+            : ['01_Core_Realism_Principles.md'];
+
+        let kbContent = '';
+        try {
+            kbContent = kbFiles.map(f => readKBFile(f)).filter(Boolean).join('\n\n');
+        } catch (err) {
+            console.warn('[refine-content] Could not load KB:', err.message);
+        }
+
+        const result = await refineContent({
+            type, currentContent, message, history, project, kbContent,
+        });
+
+        logAIFeatureUsage(db, req.session.userId, `${type}_refinement`, projectId);
+        res.json({ ...result, kbFilesUsed: kbFiles });
+    } catch (error) {
+        console.error('Content refinement error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Creative Director collaborative workspace (free - no credit cost)
+app.post('/api/projects/:projectId/creative-director', requireAuth, async (req, res) => {
+    try {
+        const { projectId } = req.params;
+        const { message, history, scriptContent, mode } = req.body;
+
+        if (!message) return res.status(400).json({ error: 'message required' });
+
+        const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId);
+        if (!project) return res.status(404).json({ error: 'Project not found' });
+
+        const kbFiles = ['01_Core_Realism_Principles.md', '03_Pack_Spatial_Composition.md', '03_Pack_Quality_Control.md', '03_Pack_Character_Consistency.md'];
+
+        let kbContent = '';
+        try {
+            kbContent = kbFiles.map(f => readKBFile(f)).filter(Boolean).join('\n\n');
+        } catch (err) {
+            console.warn('[creative-director] Could not load KB:', err.message);
+        }
+
+        const result = await creativeDirectorCollaborate({
+            project, message, history, scriptContent, mode, kbContent,
+        });
+
+        logAIFeatureUsage(db, req.session.userId, 'creative_director', projectId);
+        res.json({ ...result, kbFilesUsed: kbFiles });
+    } catch (error) {
+        console.error('Creative Director error:', error);
         res.status(500).json({ error: error.message });
     }
 });

@@ -10,9 +10,13 @@ interface AestheticSuggestionsPanelProps {
 
 // Maps API field names to user-friendly labels
 const FIELD_LABELS: Record<string, string> = {
+    frame_size: 'Frame Size (Aspect Ratio)',
     style_aesthetic: 'Style & Aesthetic',
     atmosphere_mood: 'Atmosphere & Mood',
     lighting_directions: 'Lighting Directions',
+    purpose: 'Purpose',
+    storyline_narrative: 'Storyline / Narrative',
+    cinematography: 'Cinematography',
     cinematic_references: 'Cinematic References',
 };
 
