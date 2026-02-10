@@ -7,6 +7,10 @@ export default defineConfig({
   resolve: {
     dedupe: ['react', 'react-dom']
   },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom', 'zustand'],
+    force: true
+  },
   server: {
     proxy: {
       '/api': {
