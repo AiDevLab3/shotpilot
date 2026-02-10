@@ -160,10 +160,10 @@ export const Header: React.FC = () => {
                     end
                     style={({ isActive }) => ({
                         ...styles.navLink,
-                        ...(isActive ? styles.activeNavLink : {})
+                        ...(isActive ? { color: '#8b5cf6', borderBottom: '2px solid #8b5cf6' } : {})
                     })}
                 >
-                    Project Info
+                    Creative Director
                 </NavLink>
                 <NavLink
                     to={`/projects/${pid}/characters`}
@@ -191,26 +191,6 @@ export const Header: React.FC = () => {
                     })}
                 >
                     Scene Manager
-                </NavLink>
-                <NavLink
-                    to={`/projects/${pid}/script`}
-                    style={({ isActive }) => ({
-                        ...styles.navLink,
-                        ...(isActive ? styles.activeNavLink : {})
-                    })}
-                >
-                    Script
-                </NavLink>
-                <NavLink
-                    to={`/projects/${pid}/creative-director`}
-                    style={({ isActive }) => ({
-                        ...styles.navLink,
-                        ...(isActive ? styles.activeNavLink : {}),
-                        color: isActive ? '#8b5cf6' : '#8A8A8A',
-                        borderBottomColor: isActive ? '#8b5cf6' : 'transparent',
-                    })}
-                >
-                    Creative Director
                 </NavLink>
             </nav>
         </header>

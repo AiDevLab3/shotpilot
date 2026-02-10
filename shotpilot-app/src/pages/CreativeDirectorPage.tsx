@@ -1,53 +1,61 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Send, Loader2, Save, FileText, Lightbulb, Check } from 'lucide-react';
+import { Send, Loader2, Save, FileText, Lightbulb, Check, Upload, Image, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
 import { getAllProjects, getProject, updateProject, creativeDirectorChat } from '../services/api';
+import { useCreativeDirectorStore } from '../stores/creativeDirectorStore';
+import type { Message } from '../stores/creativeDirectorStore';
 import type { Project } from '../types/schema';
 
-interface Message {
-    role: 'user' | 'assistant';
-    content: string;
-    projectUpdates?: Record<string, string> | null;
-    scriptUpdates?: string | null;
-}
+const MAX_SCRIPT_CHARS = 50000;
+const MAX_FILE_SIZE_MB = 2;
 
 export const CreativeDirectorPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    const [project, setProject] = useState<Project | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [messages, setMessages] = useState<Message[]>([]);
+    const projectId = id ? parseInt(id) : 0;
+
+    // Zustand store for persistence
+    const store = useCreativeDirectorStore();
+    const session = store.getSession(projectId);
+
+    const [project, setProject] = useState<Project | null>(session.projectSnapshot);
+    const [loading, setLoading] = useState(!session.projectSnapshot);
     const [inputMessage, setInputMessage] = useState('');
     const [isThinking, setIsThinking] = useState(false);
-    const [scriptContent, setScriptContent] = useState('');
-    const [mode, setMode] = useState<'initial' | 'script-first' | 'idea-first' | 'refining'>('initial');
     const [savedNotice, setSavedNotice] = useState(false);
+    const [scriptExpanded, setScriptExpanded] = useState(false);
+    const [projectInfoExpanded, setProjectInfoExpanded] = useState(true);
+    const [editingField, setEditingField] = useState<string | null>(null);
     const chatEndRef = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const imageInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        loadProject();
+        if (!session.projectSnapshot) loadProject();
     }, [id]);
 
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages, isThinking]);
+    }, [session.messages, isThinking]);
 
     const loadProject = async () => {
         setLoading(true);
         try {
             let proj: Project | undefined;
-            if (id) {
-                proj = await getProject(parseInt(id));
+            if (projectId) {
+                proj = await getProject(projectId);
             } else {
                 const projects = await getAllProjects();
                 if (projects.length > 0) proj = projects[0];
             }
             if (proj) {
                 setProject(proj);
-                // Initial greeting
-                setMessages([{
-                    role: 'assistant',
-                    content: `Welcome to your AI Creative Director workspace for **${proj.title}**!\n\nI can help you develop your project from concept to completion. Do you want to:\n\n- **Paste a script** for me to analyze and extract visual direction from?\n- **Start from an idea** and develop the vision together?\n\nTell me where you're starting from, and I'll guide you through the creative process.`,
-                }]);
+                store.setProjectSnapshot(proj.id, proj);
+                if (session.messages.length === 0) {
+                    store.setMessages(proj.id, [{
+                        role: 'assistant',
+                        content: `Welcome to your AI Creative Director workspace for **${proj.title}**!\n\nI can see your entire project — characters, objects, scenes, and all visual direction. I'm here to help you develop everything from concept to camera-ready.\n\n**The best workflow:**\n1. Lock your script first (the narrative blueprint)\n2. Build out characters & objects\n3. Define your visual direction\n4. Plan scenes & shots\n\nDo you want to:\n- **Paste or upload a script** for me to analyze?\n- **Start from an idea** and build the vision together?\n\nWhat's your starting point?`,
+                    }]);
+                }
             }
         } catch (error) {
             console.error('Failed to load project', error);
@@ -56,25 +64,25 @@ export const CreativeDirectorPage: React.FC = () => {
         }
     };
 
-    const handleSendMessage = async (message: string) => {
+    const handleSendMessage = async (message: string, imageUrl?: string) => {
         if (!message.trim() || isThinking || !project) return;
 
-        const userMsg: Message = { role: 'user', content: message };
-        const newMessages = [...messages, userMsg];
-        setMessages(newMessages);
+        const userMsg: Message = { role: 'user', content: message, imageUrl };
+        const newMessages = [...session.messages, userMsg];
+        store.setMessages(projectId, newMessages);
         setInputMessage('');
         setIsThinking(true);
 
         // Detect mode from first user message
-        let currentMode = mode;
-        if (mode === 'initial') {
+        let currentMode = session.mode;
+        if (session.mode === 'initial') {
             const lower = message.toLowerCase();
-            if (lower.includes('script') || lower.includes('paste') || lower.includes('here is') || lower.includes('int.') || lower.includes('ext.')) {
+            if (lower.includes('script') || lower.includes('paste') || lower.includes('here is') || lower.includes('int.') || lower.includes('ext.') || lower.includes('upload')) {
                 currentMode = 'script-first';
-                setMode('script-first');
+                store.setMode(projectId, 'script-first');
             } else {
                 currentMode = 'idea-first';
-                setMode('idea-first');
+                store.setMode(projectId, 'idea-first');
             }
         }
 
@@ -84,30 +92,33 @@ export const CreativeDirectorPage: React.FC = () => {
                 project.id,
                 message,
                 history,
-                scriptContent,
+                session.scriptContent,
                 currentMode,
+                imageUrl,
             );
 
-            // Apply updates
+            // Apply project updates
             if (result.projectUpdates) {
-                setProject(prev => prev ? { ...prev, ...result.projectUpdates } : prev);
+                const updated = { ...project, ...result.projectUpdates };
+                setProject(updated);
+                store.setProjectSnapshot(projectId, updated);
             }
             if (result.scriptUpdates) {
-                setScriptContent(result.scriptUpdates);
+                store.setScriptContent(projectId, result.scriptUpdates);
             }
 
-            setMessages([...newMessages, {
+            store.addMessage(projectId, {
                 role: 'assistant',
                 content: result.response,
                 projectUpdates: result.projectUpdates,
                 scriptUpdates: result.scriptUpdates,
-            }]);
+            });
         } catch (error) {
             console.error('Creative Director error:', error);
-            setMessages([...newMessages, {
+            store.addMessage(projectId, {
                 role: 'assistant',
                 content: 'Sorry, I encountered an error. Please try again.',
-            }]);
+            });
         } finally {
             setIsThinking(false);
         }
@@ -124,15 +135,101 @@ export const CreativeDirectorPage: React.FC = () => {
         }
     };
 
-    const projectInfoFields = [
+    const handleScriptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+            alert(`File too large. Maximum ${MAX_FILE_SIZE_MB}MB.`);
+            return;
+        }
+
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        if (!['txt', 'fdx', 'fountain', 'md'].includes(ext || '')) {
+            alert('Supported formats: .txt, .fdx, .fountain, .md');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            let text = ev.target?.result as string;
+            if (text.length > MAX_SCRIPT_CHARS) {
+                text = text.substring(0, MAX_SCRIPT_CHARS);
+                alert(`Script truncated to ${MAX_SCRIPT_CHARS.toLocaleString()} characters.`);
+            }
+            store.setScriptContent(projectId, text);
+            setScriptExpanded(true);
+            handleSendMessage(`I've uploaded my script "${file.name}" (${text.length.toLocaleString()} characters). Please analyze it and extract the key elements — scenes, characters, locations, mood, and visual direction.`);
+        };
+        reader.readAsText(file);
+        e.target.value = '';
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            alert('Please upload an image file.');
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Image too large. Maximum 5MB.');
+            return;
+        }
+
+        try {
+            const formData = new FormData();
+            formData.append('image', file);
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                credentials: 'include',
+                body: formData,
+            });
+            if (!response.ok) throw new Error('Upload failed');
+            const result = await response.json();
+            const imageUrl = result.url;
+
+            handleSendMessage(
+                `I'm sharing this reference image. Does it match the visual direction we've established for this project? Analyze the style, lighting, composition, and mood — and tell me if it aligns or where it diverges.`,
+                imageUrl
+            );
+        } catch (error) {
+            console.error('Image upload error:', error);
+            alert('Failed to upload image.');
+        }
+        e.target.value = '';
+    };
+
+    const handleFieldEdit = (field: string, value: string) => {
+        if (!project) return;
+        const updated = { ...project, [field]: value } as Project;
+        setProject(updated);
+        store.setProjectSnapshot(projectId, updated);
+    };
+
+    const handleResetChat = () => {
+        store.resetSession(projectId);
+        loadProject();
+    };
+
+    // Project info field definitions with size hints
+    const compactFields = [
         { key: 'frame_size', label: 'Frame Size' },
+        { key: 'cinematic_references', label: 'References' },
+    ];
+
+    const mediumFields = [
+        { key: 'purpose', label: 'Purpose' },
         { key: 'style_aesthetic', label: 'Style & Aesthetic' },
         { key: 'atmosphere_mood', label: 'Atmosphere & Mood' },
         { key: 'lighting_directions', label: 'Lighting' },
-        { key: 'purpose', label: 'Purpose' },
-        { key: 'storyline_narrative', label: 'Storyline' },
         { key: 'cinematography', label: 'Cinematography' },
-        { key: 'cinematic_references', label: 'References' },
+    ];
+
+    const largeFields = [
+        { key: 'storyline_narrative', label: 'Storyline / Narrative' },
     ];
 
     if (loading) return <div style={{ padding: '32px', color: 'white' }}>Loading Creative Director...</div>;
@@ -147,20 +244,36 @@ export const CreativeDirectorPage: React.FC = () => {
                         <Lightbulb size={18} color="#8b5cf6" />
                         <span style={{ fontSize: '15px', fontWeight: 700, color: '#e5e7eb' }}>AI Creative Director</span>
                     </div>
-                    <span style={{ fontSize: '11px', color: '#6b7280' }}>{mode !== 'initial' ? mode.replace('-', ' ') : 'ready'}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '11px', color: '#6b7280' }}>
+                            {session.mode !== 'initial' ? session.mode.replace('-', ' ') : 'ready'}
+                        </span>
+                        <button onClick={handleResetChat} style={styles.resetBtn} title="Reset conversation">
+                            <RotateCcw size={13} />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Quick Start Buttons */}
-                {mode === 'initial' && (
+                {session.mode === 'initial' && (
                     <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <button
-                            onClick={() => handleSendMessage('I have a script I\'d like to analyze. Let me paste it.')}
+                            onClick={() => fileInputRef.current?.click()}
                             style={styles.quickStartBtn}
                         >
-                            <FileText size={14} /> I Have a Script
+                            <Upload size={14} /> Upload Script (.txt, .fdx, .fountain)
                         </button>
                         <button
-                            onClick={() => handleSendMessage('I just have an idea. Let\'s develop it together from scratch.')}
+                            onClick={() => {
+                                setScriptExpanded(true);
+                                handleSendMessage('I have a script I\'d like to paste. Let me put it in the script editor.');
+                            }}
+                            style={styles.quickStartBtn}
+                        >
+                            <FileText size={14} /> Paste a Script
+                        </button>
+                        <button
+                            onClick={() => handleSendMessage('I just have an idea. Let\'s develop the vision together from scratch.')}
                             style={styles.quickStartBtn}
                         >
                             <Lightbulb size={14} /> Start from an Idea
@@ -170,7 +283,7 @@ export const CreativeDirectorPage: React.FC = () => {
 
                 {/* Messages */}
                 <div style={styles.messageList}>
-                    {messages.map((msg, i) => (
+                    {session.messages.map((msg, i) => (
                         <div key={i} style={styles.messageWrapper}>
                             <div style={{
                                 fontSize: '10px',
@@ -182,6 +295,13 @@ export const CreativeDirectorPage: React.FC = () => {
                             }}>
                                 {msg.role === 'user' ? 'YOU' : 'DIRECTOR'}
                             </div>
+                            {msg.imageUrl && (
+                                <img
+                                    src={msg.imageUrl}
+                                    alt="Shared reference"
+                                    style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '6px', marginBottom: '8px', objectFit: 'cover' }}
+                                />
+                            )}
                             <div style={{
                                 ...styles.messageBubble,
                                 backgroundColor: msg.role === 'user' ? '#27272a' : '#1a1a2e',
@@ -215,6 +335,13 @@ export const CreativeDirectorPage: React.FC = () => {
 
                 {/* Input */}
                 <div style={styles.inputArea}>
+                    <button
+                        onClick={() => imageInputRef.current?.click()}
+                        style={styles.iconBtn}
+                        title="Share reference image"
+                    >
+                        <Image size={16} color="#6b7280" />
+                    </button>
                     <input
                         type="text"
                         placeholder="Talk to your Creative Director..."
@@ -236,49 +363,179 @@ export const CreativeDirectorPage: React.FC = () => {
                         <Send size={14} />
                     </button>
                 </div>
+
+                {/* Hidden file inputs */}
+                <input ref={fileInputRef} type="file" accept=".txt,.fdx,.fountain,.md" onChange={handleScriptUpload} style={{ display: 'none' }} />
+                <input ref={imageInputRef} type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
             </div>
 
             {/* RIGHT: Working Area */}
             <div style={styles.workArea}>
                 {/* Save Header */}
                 <div style={styles.workHeader}>
-                    <span style={{ fontSize: '15px', fontWeight: 700, color: '#e5e7eb' }}>Project Workspace</span>
+                    <span style={{ fontSize: '15px', fontWeight: 700, color: '#e5e7eb' }}>{project.title}</span>
                     <button onClick={handleSaveProject} style={styles.saveBtn}>
                         {savedNotice ? <><Check size={14} /> Saved</> : <><Save size={14} /> Save Project</>}
                     </button>
                 </div>
 
-                {/* Script Editor */}
+                {/* Script Section — collapsible */}
                 <div style={styles.section}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <button
+                        onClick={() => setScriptExpanded(!scriptExpanded)}
+                        style={styles.sectionHeader}
+                    >
                         <span style={styles.sectionTitle}><FileText size={14} /> Script</span>
-                        <span style={{ fontSize: '11px', color: '#6b7280' }}>{scriptContent.length} chars</span>
-                    </div>
-                    <textarea
-                        value={scriptContent}
-                        onChange={(e) => setScriptContent(e.target.value)}
-                        placeholder="Your script will appear here as you develop it with AI, or paste one to get started..."
-                        style={styles.scriptEditor}
-                    />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '11px', color: '#6b7280' }}>
+                                {session.scriptContent.length.toLocaleString()} / {MAX_SCRIPT_CHARS.toLocaleString()} chars
+                            </span>
+                            {scriptExpanded ? <ChevronUp size={14} color="#6b7280" /> : <ChevronDown size={14} color="#6b7280" />}
+                        </div>
+                    </button>
+                    {scriptExpanded && (
+                        <>
+                            <textarea
+                                value={session.scriptContent}
+                                onChange={(e) => {
+                                    if (e.target.value.length <= MAX_SCRIPT_CHARS) {
+                                        store.setScriptContent(projectId, e.target.value);
+                                    }
+                                }}
+                                placeholder="Paste your script here, or upload a file using the button in the chat..."
+                                style={styles.scriptEditor}
+                            />
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                                <button onClick={() => fileInputRef.current?.click()} style={styles.smallBtn}>
+                                    <Upload size={12} /> Upload File
+                                </button>
+                                {session.scriptContent.length > 0 && (
+                                    <button
+                                        onClick={() => handleSendMessage(`I've updated the script (${session.scriptContent.length.toLocaleString()} chars). Please review the changes and let me know what you think.`)}
+                                        style={{ ...styles.smallBtn, backgroundColor: '#8b5cf6', color: 'white' }}
+                                    >
+                                        <Send size={12} /> Send to Director
+                                    </button>
+                                )}
+                            </div>
+                        </>
+                    )}
                 </div>
 
-                {/* Project Info Grid */}
+                {/* Project Info — collapsible, editable */}
                 <div style={styles.section}>
-                    <span style={styles.sectionTitle}>Project Info</span>
-                    <div style={styles.infoGrid}>
-                        {projectInfoFields.map(({ key, label }) => {
-                            const value = (project as any)[key] || '';
-                            return (
-                                <div key={key} style={styles.infoCard}>
-                                    <div style={styles.infoLabel}>{label}</div>
-                                    <div style={{ color: value ? '#e5e7eb' : '#52525b', fontSize: '12px', lineHeight: '1.4' }}>
-                                        {value || 'Not set'}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
+                    <button
+                        onClick={() => setProjectInfoExpanded(!projectInfoExpanded)}
+                        style={styles.sectionHeader}
+                    >
+                        <span style={styles.sectionTitle}>Project Info</span>
+                        {projectInfoExpanded ? <ChevronUp size={14} color="#6b7280" /> : <ChevronDown size={14} color="#6b7280" />}
+                    </button>
+                    {projectInfoExpanded && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {/* Compact row: frame size + references */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                {compactFields.map(({ key, label }) => (
+                                    <FieldCard
+                                        key={key}
+                                        field={key}
+                                        label={label}
+                                        value={(project as any)[key] || ''}
+                                        editing={editingField === key}
+                                        onStartEdit={() => setEditingField(key)}
+                                        onEndEdit={() => setEditingField(null)}
+                                        onChange={(v) => handleFieldEdit(key, v)}
+                                        compact
+                                    />
+                                ))}
+                            </div>
+                            {/* Medium fields: 2-col grid */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                {mediumFields.map(({ key, label }) => (
+                                    <FieldCard
+                                        key={key}
+                                        field={key}
+                                        label={label}
+                                        value={(project as any)[key] || ''}
+                                        editing={editingField === key}
+                                        onStartEdit={() => setEditingField(key)}
+                                        onEndEdit={() => setEditingField(null)}
+                                        onChange={(v) => handleFieldEdit(key, v)}
+                                    />
+                                ))}
+                            </div>
+                            {/* Large field: full width */}
+                            {largeFields.map(({ key, label }) => (
+                                <FieldCard
+                                    key={key}
+                                    field={key}
+                                    label={label}
+                                    value={(project as any)[key] || ''}
+                                    editing={editingField === key}
+                                    onStartEdit={() => setEditingField(key)}
+                                    onEndEdit={() => setEditingField(null)}
+                                    onChange={(v) => handleFieldEdit(key, v)}
+                                    large
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
+            </div>
+        </div>
+    );
+};
+
+// Editable field card component
+const FieldCard: React.FC<{
+    field: string;
+    label: string;
+    value: string;
+    editing: boolean;
+    onStartEdit: () => void;
+    onEndEdit: () => void;
+    onChange: (value: string) => void;
+    compact?: boolean;
+    large?: boolean;
+}> = ({ label, value, editing, onStartEdit, onEndEdit, onChange, compact, large }) => {
+    if (editing) {
+        return (
+            <div style={styles.infoCard}>
+                <div style={styles.infoLabel}>{label}</div>
+                {compact ? (
+                    <input
+                        autoFocus
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        onBlur={onEndEdit}
+                        onKeyDown={(e) => e.key === 'Enter' && onEndEdit()}
+                        style={styles.fieldInput}
+                    />
+                ) : (
+                    <textarea
+                        autoFocus
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        onBlur={onEndEdit}
+                        style={{ ...styles.fieldInput, minHeight: large ? '120px' : '60px', resize: 'vertical' as const }}
+                    />
+                )}
+            </div>
+        );
+    }
+
+    return (
+        <div style={{ ...styles.infoCard, cursor: 'pointer' }} onClick={onStartEdit}>
+            <div style={styles.infoLabel}>{label}</div>
+            <div style={{
+                color: value ? '#e5e7eb' : '#52525b',
+                fontSize: '12px',
+                lineHeight: '1.4',
+                maxHeight: large ? '200px' : compact ? '20px' : '80px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+            }}>
+                {value || 'Click to edit...'}
             </div>
         </div>
     );
@@ -287,7 +544,7 @@ export const CreativeDirectorPage: React.FC = () => {
 const styles: Record<string, React.CSSProperties> = {
     page: {
         display: 'grid',
-        gridTemplateColumns: '400px 1fr',
+        gridTemplateColumns: '420px 1fr',
         gap: '0',
         height: '100%',
         overflow: 'hidden',
@@ -306,6 +563,16 @@ const styles: Record<string, React.CSSProperties> = {
         padding: '12px 16px',
         borderBottom: '1px solid #27272a',
         flexShrink: 0,
+    },
+    resetBtn: {
+        padding: '4px',
+        background: 'transparent',
+        border: '1px solid #3f3f46',
+        borderRadius: '4px',
+        color: '#6b7280',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
     },
     quickStartBtn: {
         display: 'flex',
@@ -339,6 +606,7 @@ const styles: Record<string, React.CSSProperties> = {
         alignItems: 'center',
         gap: '4px',
         marginTop: '4px',
+        marginRight: '6px',
         padding: '2px 8px',
         backgroundColor: 'rgba(139, 92, 246, 0.15)',
         borderRadius: '4px',
@@ -348,9 +616,20 @@ const styles: Record<string, React.CSSProperties> = {
     },
     inputArea: {
         display: 'flex',
-        gap: '8px',
+        gap: '6px',
         padding: '12px 16px',
         borderTop: '1px solid #27272a',
+        flexShrink: 0,
+        alignItems: 'center',
+    },
+    iconBtn: {
+        padding: '8px',
+        background: 'transparent',
+        border: '1px solid #3f3f46',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
         flexShrink: 0,
     },
     chatInput: {
@@ -370,6 +649,7 @@ const styles: Record<string, React.CSSProperties> = {
         color: 'white',
         display: 'flex',
         alignItems: 'center',
+        flexShrink: 0,
     },
     workArea: {
         display: 'flex',
@@ -399,7 +679,19 @@ const styles: Record<string, React.CSSProperties> = {
         cursor: 'pointer',
     },
     section: {
-        marginBottom: '16px',
+        marginBottom: '12px',
+    },
+    sectionHeader: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+        padding: '8px 12px',
+        backgroundColor: '#1f1f23',
+        border: '1px solid #27272a',
+        borderRadius: '6px',
+        cursor: 'pointer',
+        marginBottom: '8px',
     },
     sectionTitle: {
         display: 'flex',
@@ -408,7 +700,6 @@ const styles: Record<string, React.CSSProperties> = {
         fontSize: '13px',
         fontWeight: 700,
         color: '#e5e7eb',
-        marginBottom: '8px',
         textTransform: 'uppercase',
         letterSpacing: '0.05em',
     },
@@ -423,14 +714,22 @@ const styles: Record<string, React.CSSProperties> = {
         fontSize: '13px',
         fontFamily: 'monospace',
         lineHeight: '1.6',
-        resize: 'vertical',
+        resize: 'vertical' as const,
         outline: 'none',
         boxSizing: 'border-box' as const,
     },
-    infoGrid: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-        gap: '8px',
+    smallBtn: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '4px',
+        padding: '6px 12px',
+        backgroundColor: '#27272a',
+        border: '1px solid #3f3f46',
+        borderRadius: '6px',
+        color: '#a78bfa',
+        fontSize: '11px',
+        fontWeight: 600,
+        cursor: 'pointer',
     },
     infoCard: {
         padding: '10px',
@@ -445,5 +744,17 @@ const styles: Record<string, React.CSSProperties> = {
         letterSpacing: '0.05em',
         marginBottom: '4px',
         fontWeight: 700,
+    },
+    fieldInput: {
+        width: '100%',
+        padding: '6px 8px',
+        backgroundColor: '#18181b',
+        border: '1px solid #52525b',
+        borderRadius: '4px',
+        color: '#e5e7eb',
+        fontSize: '12px',
+        outline: 'none',
+        fontFamily: 'sans-serif',
+        boxSizing: 'border-box' as const,
     },
 };
