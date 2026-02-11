@@ -184,6 +184,7 @@ export const CreativeDirectorPage: React.FC = () => {
                 projectUpdates: result.projectUpdates,
                 scriptUpdates: result.scriptUpdates,
                 createdCharacters: result.createdCharacters,
+                createdScenes: result.createdScenes,
             });
         } catch (error) {
             console.error('Creative Director error:', error);
@@ -439,6 +440,11 @@ export const CreativeDirectorPage: React.FC = () => {
                             {msg.createdCharacters && msg.createdCharacters.length > 0 && (
                                 <div style={styles.updateBadge}>
                                     <Check size={11} /> Characters added: {msg.createdCharacters.map(c => c.name).join(', ')}
+                                </div>
+                            )}
+                            {msg.createdScenes && msg.createdScenes.length > 0 && (
+                                <div style={styles.updateBadge}>
+                                    <Check size={11} /> Scenes created: {msg.createdScenes.map(s => `${s.name}${s.shotCount ? ` (${s.shotCount} shots)` : ''}`).join(', ')}
                                 </div>
                             )}
                         </div>

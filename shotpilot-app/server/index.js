@@ -559,8 +559,66 @@ app.post('/api/projects/:projectId/creative-director', requireAuth, async (req, 
             }
         }
 
+        // Auto-create scenes (and their suggested shots) discussed in conversation
+        const createdScenes = [];
+        if (result.sceneCreations && Array.isArray(result.sceneCreations)) {
+            const existingSceneNames = scenes.map(s => s.name.toLowerCase());
+            const insertScene = db.prepare(
+                `INSERT INTO scenes (project_id, name, description, order_index, location_setting, time_of_day, mood_tone, status)
+                 VALUES (@projectId, @name, @description, @order_index, @location_setting, @time_of_day, @mood_tone, 'planning')`
+            );
+            const getMaxSceneOrder = db.prepare('SELECT MAX(order_index) as max_order FROM scenes WHERE project_id = ?');
+            const insertShot = db.prepare(
+                `INSERT INTO shots (scene_id, shot_number, shot_type, camera_angle, description, notes, order_index, status)
+                 VALUES (@sceneId, @shot_number, @shot_type, @camera_angle, @description, @notes, @order_index, 'planning')`
+            );
+
+            for (const scene of result.sceneCreations) {
+                if (!scene.name || existingSceneNames.includes(scene.name.toLowerCase())) continue;
+                try {
+                    const maxOrder = getMaxSceneOrder.get(projectId);
+                    const sceneInfo = insertScene.run({
+                        projectId,
+                        name: sanitize(scene.name),
+                        description: sanitize(scene.description || ''),
+                        order_index: (maxOrder.max_order || 0) + 1,
+                        location_setting: sanitize(scene.location_setting || ''),
+                        time_of_day: sanitize(scene.time_of_day || ''),
+                        mood_tone: sanitize(scene.mood_tone || ''),
+                    });
+                    const sceneId = sceneInfo.lastInsertRowid;
+                    const shotNames = [];
+                    existingSceneNames.push(scene.name.toLowerCase());
+
+                    // Create suggested shots inside the scene
+                    if (scene.suggestedShots && Array.isArray(scene.suggestedShots)) {
+                        for (let i = 0; i < scene.suggestedShots.length; i++) {
+                            const shot = scene.suggestedShots[i];
+                            try {
+                                insertShot.run({
+                                    sceneId,
+                                    shot_number: String(i + 1),
+                                    shot_type: sanitize(shot.shot_type || 'Wide Shot'),
+                                    camera_angle: sanitize(shot.camera_angle || 'Eye Level'),
+                                    description: sanitize(shot.description || ''),
+                                    notes: sanitize(shot.purpose || ''),
+                                    order_index: i + 1,
+                                });
+                                shotNames.push(`${shot.shot_type || 'Shot'} ${i + 1}`);
+                            } catch (err) {
+                                console.warn(`[creative-director] Could not create shot in scene "${scene.name}":`, err.message);
+                            }
+                        }
+                    }
+                    createdScenes.push({ id: sceneId, name: scene.name, shotCount: shotNames.length });
+                } catch (err) {
+                    console.warn(`[creative-director] Could not create scene "${scene.name}":`, err.message);
+                }
+            }
+        }
+
         logAIFeatureUsage(db, req.session.userId, 'creative_director', projectId);
-        res.json({ ...result, kbFilesUsed, createdCharacters });
+        res.json({ ...result, kbFilesUsed, createdCharacters, createdScenes });
     } catch (error) {
         console.error('Creative Director error:', error);
         res.status(500).json({ error: error.message });

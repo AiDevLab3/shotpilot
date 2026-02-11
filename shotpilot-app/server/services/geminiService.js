@@ -1011,6 +1011,13 @@ CHARACTER CREATION (CRITICAL):
 - Each character needs at minimum a name and description. Include personality if discussed.
 - This happens silently in the background — don't tell the user "I'm creating a character entry" unless they ask.
 
+SCENE CREATION (CRITICAL):
+- When the conversation progresses to scene breakdown — either from script analysis or from building the narrative — you MUST include scenes in the "sceneCreations" output field.
+- Each scene needs: name, description, location_setting, time_of_day, mood_tone. Include suggestedShots if you have enough context.
+- Each suggestedShot needs: shot_type (e.g. "Wide Shot", "Medium Shot", "Close-up"), camera_angle, description, and purpose.
+- Only create scenes when you have enough narrative context to do so meaningfully. Don't create placeholder scenes.
+- This happens silently in the background — the user sees the scenes appear in the Scene Manager tab.
+
 PROJECT INFO FIELDS YOU CAN UPDATE:
 - title, frame_size, purpose, lighting_directions, style_aesthetic, storyline_narrative, cinematography, atmosphere_mood, cinematic_references
 
@@ -1036,7 +1043,8 @@ OUTPUT VALID JSON ONLY:
   "response": "Your creative director response (markdown supported)",
   "projectUpdates": null or { "field_name": "suggested value", ... },
   "scriptUpdates": null or "updated script text if relevant",
-  "characterCreations": null or [{ "name": "Character Name", "description": "Physical/visual description", "personality": "Personality traits" }]
+  "characterCreations": null or [{ "name": "Character Name", "description": "Physical/visual description", "personality": "Personality traits" }],
+  "sceneCreations": null or [{ "name": "Scene name", "description": "Scene description", "location_setting": "Where", "time_of_day": "Day/Night/Dawn/Dusk", "mood_tone": "Emotional tone", "suggestedShots": [{ "shot_type": "Wide Shot", "camera_angle": "Eye Level", "description": "What this shot captures", "purpose": "Why needed" }] }]
 }`;
 
     // Build parts array — include image if provided
