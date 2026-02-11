@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Send, Loader2, Save, FileText, Lightbulb, Check, Upload, Image, RotateCcw, ChevronDown, ChevronUp, X, Plus, Trash2 } from 'lucide-react';
+import { Send, Loader2, Save, FileText, Lightbulb, Check, Upload, Image, ChevronDown, ChevronUp, X, Plus, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getAllProjects, getProject, updateProject, createProject, deleteProject, creativeDirectorChat, getAvailableModels, createCharacter } from '../services/api';
 import { useCreativeDirectorStore } from '../stores/creativeDirectorStore';
@@ -284,13 +284,7 @@ export const CreativeDirectorPage: React.FC = () => {
         }, 800);
     };
 
-    const handleResetChat = () => {
-        if (!confirm('Reset conversation? Your script, project info, and model selection will be kept.')) return;
-        store.resetSession(projectId);
-        loadProject();
-    };
-
-    const handleNewProject = async () => {
+const handleNewProject = async () => {
         try {
             await createProject({ title: 'Untitled Project' });
             const projects = await getAllProjects();
@@ -363,9 +357,6 @@ export const CreativeDirectorPage: React.FC = () => {
                                 </option>
                             ))}
                         </select>
-                        <button onClick={handleResetChat} style={styles.resetBtn} title="Reset conversation">
-                            <RotateCcw size={13} />
-                        </button>
                     </div>
                 </div>
 
@@ -768,17 +759,7 @@ const styles: Record<string, React.CSSProperties> = {
         outline: 'none',
         maxWidth: '160px',
     },
-    resetBtn: {
-        padding: '4px',
-        background: 'transparent',
-        border: '1px solid #3f3f46',
-        borderRadius: '4px',
-        color: '#6b7280',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-    },
-    quickStartBtn: {
+quickStartBtn: {
         display: 'flex',
         alignItems: 'center',
         gap: '8px',
