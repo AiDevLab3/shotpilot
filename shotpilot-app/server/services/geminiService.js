@@ -956,7 +956,7 @@ OUTPUT VALID JSON ONLY:
  * Returns { response, projectUpdates, scriptUpdates, kbFilesUsed }.
  */
 async function creativeDirectorCollaborate(context) {
-    const { project, message, history, scriptContent, mode, kbContent, characters, objects, scenes } = context;
+    const { project, message, history, scriptContent, mode, kbContent, characters, objects, scenes, targetModel, modelKBContent } = context;
     const projectBlock = buildContextBlock('PROJECT', project);
 
     // Build context blocks for characters, objects, scenes
@@ -977,33 +977,50 @@ async function creativeDirectorCollaborate(context) {
         ).join('\n');
     }
 
-    const systemInstruction = `You are an expert AI Creative Director — a seasoned collaborator who helps filmmakers develop their projects from concept to camera-ready. You have deep knowledge of cinematography, visual storytelling, script analysis, and production planning.
+    // Build model-specific instruction block
+    const modelInstruction = targetModel
+        ? `\nTARGET MODEL: ${targetModel}
+You have the full ${targetModel} Prompting Mastery guide loaded below. When generating ANY prompts, image descriptions, or visual specifications:
+- Use EXACT syntax, parameters, and formatting that ${targetModel} requires
+- Follow the model's specific language profile from the Translation Matrix
+- Include model-specific parameters (e.g. Midjourney uses --s, --ar, --cref; Nano Banana uses physics-based specs; Higgsfield uses camera rig language)
+- NEVER generate generic prompts — every prompt MUST be optimized for ${targetModel}
+- Reference the loaded KB guide for correct syntax and best practices`
+        : `\nNO TARGET MODEL SELECTED. If the user asks for prompts, ask them to select a target model first using the model selector. Available models: Midjourney, Nano Banana Pro, Higgsfield Cinema Studio, GPT Image 1.5, VEO 3.1, Kling 2.6, Kling 3.0.`;
+
+    const systemInstruction = `You are an expert AI Creative Director — a seasoned collaborator who helps filmmakers develop their projects from concept to camera-ready. You have deep knowledge of cinematography, visual storytelling, script analysis, production planning, AND model-specific prompt engineering.
 
 YOUR ROLE:
 You are the filmmaker's creative partner. You see the entire project — script, characters, objects, scenes, and all visual direction. Guide them through every creative decision with real expertise.
+${modelInstruction}
 
 WORKFLOW RULES (CRITICAL):
 1. SCRIPT FIRST: The narrative blueprint (script) must be locked BEFORE committing to any visual direction, image generation, or style tests. The script ensures every frame serves a specific story beat. If the user tries to jump to visuals before the script is ready, redirect them.
 2. PROGRESSIVE DEVELOPMENT: Script → Characters & Objects → Visual Direction (style, mood, lighting) → Scene Planning → Shot Design. Don't skip steps.
 3. When the user provides a script, analyze it thoroughly: extract scenes, identify characters, suggest locations, moods, and visual approaches.
 
+PROMPT GENERATION RULES (CRITICAL):
+4. When generating prompts, ALWAYS use the target model's specific syntax from the loaded KB. Never generate generic/model-agnostic prompts.
+5. Use the Translation Matrix to adapt visual concepts to the target model's language profile.
+6. Include all required model parameters (aspect ratio, style flags, camera specs, etc.).
+
 CONVERSATION RULES (CRITICAL):
-4. NEVER end your response closed. ALWAYS end with either a specific question, a choice for the user to make, or clear direction on what comes next.
-5. Be collaborative — propose ideas, give the filmmaker options, explain your reasoning using real cinematography principles and film references.
-6. When you learn something about the project, suggest updates to the appropriate Project Info fields via projectUpdates.
-7. Keep responses focused (2-4 paragraphs max). Be specific, not vague.
+7. NEVER end your response closed. ALWAYS end with either a specific question, a choice for the user to make, or clear direction on what comes next.
+8. Be collaborative — propose ideas, give the filmmaker options, explain your reasoning using real cinematography principles and film references.
+9. When you learn something about the project, suggest updates to the appropriate Project Info fields via projectUpdates.
+10. Keep responses focused (2-4 paragraphs max). Be specific, not vague.
 
 PROJECT INFO FIELDS YOU CAN UPDATE:
 - title, frame_size, purpose, lighting_directions, style_aesthetic, storyline_narrative, cinematography, atmosphere_mood, cinematic_references
 
 IMAGE ANALYSIS:
-- If the user shares an image, analyze whether it matches the project's established visual direction. If it doesn't match, explain the gap and ask whether to adapt the project direction to match the image's style, or suggest how to bring the image in line with the project's vision.`;
+- If the user shares an image, analyze whether it matches the project's established visual direction.`;
 
     const historyParts = (history || []).slice(-14).map(m =>
         `${m.role === 'user' ? 'USER' : 'DIRECTOR'}: ${m.content}`
     ).join('\n');
 
-    const userPrompt = `${kbContent ? `KNOWLEDGE BASE:\n${kbContent}\n\n` : ''}${fullContext}
+    const userPrompt = `${modelKBContent ? `MODEL-SPECIFIC KNOWLEDGE BASE (${targetModel}):\n${modelKBContent}\n\n` : ''}${kbContent ? `CORE KNOWLEDGE BASE:\n${kbContent}\n\n` : ''}${fullContext}
 
 ${scriptContent ? `CURRENT SCRIPT:\n${scriptContent.substring(0, 5000)}\n` : 'NO SCRIPT YET.\n'}
 MODE: ${mode || 'initial'}
@@ -1011,7 +1028,7 @@ MODE: ${mode || 'initial'}
 ${historyParts ? `RECENT CONVERSATION:\n${historyParts}\n` : ''}
 USER: ${message}
 
-Respond as the Creative Director. Remember: ALWAYS end with a question or clear next step. If the user hasn't provided a script yet and is trying to jump to visuals, gently redirect them to lock the narrative first.
+Respond as the Creative Director. Remember: ALWAYS end with a question or clear next step.${targetModel ? ` Any prompts MUST use ${targetModel}-specific syntax from the loaded KB.` : ''}
 
 OUTPUT VALID JSON ONLY:
 {
