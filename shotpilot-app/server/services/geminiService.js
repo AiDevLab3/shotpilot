@@ -1041,14 +1041,26 @@ OUTPUT VALID JSON ONLY:
     const parts = [];
     if (imageUrl) {
         try {
-            // imageUrl is a relative path like /uploads/images/filename.jpg
-            const uploadsDir = path.join(path.dirname(new URL(import.meta.url).pathname), '../../uploads');
-            const imagePath = path.join(uploadsDir, imageUrl.replace('/uploads/', ''));
+            // imageUrl is a relative path like /uploads/images/filename
+            // Use process.cwd() for path resolution (same pattern as buildImageParts)
+            const imagePath = imageUrl.startsWith('/')
+                ? path.join(process.cwd(), imageUrl)
+                : imageUrl;
+
             if (fs.existsSync(imagePath)) {
                 const imageData = fs.readFileSync(imagePath);
+                // Multer dest mode may not add extensions — detect mime from file header bytes
+                let mimeType = 'image/jpeg';
                 const ext = path.extname(imagePath).toLowerCase();
-                const mimeMap = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp' };
-                const mimeType = mimeMap[ext] || 'image/jpeg';
+                if (ext) {
+                    const mimeMap = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp' };
+                    mimeType = mimeMap[ext] || 'image/jpeg';
+                } else {
+                    // Detect from magic bytes
+                    if (imageData[0] === 0x89 && imageData[1] === 0x50) mimeType = 'image/png';
+                    else if (imageData[0] === 0x47 && imageData[1] === 0x49) mimeType = 'image/gif';
+                    else if (imageData[0] === 0x52 && imageData[1] === 0x49) mimeType = 'image/webp';
+                }
                 parts.push({ inlineData: { mimeType, data: imageData.toString('base64') } });
                 parts.push({ text: '↑ User shared this reference image.\n\n' + userPrompt });
             } else {
