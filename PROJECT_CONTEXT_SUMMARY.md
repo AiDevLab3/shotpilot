@@ -25,6 +25,12 @@
 
 ---
 
+## Critical Strategic Reminder
+
+> ShotPilot is NOT a generic prompt optimizer. It is a professional cinematography consulting tool powered by a 250K-word knowledge base. We prioritize filmic realism, expert-level diagnostics, and context persistence over "one-click magic."
+
+---
+
 ## Project Vision
 
 ### The Problem
@@ -294,12 +300,14 @@ SessionData: {
 - All CRUD operations, hierarchical data structure
 - Reference image upload, status management
 
-#### Phase 2A-B: Backend Services
+#### Phase 2A-B: Backend Services + Stabilization Sprint
 - Authentication (session-based, auto-login MVP)
 - Credit system with usage logging
 - KB loader with model-specific file mapping
-- Quality check (completeness scoring, on-the-fly <1ms)
+- Quality check (completeness scoring, on-the-fly <1ms, 80/20 weighting)
 - Gemini integration (recommendations, prompt generation)
+- Kling 3.0 integration (multi-shot intelligence, 15s, Elements 3.0)
+- Bug fixes: quality score inflation, focal length conflicts, shot numbering gaps, modal stale data
 
 #### Phase 2C: Frontend AI Integration
 - Credit badge in header
@@ -418,6 +426,18 @@ npx tsc --noEmit   # Type check
 | SQLite | Zero infrastructure, file-based, sufficient for thousands of users | MVP |
 | Gemini Flash | 1M context, multimodal, free tier, fast inference | MVP |
 | KB Condensation | 250K words → ~18K tokens fits context window | Permanent |
+
+---
+
+## Critical Reminders
+
+1. **Do Not "Simplify" the KB** — The complexity IS the product. Remove film references and it becomes ChatGPT.
+2. **Maintain 80/20 Split** — Never let Context override user's Shot decisions.
+3. **Video is Different** — 5-layer structure (Scene, Character, Action, Camera, Audio). Do not reuse Image logic blindly.
+4. **Keep it Fast** — Quality checks <50ms (current <1ms).
+5. **Script Protection** — Never let AI erase script content (50% length guard).
+6. **AI Rules = Internal** — The AI should NEVER state its rules/workflow to the user.
+7. **Chat is Persistent** — The sidebar must survive tab navigation.
 
 ---
 
