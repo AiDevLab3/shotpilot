@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Send, Loader2, Save, FileText, Lightbulb, Check, Upload, Image, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
-import { getAllProjects, getProject, updateProject, creativeDirectorChat, getAvailableModels } from '../services/api';
+import { Send, Loader2, Save, FileText, Lightbulb, Check, Upload, Image, RotateCcw, ChevronDown, ChevronUp, X, Plus, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { getAllProjects, getProject, updateProject, createProject, deleteProject, creativeDirectorChat, getAvailableModels, createCharacter } from '../services/api';
 import { useCreativeDirectorStore } from '../stores/creativeDirectorStore';
 import type { Message } from '../stores/creativeDirectorStore';
 import type { Project } from '../types/schema';
@@ -9,9 +10,20 @@ import type { Project } from '../types/schema';
 const MAX_SCRIPT_CHARS = 50000;
 const MAX_FILE_SIZE_MB = 2;
 
+const FRAME_SIZE_OPTIONS = [
+    '16:9 Widescreen',
+    '9:16 Portrait',
+    '1:1 Square',
+    '4:3 Standard',
+    '21:9 Ultrawide',
+    '2.39:1 Anamorphic',
+    '2.35:1 CinemaScope',
+];
+
 export const CreativeDirectorPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const projectId = id ? parseInt(id) : 0;
+    const navigate = useNavigate();
 
     // Zustand store for persistence
     const store = useCreativeDirectorStore();
@@ -25,10 +37,15 @@ export const CreativeDirectorPage: React.FC = () => {
     const [scriptExpanded, setScriptExpanded] = useState(false);
     const [projectInfoExpanded, setProjectInfoExpanded] = useState(true);
     const [editingField, setEditingField] = useState<string | null>(null);
+    const [editingTitle, setEditingTitle] = useState(false);
     const [availableModels, setAvailableModels] = useState<any[]>([]);
+    const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
     const chatEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
+
+    const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const lastSavedRef = useRef<string>('');
 
     useEffect(() => {
         if (!session.projectSnapshot) loadProject();
@@ -38,6 +55,34 @@ export const CreativeDirectorPage: React.FC = () => {
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [session.messages, isThinking]);
+
+    // Periodic auto-save every 30s if project changed
+    useEffect(() => {
+        if (!project) return;
+        const interval = setInterval(() => {
+            const snapshot = JSON.stringify(project);
+            if (snapshot !== lastSavedRef.current) {
+                lastSavedRef.current = snapshot;
+                updateProject(projectId, project).catch(err =>
+                    console.error('Periodic auto-save failed:', err)
+                );
+            }
+        }, 30000);
+        return () => clearInterval(interval);
+    }, [project, projectId]);
+
+    // Save on page unload
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (project) {
+                // Best-effort save via sendBeacon
+                const data = JSON.stringify(project);
+                navigator.sendBeacon(`/api/projects/${projectId}`, new Blob([data], { type: 'application/json' }));
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [project, projectId]);
 
     const loadProject = async () => {
         setLoading(true);
@@ -69,7 +114,11 @@ export const CreativeDirectorPage: React.FC = () => {
     const handleSendMessage = async (message: string, imageUrl?: string) => {
         if (!message.trim() || isThinking || !project) return;
 
-        const userMsg: Message = { role: 'user', content: message, imageUrl };
+        // Attach pending image if no explicit imageUrl passed
+        const attachedImage = imageUrl || pendingImageUrl || undefined;
+        if (pendingImageUrl) setPendingImageUrl(null);
+
+        const userMsg: Message = { role: 'user', content: message, imageUrl: attachedImage };
         const newMessages = [...session.messages, userMsg];
         store.setMessages(projectId, newMessages);
         setInputMessage('');
@@ -96,7 +145,7 @@ export const CreativeDirectorPage: React.FC = () => {
                 history,
                 session.scriptContent,
                 currentMode,
-                imageUrl,
+                attachedImage,
                 session.targetModel || undefined,
             );
 
@@ -134,6 +183,8 @@ export const CreativeDirectorPage: React.FC = () => {
                 content: responseText,
                 projectUpdates: result.projectUpdates,
                 scriptUpdates: result.scriptUpdates,
+                createdCharacters: result.createdCharacters,
+                createdScenes: result.createdScenes,
             });
         } catch (error) {
             console.error('Creative Director error:', error);
@@ -211,12 +262,7 @@ export const CreativeDirectorPage: React.FC = () => {
             });
             if (!response.ok) throw new Error('Upload failed');
             const result = await response.json();
-            const imageUrl = result.url;
-
-            handleSendMessage(
-                `I'm sharing this reference image. Does it match the visual direction we've established for this project? Analyze the style, lighting, composition, and mood — and tell me if it aligns or where it diverges.`,
-                imageUrl
-            );
+            setPendingImageUrl(result.url);
         } catch (error) {
             console.error('Image upload error:', error);
             alert('Failed to upload image.');
@@ -229,10 +275,13 @@ export const CreativeDirectorPage: React.FC = () => {
         const updated = { ...project, [field]: value } as Project;
         setProject(updated);
         store.setProjectSnapshot(projectId, updated);
-        // Auto-save to database on field edit
-        updateProject(projectId, updated).catch(err =>
-            console.error('Auto-save failed:', err)
-        );
+        // Debounced auto-save to database on field edit
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = setTimeout(() => {
+            updateProject(projectId, updated).catch(err =>
+                console.error('Auto-save failed:', err)
+            );
+        }, 800);
     };
 
     const handleResetChat = () => {
@@ -240,9 +289,38 @@ export const CreativeDirectorPage: React.FC = () => {
         loadProject();
     };
 
+    const handleNewProject = async () => {
+        try {
+            await createProject({ title: 'Untitled Project' });
+            const projects = await getAllProjects();
+            const newest = projects[0]; // sorted by updated_at DESC
+            if (newest) navigate(`/projects/${newest.id}`);
+        } catch (error) {
+            console.error('Create project error:', error);
+        }
+    };
+
+    const handleDeleteProject = async () => {
+        if (!project) return;
+        if (!confirm(`Delete "${project.title}"? This cannot be undone.`)) return;
+        try {
+            store.resetSession(projectId);
+            await deleteProject(project.id);
+            const projects = await getAllProjects();
+            if (projects.length > 0) {
+                navigate(`/projects/${projects[0].id}`);
+            } else {
+                await createProject({ title: 'Untitled Project' });
+                const newProjs = await getAllProjects();
+                if (newProjs.length > 0) navigate(`/projects/${newProjs[0].id}`);
+            }
+        } catch (error) {
+            console.error('Delete project error:', error);
+        }
+    };
+
     // Project info field definitions with size hints
     const compactFields = [
-        { key: 'frame_size', label: 'Frame Size' },
         { key: 'cinematic_references', label: 'References' },
     ];
 
@@ -359,6 +437,16 @@ export const CreativeDirectorPage: React.FC = () => {
                                     <FileText size={11} /> Script updated
                                 </div>
                             )}
+                            {msg.createdCharacters && msg.createdCharacters.length > 0 && (
+                                <div style={styles.updateBadge}>
+                                    <Check size={11} /> Characters added: {msg.createdCharacters.map(c => c.name).join(', ')}
+                                </div>
+                            )}
+                            {msg.createdScenes && msg.createdScenes.length > 0 && (
+                                <div style={styles.updateBadge}>
+                                    <Check size={11} /> Scenes created: {msg.createdScenes.map(s => `${s.name}${s.shotCount ? ` (${s.shotCount} shots)` : ''}`).join(', ')}
+                                </div>
+                            )}
                         </div>
                     ))}
                     {isThinking && (
@@ -369,6 +457,21 @@ export const CreativeDirectorPage: React.FC = () => {
                     <div ref={chatEndRef} />
                 </div>
 
+                {/* Pending image preview */}
+                {pendingImageUrl && (
+                    <div style={styles.pendingImageBar}>
+                        <img src={pendingImageUrl} alt="Attached" style={{ height: '48px', borderRadius: '4px', objectFit: 'cover' }} />
+                        <span style={{ fontSize: '11px', color: '#a78bfa' }}>Image attached</span>
+                        <button
+                            onClick={() => setPendingImageUrl(null)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'flex' }}
+                            title="Remove image"
+                        >
+                            <X size={14} color="#6b7280" />
+                        </button>
+                    </div>
+                )}
+
                 {/* Input */}
                 <div style={styles.inputArea}>
                     <button
@@ -376,11 +479,11 @@ export const CreativeDirectorPage: React.FC = () => {
                         style={styles.iconBtn}
                         title="Share reference image"
                     >
-                        <Image size={16} color="#6b7280" />
+                        <Image size={16} color={pendingImageUrl ? '#8b5cf6' : '#6b7280'} />
                     </button>
                     <input
                         type="text"
-                        placeholder="Talk to your Creative Director..."
+                        placeholder={pendingImageUrl ? 'Type a message about this image...' : 'Talk to your Creative Director...'}
                         value={inputMessage}
                         onChange={(e) => setInputMessage(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSendMessage(inputMessage)}
@@ -409,10 +512,49 @@ export const CreativeDirectorPage: React.FC = () => {
             <div style={styles.workArea}>
                 {/* Save Header */}
                 <div style={styles.workHeader}>
-                    <span style={{ fontSize: '15px', fontWeight: 700, color: '#e5e7eb' }}>{project.title}</span>
-                    <button onClick={handleSaveProject} style={styles.saveBtn} title="Auto-saves on AI updates and field edits. Click to force save.">
-                        {savedNotice ? <><Check size={14} /> Saved</> : <><Save size={14} /> Save</>}
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                        {editingTitle ? (
+                            <input
+                                autoFocus
+                                value={project.title}
+                                onChange={(e) => {
+                                    const updated = { ...project, title: e.target.value } as Project;
+                                    setProject(updated);
+                                    store.setProjectSnapshot(projectId, updated);
+                                }}
+                                onBlur={() => {
+                                    setEditingTitle(false);
+                                    updateProject(projectId, project).catch(err => console.error('Title save error:', err));
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        setEditingTitle(false);
+                                        updateProject(projectId, project).catch(err => console.error('Title save error:', err));
+                                    }
+                                }}
+                                style={{ ...styles.fieldInput, fontSize: '15px', fontWeight: 700, flex: 1 }}
+                            />
+                        ) : (
+                            <span
+                                style={{ fontSize: '15px', fontWeight: 700, color: '#e5e7eb', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                                onClick={() => setEditingTitle(true)}
+                                title="Click to rename"
+                            >
+                                {project.title}
+                            </span>
+                        )}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                        <button onClick={handleNewProject} style={styles.headerIconBtn} title="New project">
+                            <Plus size={14} />
+                        </button>
+                        <button onClick={handleDeleteProject} style={{ ...styles.headerIconBtn, color: '#ef4444' }} title="Delete project">
+                            <Trash2 size={14} />
+                        </button>
+                        <button onClick={handleSaveProject} style={styles.saveBtn} title="Auto-saves on AI updates and field edits. Click to force save.">
+                            {savedNotice ? <><Check size={14} /> Saved</> : <><Save size={14} /> Save</>}
+                        </button>
+                    </div>
                 </div>
 
                 {/* Script Section — collapsible */}
@@ -469,8 +611,21 @@ export const CreativeDirectorPage: React.FC = () => {
                     </button>
                     {projectInfoExpanded && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            {/* Compact row: frame size + references */}
+                            {/* Compact row: frame size dropdown + references */}
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                <div style={styles.infoCard}>
+                                    <div style={styles.infoLabel}>Frame Size</div>
+                                    <select
+                                        value={project.frame_size || ''}
+                                        onChange={(e) => handleFieldEdit('frame_size', e.target.value)}
+                                        style={{ ...styles.fieldInput, cursor: 'pointer' }}
+                                    >
+                                        <option value="">Select size</option>
+                                        {FRAME_SIZE_OPTIONS.map(opt => (
+                                            <option key={opt} value={opt}>{opt}</option>
+                                        ))}
+                                    </select>
+                                </div>
                                 {compactFields.map(({ key, label }) => (
                                     <FieldCard
                                         key={key}
@@ -662,6 +817,15 @@ const styles: Record<string, React.CSSProperties> = {
         fontSize: '10px',
         fontWeight: 600,
     },
+    pendingImageBar: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '8px 16px',
+        borderTop: '1px solid #27272a',
+        backgroundColor: 'rgba(139, 92, 246, 0.08)',
+        flexShrink: 0,
+    },
     inputArea: {
         display: 'flex',
         gap: '6px',
@@ -712,6 +876,16 @@ const styles: Record<string, React.CSSProperties> = {
         alignItems: 'center',
         marginBottom: '16px',
         flexShrink: 0,
+    },
+    headerIconBtn: {
+        padding: '6px',
+        background: 'transparent',
+        border: '1px solid #3f3f46',
+        borderRadius: '4px',
+        color: '#6b7280',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
     },
     saveBtn: {
         display: 'flex',

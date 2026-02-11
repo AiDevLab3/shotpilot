@@ -8,6 +8,8 @@ interface Message {
     projectUpdates?: Record<string, string> | null;
     scriptUpdates?: string | null;
     imageUrl?: string | null;
+    createdCharacters?: { id: number; name: string }[] | null;
+    createdScenes?: { id: number; name: string; shotCount: number }[] | null;
 }
 
 interface SessionData {

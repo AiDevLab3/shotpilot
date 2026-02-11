@@ -956,7 +956,7 @@ OUTPUT VALID JSON ONLY:
  * Returns { response, projectUpdates, scriptUpdates, kbFilesUsed }.
  */
 async function creativeDirectorCollaborate(context) {
-    const { project, message, history, scriptContent, mode, kbContent, characters, objects, scenes, targetModel, modelKBContent } = context;
+    const { project, message, history, scriptContent, mode, kbContent, characters, objects, scenes, imageUrl, targetModel, modelKBContent } = context;
     const projectBlock = buildContextBlock('PROJECT', project);
 
     // Build context blocks for characters, objects, scenes
@@ -994,27 +994,35 @@ YOUR ROLE:
 You are the filmmaker's creative partner. You see the entire project — script, characters, objects, scenes, and all visual direction. Guide them through every creative decision with real expertise.
 ${modelInstruction}
 
-WORKFLOW RULES (CRITICAL):
-1. SCRIPT FIRST: The narrative blueprint (script) must be locked BEFORE committing to any visual direction, image generation, or style tests. The script ensures every frame serves a specific story beat. If the user tries to jump to visuals before the script is ready, redirect them.
-2. PROGRESSIVE DEVELOPMENT: Script → Characters & Objects → Visual Direction (style, mood, lighting) → Scene Planning → Shot Design. Don't skip steps.
+INTERNAL WORKFLOW (follow these but NEVER reference them to the user):
+1. SCRIPT FIRST: The script must be locked before committing to visual direction or image generation. If the user tries to jump to shots/visuals before the script is complete and cohesive, gently steer them back to finishing the script first — unless they explicitly say they want to skip ahead.
+2. PROGRESSIVE DEVELOPMENT: Script → Characters & Objects → Visual Direction → Scene Planning → Shot Design.
 3. When the user provides a script, analyze it thoroughly: extract scenes, identify characters, suggest locations, moods, and visual approaches.
+4. When generating prompts, ALWAYS use the target model's specific syntax from the loaded KB.
 
-PROMPT GENERATION RULES (CRITICAL):
-4. When generating prompts, ALWAYS use the target model's specific syntax from the loaded KB. Never generate generic/model-agnostic prompts.
-5. Use the Translation Matrix to adapt visual concepts to the target model's language profile.
-6. Include all required model parameters (aspect ratio, style flags, camera specs, etc.).
+TONE & STYLE (CRITICAL):
+- Talk like a creative collaborator, NOT a rule-enforcing system. Never say things like "Following our Script First rule..." or "As per our workflow...". Just naturally guide the conversation.
+- Be concise. Keep responses to 2-3 focused paragraphs max.
+- Mention technical details (camera, lens, lighting) sparingly — only when directly relevant to a creative decision. Do NOT repeat camera specs in every response. One well-placed technical mention shows expertise; repeating it in every response becomes noise.
+- Focus on the STORY and VISION. What does this scene FEEL like? What's the emotional intent? Technical specs support the vision, they don't lead it.
 
-CONVERSATION RULES (CRITICAL):
-7. NEVER end your response closed. ALWAYS end with either a specific question, a choice for the user to make, or clear direction on what comes next.
-8. Be collaborative — propose ideas, give the filmmaker options, explain your reasoning using real cinematography principles and film references.
-9. When you learn something about the project, suggest updates to the appropriate Project Info fields via projectUpdates.
-10. Keep responses focused (2-4 paragraphs max). Be specific, not vague.
+CHARACTER CREATION (CRITICAL):
+- When characters are discussed, described, or extracted from a script, you MUST include them in the "characterCreations" output field.
+- Each character needs at minimum a name and description. Include personality if discussed.
+- This happens silently in the background — don't tell the user "I'm creating a character entry" unless they ask.
+
+SCENE CREATION (CRITICAL):
+- When the conversation progresses to scene breakdown — either from script analysis or from building the narrative — you MUST include scenes in the "sceneCreations" output field.
+- Each scene needs: name, description, location_setting, time_of_day, mood_tone. Include suggestedShots if you have enough context.
+- Each suggestedShot needs: shot_type (e.g. "Wide Shot", "Medium Shot", "Close-up"), camera_angle, description, and purpose.
+- Only create scenes when you have enough narrative context to do so meaningfully. Don't create placeholder scenes.
+- This happens silently in the background — the user sees the scenes appear in the Scene Manager tab.
 
 PROJECT INFO FIELDS YOU CAN UPDATE:
 - title, frame_size, purpose, lighting_directions, style_aesthetic, storyline_narrative, cinematography, atmosphere_mood, cinematic_references
 
 IMAGE ANALYSIS:
-- If the user shares an image, analyze whether it matches the project's established visual direction.`;
+- If the user shares an image, analyze it in relation to the project's visual direction.`;
 
     const historyParts = (history || []).slice(-14).map(m =>
         `${m.role === 'user' ? 'USER' : 'DIRECTOR'}: ${m.content}`
@@ -1028,18 +1036,58 @@ MODE: ${mode || 'initial'}
 ${historyParts ? `RECENT CONVERSATION:\n${historyParts}\n` : ''}
 USER: ${message}
 
-Respond as the Creative Director. Remember: ALWAYS end with a question or clear next step.${targetModel ? ` Any prompts MUST use ${targetModel}-specific syntax from the loaded KB.` : ''}
+Respond as the Creative Director. End with a question or clear next step.${targetModel ? ` Any prompts MUST use ${targetModel}-specific syntax from the loaded KB.` : ''}
 
 OUTPUT VALID JSON ONLY:
 {
   "response": "Your creative director response (markdown supported)",
   "projectUpdates": null or { "field_name": "suggested value", ... },
-  "scriptUpdates": null or "updated script text if relevant"
+  "scriptUpdates": null or "updated script text if relevant",
+  "characterCreations": null or [{ "name": "Character Name", "description": "Physical/visual description", "personality": "Personality traits" }],
+  "sceneCreations": null or [{ "name": "Scene name", "description": "Scene description", "location_setting": "Where", "time_of_day": "Day/Night/Dawn/Dusk", "mood_tone": "Emotional tone", "suggestedShots": [{ "shot_type": "Wide Shot", "camera_angle": "Eye Level", "description": "What this shot captures", "purpose": "Why needed" }] }]
 }`;
+
+    // Build parts array — include image if provided
+    const parts = [];
+    if (imageUrl) {
+        try {
+            // imageUrl is a relative path like /uploads/images/filename
+            // Use process.cwd() for path resolution (same pattern as buildImageParts)
+            const imagePath = imageUrl.startsWith('/')
+                ? path.join(process.cwd(), imageUrl)
+                : imageUrl;
+
+            if (fs.existsSync(imagePath)) {
+                const imageData = fs.readFileSync(imagePath);
+                // Multer dest mode may not add extensions — detect mime from file header bytes
+                let mimeType = 'image/jpeg';
+                const ext = path.extname(imagePath).toLowerCase();
+                if (ext) {
+                    const mimeMap = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp' };
+                    mimeType = mimeMap[ext] || 'image/jpeg';
+                } else {
+                    // Detect from magic bytes
+                    if (imageData[0] === 0x89 && imageData[1] === 0x50) mimeType = 'image/png';
+                    else if (imageData[0] === 0x47 && imageData[1] === 0x49) mimeType = 'image/gif';
+                    else if (imageData[0] === 0x52 && imageData[1] === 0x49) mimeType = 'image/webp';
+                }
+                parts.push({ inlineData: { mimeType, data: imageData.toString('base64') } });
+                parts.push({ text: '↑ User shared this reference image.\n\n' + userPrompt });
+            } else {
+                console.warn('[gemini] Creative director: image file not found:', imagePath);
+                parts.push({ text: userPrompt });
+            }
+        } catch (err) {
+            console.warn('[gemini] Creative director: could not load image:', err.message);
+            parts.push({ text: userPrompt });
+        }
+    } else {
+        parts.push({ text: userPrompt });
+    }
 
     try {
         const text = await callGemini({
-            parts: [{ text: userPrompt }],
+            parts,
             systemInstruction,
             thinkingLevel: 'high',
             responseMimeType: 'application/json',
