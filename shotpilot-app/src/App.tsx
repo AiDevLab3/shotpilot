@@ -7,6 +7,59 @@ import ShotBoardPage from './pages/ShotBoardPage';
 import { CreativeDirectorPage } from './pages/CreativeDirectorPage';
 import { getAllProjects, createProject } from './services/api';
 
+// Error boundary: catches render crashes and shows a recovery UI
+// instead of a blank dark screen
+class ErrorBoundary extends React.Component<
+    { children: React.ReactNode },
+    { hasError: boolean; error: Error | null }
+> {
+    constructor(props: { children: React.ReactNode }) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+
+    static getDerivedStateFromError(error: Error) {
+        return { hasError: true, error };
+    }
+
+    componentDidCatch(error: Error, info: React.ErrorInfo) {
+        console.error('[ErrorBoundary] Caught:', error, info.componentStack);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div style={{
+                    height: '100vh', width: '100vw', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center',
+                    backgroundColor: '#18181b', color: '#ef4444',
+                    flexDirection: 'column', gap: '16px', padding: '24px',
+                }}>
+                    <div style={{ fontSize: '20px', fontWeight: 700 }}>Something went wrong</div>
+                    <div style={{ color: '#9ca3af', fontSize: '14px', maxWidth: '500px', textAlign: 'center' }}>
+                        {this.state.error?.message || 'An unexpected error occurred'}
+                    </div>
+                    <button
+                        onClick={() => {
+                            this.setState({ hasError: false, error: null });
+                            window.location.reload();
+                        }}
+                        style={{
+                            marginTop: '8px', padding: '10px 24px',
+                            backgroundColor: '#8b5cf6', color: 'white',
+                            border: 'none', borderRadius: '8px',
+                            cursor: 'pointer', fontSize: '14px', fontWeight: 600,
+                        }}
+                    >
+                        Reload App
+                    </button>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+
 // Auto-login: MVP has no login page, so authenticate on mount
 // Uses a module-level flag to prevent React.StrictMode double-mount from
 // firing two login requests (which creates two sessions, invalidating the first).
@@ -111,23 +164,25 @@ const App: React.FC = () => {
     }
 
     return (
-        <BrowserRouter>
-            <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', backgroundColor: '#18181b', color: '#E8E8E8', overflow: 'hidden' }}>
-                <div style={{ flex: '0 0 auto' }}>
-                    <Header />
-                </div>
+        <ErrorBoundary>
+            <BrowserRouter>
+                <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', backgroundColor: '#18181b', color: '#E8E8E8', overflow: 'hidden' }}>
+                    <div style={{ flex: '0 0 auto' }}>
+                        <Header />
+                    </div>
 
-                <main style={{ flex: '1 1 auto', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                    <Routes>
-                        <Route path="/" element={<IndexRedirect />} />
-                        <Route path="/projects/:id" element={<CreativeDirectorPage />} />
-                        <Route path="/projects/:id/characters" element={<CharacterBiblePage />} />
-                        <Route path="/projects/:id/objects" element={<ObjectBiblePage />} />
-                        <Route path="/projects/:id/scenes" element={<ShotBoardPage />} />
-                    </Routes>
-                </main>
-            </div>
-        </BrowserRouter>
+                    <main style={{ flex: '1 1 auto', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                        <Routes>
+                            <Route path="/" element={<IndexRedirect />} />
+                            <Route path="/projects/:id" element={<CreativeDirectorPage />} />
+                            <Route path="/projects/:id/characters" element={<CharacterBiblePage />} />
+                            <Route path="/projects/:id/objects" element={<ObjectBiblePage />} />
+                            <Route path="/projects/:id/scenes" element={<ShotBoardPage />} />
+                        </Routes>
+                    </main>
+                </div>
+            </BrowserRouter>
+        </ErrorBoundary>
     );
 };
 

@@ -97,19 +97,38 @@ export const CreativeDirectorPage: React.FC = () => {
                 imageUrl,
             );
 
-            // Apply project updates
-            if (result.projectUpdates) {
-                const updated = { ...project, ...result.projectUpdates };
-                setProject(updated);
-                store.setProjectSnapshot(projectId, updated);
+            // Safely apply project updates — only known string fields
+            const validFields = ['title', 'purpose', 'style_aesthetic', 'atmosphere_mood',
+                'lighting_directions', 'cinematography', 'frame_size', 'cinematic_references',
+                'storyline_narrative'];
+            if (result.projectUpdates && typeof result.projectUpdates === 'object') {
+                const safeUpdates: Record<string, string> = {};
+                for (const [key, val] of Object.entries(result.projectUpdates)) {
+                    if (validFields.includes(key) && typeof val === 'string' && val.trim()) {
+                        safeUpdates[key] = val;
+                    }
+                }
+                if (Object.keys(safeUpdates).length > 0) {
+                    const updated = { ...project, ...safeUpdates } as Project;
+                    setProject(updated);
+                    store.setProjectSnapshot(projectId, updated);
+                    // Auto-save to database
+                    updateProject(projectId, updated).catch(err =>
+                        console.error('Auto-save failed:', err)
+                    );
+                }
             }
-            if (result.scriptUpdates) {
+            if (result.scriptUpdates && typeof result.scriptUpdates === 'string') {
                 store.setScriptContent(projectId, result.scriptUpdates);
             }
 
+            const responseText = typeof result.response === 'string'
+                ? result.response
+                : 'I processed your request but had trouble formatting my response. Could you rephrase?';
+
             store.addMessage(projectId, {
                 role: 'assistant',
-                content: result.response,
+                content: responseText,
                 projectUpdates: result.projectUpdates,
                 scriptUpdates: result.scriptUpdates,
             });
@@ -207,6 +226,10 @@ export const CreativeDirectorPage: React.FC = () => {
         const updated = { ...project, [field]: value } as Project;
         setProject(updated);
         store.setProjectSnapshot(projectId, updated);
+        // Auto-save to database on field edit
+        updateProject(projectId, updated).catch(err =>
+            console.error('Auto-save failed:', err)
+        );
     };
 
     const handleResetChat = () => {
@@ -307,7 +330,7 @@ export const CreativeDirectorPage: React.FC = () => {
                                 backgroundColor: msg.role === 'user' ? '#27272a' : '#1a1a2e',
                                 borderLeft: msg.role === 'assistant' ? '2px solid #8b5cf6' : 'none',
                             }}>
-                                {msg.content.split('\n').map((line, j) => (
+                                {(typeof msg.content === 'string' ? msg.content : String(msg.content || '')).split('\n').map((line, j) => (
                                     <p key={j} style={{ margin: '0 0 4px 0', lineHeight: '1.5' }}>
                                         {line.replace(/\*\*(.*?)\*\*/g, '$1')}
                                     </p>
@@ -374,8 +397,8 @@ export const CreativeDirectorPage: React.FC = () => {
                 {/* Save Header */}
                 <div style={styles.workHeader}>
                     <span style={{ fontSize: '15px', fontWeight: 700, color: '#e5e7eb' }}>{project.title}</span>
-                    <button onClick={handleSaveProject} style={styles.saveBtn}>
-                        {savedNotice ? <><Check size={14} /> Saved</> : <><Save size={14} /> Save Project</>}
+                    <button onClick={handleSaveProject} style={styles.saveBtn} title="Auto-saves on AI updates and field edits. Click to force save.">
+                        {savedNotice ? <><Check size={14} /> Saved</> : <><Save size={14} /> Save</>}
                     </button>
                 </div>
 
