@@ -196,8 +196,8 @@ export const CreativeDirectorPage: React.FC = () => {
             return;
         }
 
-        if (file.size > 5 * 1024 * 1024) {
-            alert('Image too large. Maximum 5MB.');
+        if (file.size > 25 * 1024 * 1024) {
+            alert('Image too large. Maximum 25MB.');
             return;
         }
 
