@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Send, Loader2, Save, FileText, Lightbulb, Check, Upload, Image, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Send, Loader2, Save, FileText, Lightbulb, Check, Upload, Image, RotateCcw, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { getAllProjects, getProject, updateProject, creativeDirectorChat, getAvailableModels } from '../services/api';
 import { useCreativeDirectorStore } from '../stores/creativeDirectorStore';
 import type { Message } from '../stores/creativeDirectorStore';
@@ -26,6 +26,7 @@ export const CreativeDirectorPage: React.FC = () => {
     const [projectInfoExpanded, setProjectInfoExpanded] = useState(true);
     const [editingField, setEditingField] = useState<string | null>(null);
     const [availableModels, setAvailableModels] = useState<any[]>([]);
+    const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
     const chatEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
@@ -69,7 +70,11 @@ export const CreativeDirectorPage: React.FC = () => {
     const handleSendMessage = async (message: string, imageUrl?: string) => {
         if (!message.trim() || isThinking || !project) return;
 
-        const userMsg: Message = { role: 'user', content: message, imageUrl };
+        // Attach pending image if no explicit imageUrl passed
+        const attachedImage = imageUrl || pendingImageUrl || undefined;
+        if (pendingImageUrl) setPendingImageUrl(null);
+
+        const userMsg: Message = { role: 'user', content: message, imageUrl: attachedImage };
         const newMessages = [...session.messages, userMsg];
         store.setMessages(projectId, newMessages);
         setInputMessage('');
@@ -96,7 +101,7 @@ export const CreativeDirectorPage: React.FC = () => {
                 history,
                 session.scriptContent,
                 currentMode,
-                imageUrl,
+                attachedImage,
                 session.targetModel || undefined,
             );
 
@@ -211,12 +216,7 @@ export const CreativeDirectorPage: React.FC = () => {
             });
             if (!response.ok) throw new Error('Upload failed');
             const result = await response.json();
-            const imageUrl = result.url;
-
-            handleSendMessage(
-                `I'm sharing this reference image. Does it match the visual direction we've established for this project? Analyze the style, lighting, composition, and mood — and tell me if it aligns or where it diverges.`,
-                imageUrl
-            );
+            setPendingImageUrl(result.url);
         } catch (error) {
             console.error('Image upload error:', error);
             alert('Failed to upload image.');
@@ -369,6 +369,21 @@ export const CreativeDirectorPage: React.FC = () => {
                     <div ref={chatEndRef} />
                 </div>
 
+                {/* Pending image preview */}
+                {pendingImageUrl && (
+                    <div style={styles.pendingImageBar}>
+                        <img src={pendingImageUrl} alt="Attached" style={{ height: '48px', borderRadius: '4px', objectFit: 'cover' }} />
+                        <span style={{ fontSize: '11px', color: '#a78bfa' }}>Image attached</span>
+                        <button
+                            onClick={() => setPendingImageUrl(null)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'flex' }}
+                            title="Remove image"
+                        >
+                            <X size={14} color="#6b7280" />
+                        </button>
+                    </div>
+                )}
+
                 {/* Input */}
                 <div style={styles.inputArea}>
                     <button
@@ -376,11 +391,11 @@ export const CreativeDirectorPage: React.FC = () => {
                         style={styles.iconBtn}
                         title="Share reference image"
                     >
-                        <Image size={16} color="#6b7280" />
+                        <Image size={16} color={pendingImageUrl ? '#8b5cf6' : '#6b7280'} />
                     </button>
                     <input
                         type="text"
-                        placeholder="Talk to your Creative Director..."
+                        placeholder={pendingImageUrl ? 'Type a message about this image...' : 'Talk to your Creative Director...'}
                         value={inputMessage}
                         onChange={(e) => setInputMessage(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSendMessage(inputMessage)}
@@ -661,6 +676,15 @@ const styles: Record<string, React.CSSProperties> = {
         color: '#a78bfa',
         fontSize: '10px',
         fontWeight: 600,
+    },
+    pendingImageBar: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '8px 16px',
+        borderTop: '1px solid #27272a',
+        backgroundColor: 'rgba(139, 92, 246, 0.08)',
+        flexShrink: 0,
     },
     inputArea: {
         display: 'flex',

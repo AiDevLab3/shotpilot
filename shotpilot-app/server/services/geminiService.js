@@ -956,7 +956,7 @@ OUTPUT VALID JSON ONLY:
  * Returns { response, projectUpdates, scriptUpdates, kbFilesUsed }.
  */
 async function creativeDirectorCollaborate(context) {
-    const { project, message, history, scriptContent, mode, kbContent, characters, objects, scenes, targetModel, modelKBContent } = context;
+    const { project, message, history, scriptContent, mode, kbContent, characters, objects, scenes, imageUrl, targetModel, modelKBContent } = context;
     const projectBlock = buildContextBlock('PROJECT', project);
 
     // Build context blocks for characters, objects, scenes
@@ -1037,9 +1037,35 @@ OUTPUT VALID JSON ONLY:
   "scriptUpdates": null or "updated script text if relevant"
 }`;
 
+    // Build parts array — include image if provided
+    const parts = [];
+    if (imageUrl) {
+        try {
+            // imageUrl is a relative path like /uploads/images/filename.jpg
+            const uploadsDir = path.join(path.dirname(new URL(import.meta.url).pathname), '../../uploads');
+            const imagePath = path.join(uploadsDir, imageUrl.replace('/uploads/', ''));
+            if (fs.existsSync(imagePath)) {
+                const imageData = fs.readFileSync(imagePath);
+                const ext = path.extname(imagePath).toLowerCase();
+                const mimeMap = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp' };
+                const mimeType = mimeMap[ext] || 'image/jpeg';
+                parts.push({ inlineData: { mimeType, data: imageData.toString('base64') } });
+                parts.push({ text: '↑ User shared this reference image.\n\n' + userPrompt });
+            } else {
+                console.warn('[gemini] Creative director: image file not found:', imagePath);
+                parts.push({ text: userPrompt });
+            }
+        } catch (err) {
+            console.warn('[gemini] Creative director: could not load image:', err.message);
+            parts.push({ text: userPrompt });
+        }
+    } else {
+        parts.push({ text: userPrompt });
+    }
+
     try {
         const text = await callGemini({
-            parts: [{ text: userPrompt }],
+            parts,
             systemInstruction,
             thinkingLevel: 'high',
             responseMimeType: 'application/json',
