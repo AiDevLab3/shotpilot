@@ -1108,11 +1108,32 @@ OUTPUT VALID JSON ONLY:
         try {
             parsed = JSON.parse(text);
         } catch (e) {
+            // Fallback 1: Extract JSON object from surrounding text
             const jsonMatch = text.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
-                parsed = JSON.parse(jsonMatch[0]);
+                try {
+                    parsed = JSON.parse(jsonMatch[0]);
+                } catch (e2) {
+                    // Fallback 2: Try to sanitize common JSON issues (trailing commas, unescaped newlines in strings)
+                    let sanitized = jsonMatch[0]
+                        .replace(/,\s*([}\]])/g, '$1')           // trailing commas
+                        .replace(/[\x00-\x1f]/g, (ch) =>         // control chars in strings
+                            ch === '\n' ? '\\n' : ch === '\r' ? '\\r' : ch === '\t' ? '\\t' : ''
+                        );
+                    try {
+                        parsed = JSON.parse(sanitized);
+                    } catch (e3) {
+                        // Fallback 3: Extract just the response text so user sees something useful
+                        console.warn('[gemini] Could not parse Creative Director JSON, extracting response text');
+                        const responseMatch = text.match(/"response"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+                        const responseText = responseMatch
+                            ? responseMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"')
+                            : text.substring(0, 500);
+                        parsed = { response: responseText, projectUpdates: null, scriptUpdates: null, characterCreations: null, sceneCreations: null };
+                    }
+                }
             } else {
-                return { response: text, projectUpdates: null, scriptUpdates: null };
+                parsed = { response: text, projectUpdates: null, scriptUpdates: null, characterCreations: null, sceneCreations: null };
             }
         }
         return parsed;
