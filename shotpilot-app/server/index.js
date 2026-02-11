@@ -534,8 +534,33 @@ app.post('/api/projects/:projectId/creative-director', requireAuth, async (req, 
             targetModel, modelKBContent,
         });
 
+        // Auto-create characters discussed in conversation
+        const createdCharacters = [];
+        if (result.characterCreations && Array.isArray(result.characterCreations)) {
+            const existingNames = characters.map(c => c.name.toLowerCase());
+            const insertChar = db.prepare(
+                'INSERT INTO characters (project_id, name, description, personality) VALUES (@projectId, @name, @description, @personality)'
+            );
+            for (const char of result.characterCreations) {
+                if (char.name && !existingNames.includes(char.name.toLowerCase())) {
+                    try {
+                        const info = insertChar.run({
+                            projectId,
+                            name: sanitize(char.name),
+                            description: sanitize(char.description || ''),
+                            personality: sanitize(char.personality || ''),
+                        });
+                        createdCharacters.push({ id: info.lastInsertRowid, name: char.name });
+                        existingNames.push(char.name.toLowerCase());
+                    } catch (err) {
+                        console.warn(`[creative-director] Could not create character "${char.name}":`, err.message);
+                    }
+                }
+            }
+        }
+
         logAIFeatureUsage(db, req.session.userId, 'creative_director', projectId);
-        res.json({ ...result, kbFilesUsed });
+        res.json({ ...result, kbFilesUsed, createdCharacters });
     } catch (error) {
         console.error('Creative Director error:', error);
         res.status(500).json({ error: error.message });

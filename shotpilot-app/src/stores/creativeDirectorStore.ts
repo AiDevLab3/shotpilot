@@ -8,6 +8,7 @@ interface Message {
     projectUpdates?: Record<string, string> | null;
     scriptUpdates?: string | null;
     imageUrl?: string | null;
+    createdCharacters?: { id: number; name: string }[] | null;
 }
 
 interface SessionData {
