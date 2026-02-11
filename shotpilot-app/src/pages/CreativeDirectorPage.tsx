@@ -285,6 +285,7 @@ export const CreativeDirectorPage: React.FC = () => {
     };
 
     const handleResetChat = () => {
+        if (!confirm('Reset conversation? Your script, project info, and model selection will be kept.')) return;
         store.resetSession(projectId);
         loadProject();
     };

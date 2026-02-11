@@ -1022,8 +1022,14 @@ SCENE CREATION (CRITICAL):
 PROJECT INFO FIELDS YOU CAN UPDATE:
 - title, frame_size, purpose, lighting_directions, style_aesthetic, storyline_narrative, cinematography, atmosphere_mood, cinematic_references
 
-IMAGE ANALYSIS:
-- If the user shares an image, analyze it in relation to the project's visual direction.`;
+IMAGE ANALYSIS (CRITICAL):
+- When the user shares an image, your default behavior is to AUDIT it against the project's EXISTING visual direction. Use the Quality Control Visual Audit criteria:
+  - Does the style match what's established? (lighting, color, mood, composition)
+  - Is character identity consistent? (face, hair, wardrobe, build)
+  - Does the lighting match the project's lighting direction?
+  - Does the color/tonality match the established aesthetic?
+- Report what aligns and what diverges. Do NOT update projectUpdates based on the image unless the user explicitly says they want to use this image to SET or LOCK the project style (e.g. "use this as our look", "match this style", "lock this aesthetic").
+- If the image is a character reference, note how it fits the character's established description. Update the character description if the user asks you to.`;
 
     const historyParts = (history || []).slice(-14).map(m =>
         `${m.role === 'user' ? 'USER' : 'DIRECTOR'}: ${m.content}`
