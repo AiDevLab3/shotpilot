@@ -10,7 +10,7 @@ import { setupAuth, requireAuth, checkCredits } from './middleware/auth.js';
 import { deductCredit, getUserCredits, getUsageStats, logAIFeatureUsage, getAIUsageStats } from './services/creditService.js';
 import { loadKBForModel, getAvailableModels, readKBFile } from './services/kbLoader.js';
 import { calculateCompleteness, checkQualityWithKB } from './services/qualityCheck.js';
-import { generateRecommendations, generatePrompt, analyzeQuality, generateAestheticSuggestions, generateCharacterSuggestions, generateShotPlan, qualityDialogue, analyzeScript, generateObjectSuggestions, refineContent, creativeDirectorCollaborate } from './services/geminiService.js';
+import { generateRecommendations, generatePrompt, analyzeQuality, generateAestheticSuggestions, generateCharacterSuggestions, generateShotPlan, qualityDialogue, analyzeScript, generateObjectSuggestions, refineContent, creativeDirectorCollaborate, summarizeConversation } from './services/geminiService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -621,6 +621,33 @@ app.post('/api/projects/:projectId/creative-director', requireAuth, async (req, 
         res.json({ ...result, kbFilesUsed, createdCharacters, createdScenes });
     } catch (error) {
         console.error('Creative Director error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Conversation compaction — summarize older messages to reduce token usage
+app.post('/api/projects/:projectId/compact-conversation', requireAuth, async (req, res) => {
+    try {
+        const { projectId } = req.params;
+        const { messages, scriptContent } = req.body;
+
+        if (!messages || !Array.isArray(messages) || messages.length < 10) {
+            return res.status(400).json({ error: 'Need at least 10 messages to compact' });
+        }
+
+        const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId);
+        if (!project) return res.status(404).json({ error: 'Project not found' });
+
+        const result = await summarizeConversation({
+            messages,
+            scriptContent: scriptContent || '',
+            projectTitle: project.title,
+        });
+
+        logAIFeatureUsage(db, req.session.userId, 'conversation_compaction', parseInt(projectId));
+        res.json(result);
+    } catch (error) {
+        console.error('Conversation compaction error:', error);
         res.status(500).json({ error: error.message });
     }
 });

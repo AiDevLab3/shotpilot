@@ -3,13 +3,14 @@ import { persist } from 'zustand/middleware';
 import type { Project } from '../types/schema';
 
 interface Message {
-    role: 'user' | 'assistant';
+    role: 'user' | 'assistant' | 'summary';
     content: string;
     projectUpdates?: Record<string, string> | null;
     scriptUpdates?: string | null;
     imageUrl?: string | null;
     createdCharacters?: { id: number; name: string }[] | null;
     createdScenes?: { id: number; name: string; shotCount: number }[] | null;
+    keyDecisions?: string[] | null;
 }
 
 interface SessionData {
@@ -24,6 +25,9 @@ interface CreativeDirectorState {
     // Per-project state keyed by projectId
     sessions: Record<number, SessionData>;
 
+    // Queued message for cross-component "Send to Director" (e.g. from Project Info page)
+    queuedMessage: { projectId: number; content: string } | null;
+
     // Actions
     getSession: (projectId: number) => SessionData;
     setMessages: (projectId: number, messages: Message[]) => void;
@@ -33,6 +37,8 @@ interface CreativeDirectorState {
     setProjectSnapshot: (projectId: number, project: Project) => void;
     setTargetModel: (projectId: number, model: string | null) => void;
     resetSession: (projectId: number) => void;
+    queueMessage: (projectId: number, content: string) => void;
+    clearQueuedMessage: () => void;
 }
 
 const DEFAULT_SESSION: SessionData = {
@@ -49,6 +55,7 @@ export const useCreativeDirectorStore = create<CreativeDirectorState>()(
     persist(
         (set, get) => ({
             sessions: {},
+            queuedMessage: null,
 
             getSession: (projectId: number) => {
                 return get().sessions[projectId] || { ...DEFAULT_SESSION };
@@ -109,7 +116,6 @@ export const useCreativeDirectorStore = create<CreativeDirectorState>()(
                 set((state) => {
                     const existing = state.sessions[projectId];
                     if (!existing) return state;
-                    // Only reset messages and mode — preserve script, project snapshot, and model
                     return {
                         sessions: {
                             ...state.sessions,
@@ -121,6 +127,12 @@ export const useCreativeDirectorStore = create<CreativeDirectorState>()(
                         },
                     };
                 }),
+
+            queueMessage: (projectId, content) =>
+                set({ queuedMessage: { projectId, content } }),
+
+            clearQueuedMessage: () =>
+                set({ queuedMessage: null }),
         }),
         {
             name: 'shotpilot-creative-director',

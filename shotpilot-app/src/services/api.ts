@@ -360,5 +360,24 @@ export const creativeDirectorChat = async (
     });
 };
 
+// Conversation compaction
+export const compactConversation = async (
+    projectId: number,
+    messages: { role: string; content: string }[],
+    scriptContent: string,
+): Promise<{
+    summary: string;
+    keyDecisions: string[];
+    characterNotes: string | null;
+    sceneNotes: string | null;
+    styleDirection: string | null;
+    openQuestions: string | null;
+}> => {
+    return apiCall(`/projects/${projectId}/compact-conversation`, {
+        method: 'POST',
+        body: JSON.stringify({ messages, scriptContent }),
+    });
+};
+
 // Deprecated or Unused in Server Mode
 export const saveDB = async () => { };

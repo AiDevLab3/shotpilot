@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { Header } from './components/layout/Header';
+import { ProjectLayout } from './components/ProjectLayout';
 import { CharacterBiblePage } from './pages/CharacterBiblePage';
 import { ObjectBiblePage } from './pages/ObjectBiblePage';
 import ShotBoardPage from './pages/ShotBoardPage';
@@ -174,10 +175,12 @@ const App: React.FC = () => {
                     <main style={{ flex: '1 1 auto', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                         <Routes>
                             <Route path="/" element={<IndexRedirect />} />
-                            <Route path="/projects/:id" element={<CreativeDirectorPage />} />
-                            <Route path="/projects/:id/characters" element={<CharacterBiblePage />} />
-                            <Route path="/projects/:id/objects" element={<ObjectBiblePage />} />
-                            <Route path="/projects/:id/scenes" element={<ShotBoardPage />} />
+                            <Route path="/projects/:id" element={<ProjectLayout />}>
+                                <Route index element={<CreativeDirectorPage />} />
+                                <Route path="characters" element={<CharacterBiblePage />} />
+                                <Route path="objects" element={<ObjectBiblePage />} />
+                                <Route path="scenes" element={<ShotBoardPage />} />
+                            </Route>
                         </Routes>
                     </main>
                 </div>
