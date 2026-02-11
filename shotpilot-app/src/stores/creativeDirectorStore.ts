@@ -107,9 +107,19 @@ export const useCreativeDirectorStore = create<CreativeDirectorState>()(
 
             resetSession: (projectId) =>
                 set((state) => {
-                    const newSessions = { ...state.sessions };
-                    delete newSessions[projectId];
-                    return { sessions: newSessions };
+                    const existing = state.sessions[projectId];
+                    if (!existing) return state;
+                    // Only reset messages and mode — preserve script, project snapshot, and model
+                    return {
+                        sessions: {
+                            ...state.sessions,
+                            [projectId]: {
+                                ...existing,
+                                messages: [],
+                                mode: 'initial' as const,
+                            },
+                        },
+                    };
                 }),
         }),
         {
