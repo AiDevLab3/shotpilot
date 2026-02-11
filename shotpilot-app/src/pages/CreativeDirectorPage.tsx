@@ -97,19 +97,34 @@ export const CreativeDirectorPage: React.FC = () => {
                 imageUrl,
             );
 
-            // Apply project updates
-            if (result.projectUpdates) {
-                const updated = { ...project, ...result.projectUpdates };
-                setProject(updated);
-                store.setProjectSnapshot(projectId, updated);
+            // Safely apply project updates — only known string fields
+            const validFields = ['title', 'purpose', 'style_aesthetic', 'atmosphere_mood',
+                'lighting_directions', 'cinematography', 'frame_size', 'cinematic_references',
+                'storyline_narrative'];
+            if (result.projectUpdates && typeof result.projectUpdates === 'object') {
+                const safeUpdates: Record<string, string> = {};
+                for (const [key, val] of Object.entries(result.projectUpdates)) {
+                    if (validFields.includes(key) && typeof val === 'string' && val.trim()) {
+                        safeUpdates[key] = val;
+                    }
+                }
+                if (Object.keys(safeUpdates).length > 0) {
+                    const updated = { ...project, ...safeUpdates } as Project;
+                    setProject(updated);
+                    store.setProjectSnapshot(projectId, updated);
+                }
             }
-            if (result.scriptUpdates) {
+            if (result.scriptUpdates && typeof result.scriptUpdates === 'string') {
                 store.setScriptContent(projectId, result.scriptUpdates);
             }
 
+            const responseText = typeof result.response === 'string'
+                ? result.response
+                : 'I processed your request but had trouble formatting my response. Could you rephrase?';
+
             store.addMessage(projectId, {
                 role: 'assistant',
-                content: result.response,
+                content: responseText,
                 projectUpdates: result.projectUpdates,
                 scriptUpdates: result.scriptUpdates,
             });
@@ -307,7 +322,7 @@ export const CreativeDirectorPage: React.FC = () => {
                                 backgroundColor: msg.role === 'user' ? '#27272a' : '#1a1a2e',
                                 borderLeft: msg.role === 'assistant' ? '2px solid #8b5cf6' : 'none',
                             }}>
-                                {msg.content.split('\n').map((line, j) => (
+                                {(typeof msg.content === 'string' ? msg.content : String(msg.content || '')).split('\n').map((line, j) => (
                                     <p key={j} style={{ margin: '0 0 4px 0', lineHeight: '1.5' }}>
                                         {line.replace(/\*\*(.*?)\*\*/g, '$1')}
                                     </p>

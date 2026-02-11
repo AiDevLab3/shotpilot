@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { Project } from '../types/schema';
 
 interface Message {
@@ -9,22 +10,19 @@ interface Message {
     imageUrl?: string | null;
 }
 
+interface SessionData {
+    messages: Message[];
+    scriptContent: string;
+    mode: 'initial' | 'script-first' | 'idea-first' | 'refining';
+    projectSnapshot: Project | null;
+}
+
 interface CreativeDirectorState {
     // Per-project state keyed by projectId
-    sessions: Record<number, {
-        messages: Message[];
-        scriptContent: string;
-        mode: 'initial' | 'script-first' | 'idea-first' | 'refining';
-        projectSnapshot: Project | null;
-    }>;
+    sessions: Record<number, SessionData>;
 
     // Actions
-    getSession: (projectId: number) => {
-        messages: Message[];
-        scriptContent: string;
-        mode: 'initial' | 'script-first' | 'idea-first' | 'refining';
-        projectSnapshot: Project | null;
-    };
+    getSession: (projectId: number) => SessionData;
     setMessages: (projectId: number, messages: Message[]) => void;
     addMessage: (projectId: number, message: Message) => void;
     setScriptContent: (projectId: number, content: string) => void;
@@ -33,7 +31,7 @@ interface CreativeDirectorState {
     resetSession: (projectId: number) => void;
 }
 
-const DEFAULT_SESSION = {
+const DEFAULT_SESSION: SessionData = {
     messages: [],
     scriptContent: '',
     mode: 'initial' as const,
@@ -42,60 +40,68 @@ const DEFAULT_SESSION = {
 
 export type { Message };
 
-export const useCreativeDirectorStore = create<CreativeDirectorState>((set, get) => ({
-    sessions: {},
+export const useCreativeDirectorStore = create<CreativeDirectorState>()(
+    persist(
+        (set, get) => ({
+            sessions: {},
 
-    getSession: (projectId: number) => {
-        return get().sessions[projectId] || { ...DEFAULT_SESSION };
-    },
-
-    setMessages: (projectId, messages) =>
-        set((state) => ({
-            sessions: {
-                ...state.sessions,
-                [projectId]: { ...(state.sessions[projectId] || DEFAULT_SESSION), messages },
+            getSession: (projectId: number) => {
+                return get().sessions[projectId] || { ...DEFAULT_SESSION };
             },
-        })),
 
-    addMessage: (projectId, message) =>
-        set((state) => {
-            const session = state.sessions[projectId] || DEFAULT_SESSION;
-            return {
-                sessions: {
-                    ...state.sessions,
-                    [projectId]: { ...session, messages: [...session.messages, message] },
-                },
-            };
+            setMessages: (projectId, messages) =>
+                set((state) => ({
+                    sessions: {
+                        ...state.sessions,
+                        [projectId]: { ...(state.sessions[projectId] || DEFAULT_SESSION), messages },
+                    },
+                })),
+
+            addMessage: (projectId, message) =>
+                set((state) => {
+                    const session = state.sessions[projectId] || DEFAULT_SESSION;
+                    return {
+                        sessions: {
+                            ...state.sessions,
+                            [projectId]: { ...session, messages: [...session.messages, message] },
+                        },
+                    };
+                }),
+
+            setScriptContent: (projectId, content) =>
+                set((state) => ({
+                    sessions: {
+                        ...state.sessions,
+                        [projectId]: { ...(state.sessions[projectId] || DEFAULT_SESSION), scriptContent: content },
+                    },
+                })),
+
+            setMode: (projectId, mode) =>
+                set((state) => ({
+                    sessions: {
+                        ...state.sessions,
+                        [projectId]: { ...(state.sessions[projectId] || DEFAULT_SESSION), mode },
+                    },
+                })),
+
+            setProjectSnapshot: (projectId, project) =>
+                set((state) => ({
+                    sessions: {
+                        ...state.sessions,
+                        [projectId]: { ...(state.sessions[projectId] || DEFAULT_SESSION), projectSnapshot: project },
+                    },
+                })),
+
+            resetSession: (projectId) =>
+                set((state) => {
+                    const newSessions = { ...state.sessions };
+                    delete newSessions[projectId];
+                    return { sessions: newSessions };
+                }),
         }),
-
-    setScriptContent: (projectId, content) =>
-        set((state) => ({
-            sessions: {
-                ...state.sessions,
-                [projectId]: { ...(state.sessions[projectId] || DEFAULT_SESSION), scriptContent: content },
-            },
-        })),
-
-    setMode: (projectId, mode) =>
-        set((state) => ({
-            sessions: {
-                ...state.sessions,
-                [projectId]: { ...(state.sessions[projectId] || DEFAULT_SESSION), mode },
-            },
-        })),
-
-    setProjectSnapshot: (projectId, project) =>
-        set((state) => ({
-            sessions: {
-                ...state.sessions,
-                [projectId]: { ...(state.sessions[projectId] || DEFAULT_SESSION), projectSnapshot: project },
-            },
-        })),
-
-    resetSession: (projectId) =>
-        set((state) => {
-            const newSessions = { ...state.sessions };
-            delete newSessions[projectId];
-            return { sessions: newSessions };
-        }),
-}));
+        {
+            name: 'shotpilot-creative-director',
+            partialize: (state) => ({ sessions: state.sessions }),
+        }
+    )
+);
