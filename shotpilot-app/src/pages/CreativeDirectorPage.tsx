@@ -112,6 +112,10 @@ export const CreativeDirectorPage: React.FC = () => {
                     const updated = { ...project, ...safeUpdates } as Project;
                     setProject(updated);
                     store.setProjectSnapshot(projectId, updated);
+                    // Auto-save to database
+                    updateProject(projectId, updated).catch(err =>
+                        console.error('Auto-save failed:', err)
+                    );
                 }
             }
             if (result.scriptUpdates && typeof result.scriptUpdates === 'string') {
@@ -222,6 +226,10 @@ export const CreativeDirectorPage: React.FC = () => {
         const updated = { ...project, [field]: value } as Project;
         setProject(updated);
         store.setProjectSnapshot(projectId, updated);
+        // Auto-save to database on field edit
+        updateProject(projectId, updated).catch(err =>
+            console.error('Auto-save failed:', err)
+        );
     };
 
     const handleResetChat = () => {
@@ -389,8 +397,8 @@ export const CreativeDirectorPage: React.FC = () => {
                 {/* Save Header */}
                 <div style={styles.workHeader}>
                     <span style={{ fontSize: '15px', fontWeight: 700, color: '#e5e7eb' }}>{project.title}</span>
-                    <button onClick={handleSaveProject} style={styles.saveBtn}>
-                        {savedNotice ? <><Check size={14} /> Saved</> : <><Save size={14} /> Save Project</>}
+                    <button onClick={handleSaveProject} style={styles.saveBtn} title="Auto-saves on AI updates and field edits. Click to force save.">
+                        {savedNotice ? <><Check size={14} /> Saved</> : <><Save size={14} /> Save</>}
                     </button>
                 </div>
 
