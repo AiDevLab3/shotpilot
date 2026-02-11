@@ -2,13 +2,15 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { Send, Loader2, Save, FileText, Lightbulb, Check, Upload, Image, ChevronDown, ChevronUp, X, Plus, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getAllProjects, getProject, updateProject, createProject, deleteProject, creativeDirectorChat, getAvailableModels, createCharacter } from '../services/api';
+import { getAllProjects, getProject, updateProject, createProject, deleteProject, creativeDirectorChat, getAvailableModels, createCharacter, compactConversation } from '../services/api';
 import { useCreativeDirectorStore } from '../stores/creativeDirectorStore';
 import type { Message } from '../stores/creativeDirectorStore';
 import type { Project } from '../types/schema';
 
 const MAX_SCRIPT_CHARS = 50000;
 const MAX_FILE_SIZE_MB = 2;
+const COMPACTION_THRESHOLD = 20; // Compact when messages exceed this count
+const KEEP_RECENT = 6; // Keep this many recent messages after compaction
 
 const FRAME_SIZE_OPTIONS = [
     '16:9 Widescreen',
@@ -40,12 +42,14 @@ export const CreativeDirectorPage: React.FC = () => {
     const [editingTitle, setEditingTitle] = useState(false);
     const [availableModels, setAvailableModels] = useState<any[]>([]);
     const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
+    const [isCompacting, setIsCompacting] = useState(false);
     const chatEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
 
     const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lastSavedRef = useRef<string>('');
+    const compactingRef = useRef(false);
 
     useEffect(() => {
         if (!session.projectSnapshot) loadProject();
@@ -186,6 +190,9 @@ export const CreativeDirectorPage: React.FC = () => {
                 createdCharacters: result.createdCharacters,
                 createdScenes: result.createdScenes,
             });
+
+            // Trigger compaction check in background (non-blocking)
+            setTimeout(() => maybeCompact(), 500);
         } catch (error) {
             console.error('Creative Director error:', error);
             store.addMessage(projectId, {
@@ -194,6 +201,49 @@ export const CreativeDirectorPage: React.FC = () => {
             });
         } finally {
             setIsThinking(false);
+        }
+    };
+
+    // Conversation compaction — runs in background after AI response
+    const maybeCompact = async () => {
+        const currentMessages = store.getSession(projectId).messages;
+        if (currentMessages.length < COMPACTION_THRESHOLD || compactingRef.current || !project) return;
+
+        compactingRef.current = true;
+        setIsCompacting(true);
+
+        try {
+            // Messages to summarize: everything except the most recent KEEP_RECENT
+            const toSummarize = currentMessages.slice(0, currentMessages.length - KEEP_RECENT);
+            const toKeep = currentMessages.slice(currentMessages.length - KEEP_RECENT);
+
+            const digest = await compactConversation(
+                project.id,
+                toSummarize.map(m => ({ role: m.role === 'summary' ? 'assistant' : m.role, content: m.content })),
+                session.scriptContent,
+            );
+
+            // Build a summary message that replaces all the old messages
+            const parts: string[] = [];
+            parts.push(digest.summary);
+            if (digest.styleDirection) parts.push(`**Visual Direction:** ${digest.styleDirection}`);
+            if (digest.characterNotes) parts.push(`**Characters:** ${digest.characterNotes}`);
+            if (digest.sceneNotes) parts.push(`**Scenes:** ${digest.sceneNotes}`);
+            if (digest.openQuestions) parts.push(`**Open Questions:** ${digest.openQuestions}`);
+
+            const summaryMsg: Message = {
+                role: 'summary',
+                content: parts.join('\n\n'),
+                keyDecisions: digest.keyDecisions,
+            };
+
+            // Replace messages: summary + recent messages
+            store.setMessages(projectId, [summaryMsg, ...toKeep]);
+        } catch (err) {
+            console.error('Compaction failed (non-critical):', err);
+        } finally {
+            compactingRef.current = false;
+            setIsCompacting(false);
         }
     };
 
@@ -391,6 +441,43 @@ const handleNewProject = async () => {
                 <div style={styles.messageList}>
                     {session.messages.map((msg, i) => (
                         <div key={i} style={styles.messageWrapper}>
+                            {msg.role === 'summary' ? (
+                                /* Compacted context digest */
+                                <div style={{
+                                    backgroundColor: '#1a1a2e',
+                                    border: '1px solid #2d2b55',
+                                    borderRadius: '8px',
+                                    padding: '12px',
+                                    marginBottom: '4px',
+                                }}>
+                                    <div style={{
+                                        fontSize: '10px',
+                                        fontWeight: 700,
+                                        color: '#6366f1',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.08em',
+                                        marginBottom: '8px',
+                                    }}>
+                                        Context Digest (earlier conversation compacted)
+                                    </div>
+                                    {msg.content.split('\n').map((line, j) => (
+                                        <p key={j} style={{ margin: '0 0 4px 0', lineHeight: '1.5', color: '#a5a3c9', fontSize: '12px' }}>
+                                            {line.replace(/\*\*(.*?)\*\*/g, '$1')}
+                                        </p>
+                                    ))}
+                                    {msg.keyDecisions && msg.keyDecisions.length > 0 && (
+                                        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #2d2b55' }}>
+                                            <div style={{ fontSize: '10px', fontWeight: 700, color: '#6366f1', marginBottom: '4px' }}>KEY DECISIONS</div>
+                                            {msg.keyDecisions.map((d, k) => (
+                                                <div key={k} style={{ fontSize: '11px', color: '#a5a3c9', paddingLeft: '8px', marginBottom: '2px' }}>
+                                                    - {d}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                            <>
                             <div style={{
                                 fontSize: '10px',
                                 fontWeight: 700,
@@ -439,11 +526,18 @@ const handleNewProject = async () => {
                                     <Check size={11} /> Scenes created: {msg.createdScenes.map(s => `${s.name}${s.shotCount ? ` (${s.shotCount} shots)` : ''}`).join(', ')}
                                 </div>
                             )}
+                            </>
+                            )}
                         </div>
                     ))}
                     {isThinking && (
                         <div style={{ ...styles.messageBubble, backgroundColor: '#1a1a2e', borderLeft: '2px solid #8b5cf6' }}>
                             <Loader2 size={14} className="spin" color="#8b5cf6" style={{ display: 'inline' }} /> Thinking...
+                        </div>
+                    )}
+                    {isCompacting && (
+                        <div style={{ padding: '6px 12px', fontSize: '11px', color: '#6366f1', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Loader2 size={12} className="spin" color="#6366f1" style={{ display: 'inline' }} /> Compacting conversation history...
                         </div>
                     )}
                     <div ref={chatEndRef} />

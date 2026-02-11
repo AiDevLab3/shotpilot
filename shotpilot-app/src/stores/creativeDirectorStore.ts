@@ -3,13 +3,14 @@ import { persist } from 'zustand/middleware';
 import type { Project } from '../types/schema';
 
 interface Message {
-    role: 'user' | 'assistant';
+    role: 'user' | 'assistant' | 'summary';
     content: string;
     projectUpdates?: Record<string, string> | null;
     scriptUpdates?: string | null;
     imageUrl?: string | null;
     createdCharacters?: { id: number; name: string }[] | null;
     createdScenes?: { id: number; name: string; shotCount: number }[] | null;
+    keyDecisions?: string[] | null;
 }
 
 interface SessionData {

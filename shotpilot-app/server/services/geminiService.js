@@ -1031,9 +1031,12 @@ IMAGE ANALYSIS (CRITICAL):
 - Report what aligns and what diverges. Do NOT update projectUpdates based on the image unless the user explicitly says they want to use this image to SET or LOCK the project style (e.g. "use this as our look", "match this style", "lock this aesthetic").
 - If the image is a character reference, note how it fits the character's established description. Update the character description if the user asks you to.`;
 
-    const historyParts = (history || []).slice(-14).map(m =>
-        `${m.role === 'user' ? 'USER' : 'DIRECTOR'}: ${m.content}`
-    ).join('\n');
+    // Format history — handle compacted summary messages specially
+    const recentHistory = (history || []).slice(-14);
+    const historyParts = recentHistory.map(m => {
+        if (m.role === 'summary') return `[CONTEXT DIGEST — earlier conversation compacted]:\n${m.content}`;
+        return `${m.role === 'user' ? 'USER' : 'DIRECTOR'}: ${m.content}`;
+    }).join('\n');
 
     const userPrompt = `${modelKBContent ? `MODEL-SPECIFIC KNOWLEDGE BASE (${targetModel}):\n${modelKBContent}\n\n` : ''}${kbContent ? `CORE KNOWLEDGE BASE:\n${kbContent}\n\n` : ''}${fullContext}
 
@@ -1119,6 +1122,69 @@ OUTPUT VALID JSON ONLY:
     }
 }
 
+/**
+ * Summarize/compact a Creative Director conversation into a concise context digest.
+ * Preserves key creative decisions, character/scene notes, style direction, and script state.
+ */
+async function summarizeConversation({ messages, scriptContent, projectTitle }) {
+    const systemInstruction = `You are an expert conversation summarizer for a cinematography AI tool called ShotPilot.
+Your job is to distill a Creative Director conversation into a concise CONTEXT DIGEST that preserves every important creative decision while discarding conversational filler.
+
+OUTPUT FORMAT — return valid JSON:
+{
+  "summary": "A concise paragraph (3-6 sentences) capturing the creative vision, decisions made, and current direction.",
+  "keyDecisions": ["decision 1", "decision 2", ...],
+  "characterNotes": "Any character details discussed (or null if none)",
+  "sceneNotes": "Any scene/shot details discussed (or null if none)",
+  "styleDirection": "Visual style, lighting, mood, cinematography notes (or null if none)",
+  "openQuestions": "Anything left unresolved or still being explored (or null if none)"
+}
+
+RULES:
+- Be concise but preserve EVERY creative decision and specific detail (names, styles, references, technical choices)
+- Discard greetings, pleasantries, workflow explanations, error messages, and repeated content
+- If the user gave a script or story outline, summarize the plot briefly — don't reproduce the full text
+- Preserve any model-specific notes (e.g. "targeting Higgsfield", "anamorphic 2.39:1")`;
+
+    const conversationText = messages.map(m =>
+        `${m.role === 'user' ? 'USER' : 'DIRECTOR'}: ${m.content}`
+    ).join('\n\n');
+
+    const userPrompt = `PROJECT: ${projectTitle || 'Untitled'}
+${scriptContent ? `SCRIPT STATUS: Script exists (${scriptContent.length} chars)` : 'NO SCRIPT YET'}
+
+CONVERSATION TO SUMMARIZE:
+${conversationText}
+
+Summarize this conversation into a context digest.`;
+
+    try {
+        const text = await callGemini({
+            parts: [{ text: userPrompt }],
+            systemInstruction,
+            thinkingLevel: 'low',
+            responseMimeType: 'application/json',
+            maxOutputTokens: 1024,
+        });
+
+        let parsed;
+        try {
+            parsed = JSON.parse(text);
+        } catch (e) {
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                parsed = JSON.parse(jsonMatch[0]);
+            } else {
+                return { summary: text, keyDecisions: [], characterNotes: null, sceneNotes: null, styleDirection: null, openQuestions: null };
+            }
+        }
+        return parsed;
+    } catch (error) {
+        console.error('[gemini] Summarize conversation error:', error);
+        throw error;
+    }
+}
+
 export {
     generateRecommendations,
     generatePrompt,
@@ -1132,4 +1198,5 @@ export {
     buildContextBlock,
     refineContent,
     creativeDirectorCollaborate,
+    summarizeConversation,
 };
