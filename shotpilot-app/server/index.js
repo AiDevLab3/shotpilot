@@ -487,7 +487,7 @@ app.post('/api/projects/:projectId/refine-content', requireAuth, async (req, res
 app.post('/api/projects/:projectId/creative-director', requireAuth, async (req, res) => {
     try {
         const { projectId } = req.params;
-        const { message, history, scriptContent, mode, imageUrl } = req.body;
+        const { message, history, scriptContent, mode, imageUrl, targetModel } = req.body;
 
         if (!message) return res.status(400).json({ error: 'message required' });
 
@@ -499,7 +499,20 @@ app.post('/api/projects/:projectId/creative-director', requireAuth, async (req, 
         const objects = db.prepare('SELECT * FROM objects WHERE project_id = ?').all(projectId);
         const scenes = db.prepare('SELECT * FROM scenes WHERE project_id = ?').all(projectId);
 
-        const kbFiles = [
+        // Load model-specific KB if a target model is selected
+        let modelKBContent = '';
+        let kbFilesUsed = [];
+        if (targetModel) {
+            try {
+                modelKBContent = loadKBForModel(targetModel);
+                kbFilesUsed.push(`model:${targetModel}`);
+            } catch (err) {
+                console.warn(`[creative-director] Could not load model KB for ${targetModel}:`, err.message);
+            }
+        }
+
+        // Also load core KB packs
+        const coreKBFiles = [
             '01_Core_Realism_Principles.md',
             '03_Pack_Spatial_Composition.md',
             '03_Pack_Quality_Control.md',
@@ -509,7 +522,8 @@ app.post('/api/projects/:projectId/creative-director', requireAuth, async (req, 
 
         let kbContent = '';
         try {
-            kbContent = kbFiles.map(f => readKBFile(f)).filter(Boolean).join('\n\n');
+            kbContent = coreKBFiles.map(f => readKBFile(f)).filter(Boolean).join('\n\n');
+            kbFilesUsed.push(...coreKBFiles);
         } catch (err) {
             console.warn('[creative-director] Could not load KB:', err.message);
         }
@@ -517,10 +531,11 @@ app.post('/api/projects/:projectId/creative-director', requireAuth, async (req, 
         const result = await creativeDirectorCollaborate({
             project, message, history, scriptContent, mode, kbContent,
             characters, objects, scenes, imageUrl,
+            targetModel, modelKBContent,
         });
 
         logAIFeatureUsage(db, req.session.userId, 'creative_director', projectId);
-        res.json({ ...result, kbFilesUsed: kbFiles });
+        res.json({ ...result, kbFilesUsed });
     } catch (error) {
         console.error('Creative Director error:', error);
         res.status(500).json({ error: error.message });

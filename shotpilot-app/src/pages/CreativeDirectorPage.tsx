@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { Send, Loader2, Save, FileText, Lightbulb, Check, Upload, Image, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
-import { getAllProjects, getProject, updateProject, creativeDirectorChat } from '../services/api';
+import { getAllProjects, getProject, updateProject, creativeDirectorChat, getAvailableModels } from '../services/api';
 import { useCreativeDirectorStore } from '../stores/creativeDirectorStore';
 import type { Message } from '../stores/creativeDirectorStore';
 import type { Project } from '../types/schema';
@@ -25,12 +25,14 @@ export const CreativeDirectorPage: React.FC = () => {
     const [scriptExpanded, setScriptExpanded] = useState(false);
     const [projectInfoExpanded, setProjectInfoExpanded] = useState(true);
     const [editingField, setEditingField] = useState<string | null>(null);
+    const [availableModels, setAvailableModels] = useState<any[]>([]);
     const chatEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (!session.projectSnapshot) loadProject();
+        getAvailableModels().then(setAvailableModels).catch(() => {});
     }, [id]);
 
     useEffect(() => {
@@ -95,6 +97,7 @@ export const CreativeDirectorPage: React.FC = () => {
                 session.scriptContent,
                 currentMode,
                 imageUrl,
+                session.targetModel || undefined,
             );
 
             // Safely apply project updates — only known string fields
@@ -268,9 +271,19 @@ export const CreativeDirectorPage: React.FC = () => {
                         <span style={{ fontSize: '15px', fontWeight: 700, color: '#e5e7eb' }}>AI Creative Director</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '11px', color: '#6b7280' }}>
-                            {session.mode !== 'initial' ? session.mode.replace('-', ' ') : 'ready'}
-                        </span>
+                        <select
+                            value={session.targetModel || ''}
+                            onChange={(e) => store.setTargetModel(projectId, e.target.value || null)}
+                            style={styles.modelSelect}
+                            title="Target model for prompt generation"
+                        >
+                            <option value="">No model</option>
+                            {availableModels.map(m => (
+                                <option key={m.name} value={m.name}>
+                                    {m.displayName} ({m.type})
+                                </option>
+                            ))}
+                        </select>
                         <button onClick={handleResetChat} style={styles.resetBtn} title="Reset conversation">
                             <RotateCcw size={13} />
                         </button>
@@ -586,6 +599,18 @@ const styles: Record<string, React.CSSProperties> = {
         padding: '12px 16px',
         borderBottom: '1px solid #27272a',
         flexShrink: 0,
+    },
+    modelSelect: {
+        padding: '4px 8px',
+        backgroundColor: '#27272a',
+        border: '1px solid #3f3f46',
+        borderRadius: '4px',
+        color: '#a78bfa',
+        fontSize: '11px',
+        fontWeight: 600,
+        cursor: 'pointer',
+        outline: 'none',
+        maxWidth: '160px',
     },
     resetBtn: {
         padding: '4px',

@@ -15,6 +15,7 @@ interface SessionData {
     scriptContent: string;
     mode: 'initial' | 'script-first' | 'idea-first' | 'refining';
     projectSnapshot: Project | null;
+    targetModel: string | null;
 }
 
 interface CreativeDirectorState {
@@ -28,6 +29,7 @@ interface CreativeDirectorState {
     setScriptContent: (projectId: number, content: string) => void;
     setMode: (projectId: number, mode: 'initial' | 'script-first' | 'idea-first' | 'refining') => void;
     setProjectSnapshot: (projectId: number, project: Project) => void;
+    setTargetModel: (projectId: number, model: string | null) => void;
     resetSession: (projectId: number) => void;
 }
 
@@ -36,6 +38,7 @@ const DEFAULT_SESSION: SessionData = {
     scriptContent: '',
     mode: 'initial' as const,
     projectSnapshot: null,
+    targetModel: null,
 };
 
 export type { Message };
@@ -89,6 +92,14 @@ export const useCreativeDirectorStore = create<CreativeDirectorState>()(
                     sessions: {
                         ...state.sessions,
                         [projectId]: { ...(state.sessions[projectId] || DEFAULT_SESSION), projectSnapshot: project },
+                    },
+                })),
+
+            setTargetModel: (projectId, model) =>
+                set((state) => ({
+                    sessions: {
+                        ...state.sessions,
+                        [projectId]: { ...(state.sessions[projectId] || DEFAULT_SESSION), targetModel: model },
                     },
                 })),
 
