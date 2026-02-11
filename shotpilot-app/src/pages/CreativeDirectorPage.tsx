@@ -175,7 +175,13 @@ export const CreativeDirectorPage: React.FC = () => {
                 }
             }
             if (result.scriptUpdates && typeof result.scriptUpdates === 'string') {
-                store.setScriptContent(projectId, result.scriptUpdates);
+                const existing = session.scriptContent;
+                // Safety: reject script updates that lose more than half the content (likely a fragment)
+                if (existing && result.scriptUpdates.length < existing.length * 0.5) {
+                    console.warn('Script update rejected — returned fragment shorter than 50% of existing script');
+                } else {
+                    store.setScriptContent(projectId, result.scriptUpdates);
+                }
             }
 
             const responseText = typeof result.response === 'string'

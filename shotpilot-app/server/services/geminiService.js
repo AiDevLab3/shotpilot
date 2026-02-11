@@ -1052,7 +1052,7 @@ OUTPUT VALID JSON ONLY:
 {
   "response": "Your creative director response (markdown supported)",
   "projectUpdates": null or { "field_name": "suggested value", ... },
-  "scriptUpdates": null or "updated script text if relevant",
+  "scriptUpdates": null or "THE COMPLETE FULL SCRIPT with changes integrated — NEVER a partial fragment. If you modify one scene, you MUST return the entire script including ALL unchanged scenes. If the script is too long to return in full, set scriptUpdates to null and describe the changes in your response instead so the user can make the edit manually.",
   "characterCreations": null or [{ "name": "Character Name", "description": "Physical/visual description", "personality": "Personality traits" }],
   "sceneCreations": null or [{ "name": "Scene name", "description": "Scene description", "location_setting": "Where", "time_of_day": "Day/Night/Dawn/Dusk", "mood_tone": "Emotional tone", "suggestedShots": [{ "shot_type": "Wide Shot", "camera_angle": "Eye Level", "description": "What this shot captures", "purpose": "Why needed" }] }]
 }`;
