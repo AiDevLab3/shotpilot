@@ -351,10 +351,31 @@ export const creativeDirectorChat = async (
     history: { role: string; content: string }[],
     scriptContent: string,
     mode: string,
+    imageUrl?: string,
+    targetModel?: string,
 ): Promise<{ response: string; projectUpdates: any; scriptUpdates: string | null }> => {
     return apiCall(`/projects/${projectId}/creative-director`, {
         method: 'POST',
-        body: JSON.stringify({ message, history, scriptContent, mode }),
+        body: JSON.stringify({ message, history, scriptContent, mode, imageUrl, targetModel }),
+    });
+};
+
+// Conversation compaction
+export const compactConversation = async (
+    projectId: number,
+    messages: { role: string; content: string }[],
+    scriptContent: string,
+): Promise<{
+    summary: string;
+    keyDecisions: string[];
+    characterNotes: string | null;
+    sceneNotes: string | null;
+    styleDirection: string | null;
+    openQuestions: string | null;
+}> => {
+    return apiCall(`/projects/${projectId}/compact-conversation`, {
+        method: 'POST',
+        body: JSON.stringify({ messages, scriptContent }),
     });
 };
 

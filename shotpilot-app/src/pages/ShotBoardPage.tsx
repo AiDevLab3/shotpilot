@@ -735,7 +735,7 @@ const ShotBoardPage: React.FC = () => {
                                                                 <div style={{ ...styles.cardHeader, flexShrink: 0 }}>
                                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                                         <span style={styles.shotBadge}>Shot {shot.shot_number}</span>
-                                                                        <QualityBadge tier={shot.quality_tier} score={shot.quality_percentage} />
+                                                                        <QualityBadge tier={shot.quality_tier} score={shot.quality_percentage} onClick={() => handleOpenQualityDialogue(shot.id, shot.quality_percentage || 0)} />
                                                                         <button onClick={(e) => { e.stopPropagation(); handleOpenQualityDialogue(shot.id, shot.quality_percentage || 0); }} style={{ background: 'none', border: 'none', color: '#8b5cf6', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }} title="Ask AI about quality"><MessageCircle size={14} /></button>
                                                                     </div>
                                                                     <div style={{ position: 'relative' }} ref={isDropdownOpen ? dropdownRef : null}>

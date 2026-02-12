@@ -14,6 +14,13 @@ Thumbs.db
 *.bak
 *.log
 
+# SQLite runtime files
+*.db-shm
+*.db-wal
+
+# SQLite database (user data — never overwrite via git merge)
+shotpilot-app/data/*.db
+
 # Compressed files (we want the source files, not zips)
 *.zip
 *.tar.gz
