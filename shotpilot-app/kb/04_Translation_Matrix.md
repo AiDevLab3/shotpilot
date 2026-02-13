@@ -8,7 +8,7 @@ Cross-model prompt translation for ShotPilot Lite's supported models. The same v
 
 | Model | Language Style | Key Trait |
 |---|---|---|
-| **Midjourney** | Abstract/mood keywords + parameters (`--s`, `--cref`, `--ar`, `--style raw`) | Style-driven; less precise camera control |
+| **Midjourney** | Abstract/mood keywords + parameters (`--s`, `--oref`, `--ar`, `--style raw`) | Style-driven; less precise camera control |
 | **Higgsfield Cinema Studio** | Technical camera/lens/film terminology | Cinematography rig language; most precise |
 | **GPT Image 1.5** | Natural descriptive language (director-speak) | Conversational; iterative-friendly |
 | **Nano Banana Pro** | Physics-based specs (angles, ratios, hex codes) | Most technical precision; realism-optimized |
@@ -88,7 +88,7 @@ Cross-model prompt translation for ShotPilot Lite's supported models. The same v
 
 | Model | Prompt Language |
 |---|---|
-| **Midjourney** | `teal and orange color grading, cinematic blockbuster look --cref [character_ref_URL]` |
+| **Midjourney** | `teal and orange color grading, cinematic blockbuster look --oref [character_ref_URL]` |
 | **Higgsfield** | `Camera: Sony Venice, Film Stock: Digital Cinema with teal shadows and orange highlights` |
 | **GPT Image** | `Color graded with teal shadows and warm orange highlights, creating a modern blockbuster cinematic look.` |
 | **Nano Banana** | `Color grade: Teal in shadows (#1A535C), warm orange in highlights (#FF6B35). Complementary contrast. Cinematic LUT.` |
@@ -158,7 +158,7 @@ Cross-model prompt translation for ShotPilot Lite's supported models. The same v
 | **Camera/Lens** | Focal length + `--ar` | Full rig: body + lens + focal + aperture | Photography language with specs | Technical specs + depth of field |
 | **Color** | Style keywords + `--style raw` | Camera + film stock | Descriptive color language | Hex codes + percentage adjustments |
 | **Atmosphere** | Effect keywords | Weather + atmospheric description | Natural language effects | Physics: density, scattering, caustics |
-| **Style Lock** | `--cref [character_ref_URL]` + `--cw` | "Hero Frame" lock | Reference image + explicit constraints | Reference matching + technical specs |
+| **Style Lock** | `--oref [character_ref_URL]` + `--ow` | "Hero Frame" lock | Reference image + explicit constraints | Reference matching + technical specs |
 
 ---
 

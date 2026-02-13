@@ -33,7 +33,7 @@ AI models cannot reliably interpret "left" and "right" due to:
 |---|---|
 | **GPT Image 1.5** | Describe relative positions using landmarks. Avoid reference images if directional accuracy is critical. |
 | **Higgsfield** | Use camera-centric terms: "camera left," "camera right." |
-| **Midjourney** | Use `--cref` with a correctly-posed image. Visual reference overrides text for positioning. |
+| **Midjourney** | Use `--oref` with a correctly-posed image. Visual reference overrides text for positioning. |
 | **Nano Banana Pro** | Use conversational editing: "The hand on the right side of the image should be holding the object." |
 | **VEO 3.1** | Describe spatial movement relative to environment: "walks toward the window," "turns away from camera." |
 | **Kling 2.6** | Use Element Library with pre-posed references. Spatial text prompts are unreliable. |

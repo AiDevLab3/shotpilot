@@ -27,7 +27,7 @@ const LITE_MODELS = {
         name: 'Midjourney',
         type: 'image',
         description: 'Artistic & stylized imagery with V7 personalization, character consistency & draft mode',
-        capabilities: 'Best for: Concept art, stylized aesthetics, photorealistic stills, character consistency via --cref'
+        capabilities: 'Best for: Concept art, stylized aesthetics, photorealistic stills, character/object consistency via --oref (Omni Reference)'
     },
     'kling-2.6': {
         stub: '02_Model_Kling_26.md',

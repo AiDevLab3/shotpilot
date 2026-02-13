@@ -85,11 +85,11 @@ Prevents character drift across multi-shot sequences:
 - Animate Hero Frame or use as reference for video models
 - Best for: deterministic control, cinematic precision
 
-### Midjourney V7: --cref Parameter
-- Generate or upload master character image
-- Add `--cref [image_URL]` to subsequent prompts
-- Use `--cw` (character weight, 0-100) to control influence
-- Best for: quick character consistency without extensive setup
+### Midjourney V7: --oref Parameter (Omni Reference)
+- Generate or upload master character/object image
+- Add `--oref [image_URL]` to subsequent prompts (replaces --cref from V6)
+- Use `--ow` (Omni Weight, 0-1000, default 100) to control influence
+- Best for: quick character/object consistency without extensive setup
 
 ### GPT Image: Reference + Detailed Description
 - Upload reference image alongside detailed text description

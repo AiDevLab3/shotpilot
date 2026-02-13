@@ -985,7 +985,7 @@ async function creativeDirectorCollaborate(context) {
 You have the full ${targetModel} Prompting Mastery guide loaded below. When generating ANY prompts, image descriptions, or visual specifications:
 - Use EXACT syntax, parameters, and formatting that ${targetModel} requires
 - Follow the model's specific language profile from the Translation Matrix
-- Include model-specific parameters (e.g. Midjourney uses --s, --ar, --cref; Nano Banana uses physics-based specs; Higgsfield uses camera rig language)
+- Include model-specific parameters (e.g. Midjourney uses --s, --ar, --oref; Nano Banana uses physics-based specs; Higgsfield uses camera rig language)
 - NEVER generate generic prompts — every prompt MUST be optimized for ${targetModel}
 - Reference the loaded KB guide for correct syntax and best practices`
         : `\nNO TARGET MODEL SELECTED. If the user asks for prompts, ask them to select a target model first using the model selector. Available models: Midjourney, Nano Banana Pro, Higgsfield Cinema Studio, GPT Image 1.5, VEO 3.1, Kling 2.6, Kling 3.0.`;
@@ -1447,7 +1447,7 @@ PROMPT REFINEMENT RULES:
 
 REFERENCE STRATEGY RULES:
 - Consult the ${modelName} KB below for what reference image / editing capabilities the model supports
-- If the KB documents reference image input, editing, img2img, --cref, conversational editing, or similar capabilities, the model supports references
+- If the KB documents reference image input, editing, img2img, --oref, --cref, conversational editing, or similar capabilities, the model supports references
 - For REFINE recommendations (score 70-94): if the model supports references, recommend using the previous image as reference to preserve what works
 - For REGENERATE recommendations (score 0-69): generally recommend starting fresh, UNLESS a specific dimension (like character identity) scored well AND the model supports character references — then note that as optional
 - Always explain HOW to use the reference (the specific method from the KB: parameter name, upload method, etc.)

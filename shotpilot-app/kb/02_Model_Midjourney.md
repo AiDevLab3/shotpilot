@@ -1,6 +1,6 @@
 # Midjourney - AI Prompt Generation Guide
 
-> Last Updated: 2026-02-08 | Source: midjourney_prompting_mastery_guide.md (V7 params verified)
+> Last Updated: 2026-02-13 | Source: midjourney_prompting_mastery_guide.md (V7 params verified)
 
 **Model:** Midjourney V7 | **Type:** IMAGE generation (artistic + photorealistic) | **Developer:** Midjourney Inc.
 
@@ -36,15 +36,29 @@ Build prompts using these components in order:
 - Parameter: `--draft`
 - Use for rapid prototyping and idea exploration
 
-### Character Consistency (--cref)
-- Pass a character reference image URL: `--cref [image URL]`
-- Maintains character appearance across multiple generations
-- Essential for narrative sequences and character-driven stories
+### Omni Reference (--oref)
+- Replaces Character Reference (--cref) in V7. Use `--oref [image URL]` to transfer a character or object's likeness into new generations.
+- Use the `--ow` (Omni Weight) parameter (0-1000, default 100) to control the strength of the reference.
+- Essential for narrative sequences and consistent asset creation.
 
 ### Text Generation
 - Enclose desired text in quotation marks within the prompt
 - Works for posters, signs, book covers
 - Still less reliable than GPT Image for complex text
+
+---
+
+## V7 Image Editing & Iteration
+
+Midjourney V7 offers a suite of tools for refining and expanding your generated images. These features are primarily accessed through the buttons that appear after an image is upscaled.
+
+| Feature | Description | V7 Status |
+|---------|-------------|-----------|
+| **Vary (Region)** | Select and regenerate a specific area of an image. Useful for fixing errors or adding elements. Requires Remix Mode to be enabled to change the prompt for the selected area. | Active in V7 |
+| **Pan** | Expand the image canvas in any direction (up, down, left, right), filling the new space with content that matches the original prompt. | Uses V6.1 engine |
+| **Zoom Out** | Pull the camera back to reveal a wider scene around your original image. You can use custom zoom values between 1.0 and 2.0. | Uses V6.1 engine |
+| **Variations** | Create new versions of an upscaled image. With Remix Mode enabled, you can edit your prompt to guide the variations. | Active in V7 |
+| **Upscalers** | V7 offers two upscaling options: Subtle and Creative. Both double the image size, but Creative adds more variation and detail. | Active in V7 |
 
 ---
 
@@ -60,7 +74,14 @@ Build prompts using these components in order:
 | `--seed` | Reproduce similar results | `--seed 12345` |
 | `--stylize` / `--s` | Strength of MJ aesthetic (0-1000) | `--s 750` |
 | `--style` | Model sub-version | `--style raw` |
-| `--cref` | Character reference image | `--cref [URL]` |
+| `--tile` | Create seamless, repeating patterns. | `--tile` |
+| `--weird` / `--w` | Introduce quirky, unexpected aesthetics (0-3000). | `--w 1000` |
+| `--sref` | Style Reference (image URL or code). | `--sref [URL]` or `--sref 12345` |
+| `--sw` | Style Weight (0-1000). Controls --sref strength. | `--sw 750` |
+| `--oref` | Omni Reference (replaces --cref in V7). | `--oref [URL]` |
+| `--ow` | Omni Weight (0-1000). Controls --oref strength. | `--ow 500` |
+| `--iw` | Image Weight (0-2). Controls influence of an image prompt. | `--iw 1.5` |
+| `--cref` | **V6 Only.** Character Reference image. | `--cref [URL]` |
 | `--draft` | Fast low-res generation | `--draft` |
 
 ### Parameter Tips
@@ -101,7 +122,7 @@ composition with the boy in the exact center. --ar 16:9 --style raw --v 7
 - **Specify real skin texture:** `detailed skin`, `visible pores`, `freckles`, `unretouched`
 - **Name director references** to evoke specific visual styles (Kubrick = symmetry, Villeneuve = scale)
 - **Layer detail gradually** - Start with core prompt, add complexity iteratively
-- **Use --cref for consistency** when generating multiple shots of the same character
+- **Use --oref for consistency** when generating multiple shots of the same character in V7.
 - **Aspect ratios matter:** `--ar 21:9` or `--ar 16:9` for cinematic widescreen; `--ar 4:5` for portraits
 - **Low --stylize (100-250)** for realistic results; high (750+) for artistic interpretation
 
@@ -116,7 +137,7 @@ composition with the boy in the exact center. --ar 16:9 --style raw --v 7
 | 3 | **Ignoring parameters** | Always set --ar, --style, --stylize at minimum |
 | 4 | **Generic quality words** ("ultra HD, masterpiece") | Use photography terms: lens focal length, film stock, aperture |
 | 5 | **No negative prompting** | Use --no to exclude unwanted elements (text, watermarks, people) |
-| 6 | **Inconsistent characters** | Use --cref with a reference image for every generation |
+| 6 | **Inconsistent characters** | Use --oref with a reference image for every generation in V7 |
 
 ---
 
