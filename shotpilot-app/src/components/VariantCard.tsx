@@ -308,6 +308,7 @@ const styles: Record<string, React.CSSProperties> = {
         border: '1px solid #27272a',
         borderRadius: '8px',
         padding: '12px 14px',
+        overflow: 'hidden' as const,
     },
     header: {
         display: 'flex',

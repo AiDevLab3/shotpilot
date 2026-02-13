@@ -37,12 +37,12 @@ function ScoreBar({ score, max, label, icon, notes }: { score: number; max: numb
     return (
         <div style={{ marginBottom: '6px' }}>
             <div
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: notes ? 'pointer' : 'default' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: notes ? 'pointer' : 'default', minWidth: 0 }}
                 onClick={() => notes && setExpanded(!expanded)}
             >
-                <span style={{ fontSize: '13px', width: '16px', textAlign: 'center', flexShrink: 0 }}>{icon}</span>
-                <span style={{ fontSize: '11px', color: '#d1d5db', width: '90px', flexShrink: 0 }}>{label}</span>
-                <div style={{ flex: 1, minWidth: '40px', height: '8px', backgroundColor: '#27272a', borderRadius: '4px', overflow: 'hidden' }}>
+                <span style={{ fontSize: '12px', flexShrink: 0 }}>{icon}</span>
+                <span style={{ fontSize: '11px', color: '#d1d5db', flexShrink: 0, whiteSpace: 'nowrap' }}>{label}</span>
+                <div style={{ flex: 1, minWidth: 0, height: '8px', backgroundColor: '#27272a', borderRadius: '4px', overflow: 'hidden' }}>
                     <div style={{
                         height: '100%',
                         width: `${pct}%`,
@@ -51,7 +51,7 @@ function ScoreBar({ score, max, label, icon, notes }: { score: number; max: numb
                         transition: 'width 0.5s ease',
                     }} />
                 </div>
-                <span style={{ fontSize: '11px', fontWeight: 700, color, width: '32px', textAlign: 'right', flexShrink: 0 }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color, flexShrink: 0, whiteSpace: 'nowrap' }}>
                     {score}/{max}
                 </span>
                 {notes && (
@@ -96,17 +96,19 @@ export const ImageAuditReport: React.FC<ImageAuditReportProps> = ({ audit, compa
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '12px 14px',
+                padding: '10px 12px',
                 backgroundColor: rec.bg,
                 cursor: compact ? 'pointer' : 'default',
+                flexWrap: 'wrap' as const,
+                gap: '6px',
             }} onClick={() => compact && setShowDetails(!showDetails)}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Shield size={18} color={rec.color} />
-                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#e5e7eb' }}>
-                        Image Audit
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Shield size={16} color={rec.color} />
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#e5e7eb' }}>
+                        Audit
                     </span>
                     <span style={{
-                        fontSize: '18px',
+                        fontSize: '16px',
                         fontWeight: 800,
                         color: rec.color,
                     }}>
@@ -116,21 +118,21 @@ export const ImageAuditReport: React.FC<ImageAuditReportProps> = ({ audit, compa
                 <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    padding: '4px 12px',
+                    gap: '4px',
+                    padding: '3px 8px',
                     borderRadius: '9999px',
                     backgroundColor: rec.bg,
                     border: `1px solid ${rec.border}`,
                 }}>
-                    <RecIcon size={14} color={rec.color} />
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: rec.color }}>
+                    <RecIcon size={12} color={rec.color} />
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: rec.color }}>
                         {rec.label}
                     </span>
                 </div>
             </div>
 
             {showDetails && (
-                <div style={{ padding: '12px 14px' }}>
+                <div style={{ padding: '10px 8px' }}>
                     {/* Summary */}
                     {audit.summary && (
                         <div style={{
