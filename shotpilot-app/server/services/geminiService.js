@@ -1432,18 +1432,38 @@ async function refinePromptFromAudit({ originalPrompt, auditResult, modelName, m
         `- ${key.replace(/_/g, ' ').toUpperCase()}: ${dim.score}/10 — ${dim.notes}`
     ).join('\n');
 
-    const systemInstruction = `You are an expert AI prompt engineer specializing in ${modelName}. Your job is to take a prompt that was used to generate an image, analyze the audit feedback from that generated image, and produce a REFINED prompt that corrects all identified issues.
+    const systemInstruction = `You are an expert AI prompt engineer specializing in ${modelName}. You have two jobs:
 
-CRITICAL RULES:
+1. REFINE THE PROMPT: Take a prompt that generated an image, analyze audit feedback, and produce a corrected prompt.
+2. RECOMMEND A REFERENCE STRATEGY: Based on the model's KB-documented capabilities and the audit results, tell the user whether to use the previous image as a reference or start fresh with text only.
+
+PROMPT REFINEMENT RULES:
 - Follow the ${modelName} syntax and formatting rules from the KB EXACTLY
 - Address EVERY issue identified in the audit
 - Apply EVERY suggested prompt adjustment
 - Preserve what worked well (high-scoring dimensions)
 - Reference characters by their EXACT names from context
 - Do NOT add unnecessary elements not in the original intent
-- Output ONLY the refined prompt — no explanations, no preamble`;
 
-    const userPrompt = `TASK: Refine this ${modelName} prompt based on image audit feedback.
+REFERENCE STRATEGY RULES:
+- Consult the ${modelName} KB below for what reference image / editing capabilities the model supports
+- If the KB documents reference image input, editing, img2img, --cref, conversational editing, or similar capabilities, the model supports references
+- For REFINE recommendations (score 70-94): if the model supports references, recommend using the previous image as reference to preserve what works
+- For REGENERATE recommendations (score 0-69): generally recommend starting fresh, UNLESS a specific dimension (like character identity) scored well AND the model supports character references — then note that as optional
+- Always explain HOW to use the reference (the specific method from the KB: parameter name, upload method, etc.)
+- If the KB does not document any reference/editing capability for this model, recommend text-only
+
+OUTPUT FORMAT: Respond with valid JSON only. No markdown, no code fences, no explanation outside the JSON.
+{
+  "refined_prompt": "the corrected prompt text",
+  "reference_strategy": {
+    "action": "use_reference" | "text_only" | "ref_optional",
+    "title": "short directive (e.g. 'Use Previous Image — Conversational Edit')",
+    "reason": "1-2 sentence explanation citing specific KB capabilities and audit scores"
+  }
+}`;
+
+    const userPrompt = `TASK: Refine this ${modelName} prompt and recommend a reference strategy.
 
 ORIGINAL PROMPT:
 ${originalPrompt}
@@ -1467,10 +1487,10 @@ ${shotBlock}
 ${characterBlock}
 ${objectBlock}
 
-${modelName.toUpperCase()} KB (follow syntax rules exactly):
+${modelName.toUpperCase()} KB (consult for syntax rules AND reference image capabilities):
 ${modelKBContent || 'No model-specific KB available'}
 
-OUTPUT: Generate the refined prompt only. No explanations, no markdown formatting, no code blocks. Just the corrected prompt ready to paste into ${modelName}.`;
+Respond with JSON only.`;
 
     try {
         const text = await callGemini({
@@ -1480,111 +1500,37 @@ OUTPUT: Generate the refined prompt only. No explanations, no markdown formattin
             maxOutputTokens: 4096,
         });
 
-        // Clean any markdown formatting that might slip through
-        const refinedPrompt = text.trim().replace(/^```.*\n?/gm, '').replace(/```$/gm, '').trim();
+        // Parse JSON response
+        const cleaned = text.trim().replace(/^```(?:json)?\n?/gm, '').replace(/```$/gm, '').trim();
+        let parsed;
+        try {
+            parsed = JSON.parse(cleaned);
+        } catch (parseErr) {
+            // Fallback: if Gemini didn't return valid JSON, extract what we can
+            console.warn('[gemini] Refinement response was not valid JSON, attempting fallback parse');
+            const promptMatch = cleaned.match(/"refined_prompt"\s*:\s*"([\s\S]*?)(?:"\s*,\s*"reference_strategy|"\s*})/);
+            parsed = {
+                refined_prompt: promptMatch ? promptMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') : cleaned,
+                reference_strategy: {
+                    action: auditResult.recommendation === 'REFINE' ? 'use_reference' : 'text_only',
+                    title: auditResult.recommendation === 'REFINE' ? 'Use Previous Image' : 'Start Fresh — Text Only',
+                    reason: `Score ${auditResult.overall_score}/100. Gemini response could not be parsed — using audit recommendation as fallback.`,
+                },
+            };
+        }
 
-        // Determine reference strategy based on audit score + model capabilities
-        const referenceStrategy = buildReferenceStrategy(modelName, auditResult);
+        const refinedPrompt = (parsed.refined_prompt || '').trim();
+        const referenceStrategy = parsed.reference_strategy || {
+            action: 'text_only',
+            title: 'Use Refined Prompt',
+            reason: 'No reference strategy returned by model.',
+        };
 
         return { refined_prompt: refinedPrompt, reference_strategy: referenceStrategy };
     } catch (error) {
         console.error('[gemini] Prompt refinement error:', error);
         throw error;
     }
-}
-
-/**
- * Determines whether to use the previous image as a reference or go text-only,
- * based on the audit recommendation and model-specific capabilities.
- */
-function buildReferenceStrategy(modelName, auditResult) {
-    const score = auditResult.overall_score || 0;
-    const recommendation = auditResult.recommendation;
-    const lower = modelName.toLowerCase().replace(/[\s.-]+/g, '_');
-
-    // Model-specific reference capabilities
-    const modelRef = {
-        midjourney: {
-            supports_ref: true,
-            method: '--cref [image URL]',
-            label: 'Character Reference (--cref)',
-        },
-        gpt_image: {
-            supports_ref: true,
-            method: 'Upload as Image 1 input',
-            label: 'Multi-Image Input',
-        },
-        veo: {
-            supports_ref: true,
-            method: 'Upload as Image-to-Video source',
-            label: 'Image-to-Video',
-        },
-        kling: {
-            supports_ref: true,
-            method: 'Upload as Image-to-Video source',
-            label: 'Image-to-Video (I2V)',
-        },
-        higgsfield: {
-            supports_ref: true,
-            method: 'Use as ref for video mode',
-            label: 'Hero Frame Reference',
-        },
-        nano_banana: {
-            supports_ref: true,
-            method: 'Conversational edit with reference images (up to 14)',
-            label: 'Natural Language Edit',
-        },
-    };
-
-    // Find matching model
-    let modelInfo = null;
-    for (const [key, info] of Object.entries(modelRef)) {
-        if (lower.includes(key)) {
-            modelInfo = info;
-            break;
-        }
-    }
-
-    if (recommendation === 'REGENERATE') {
-        // Score 0-69: fundamental issues — start fresh
-        const strategy = {
-            action: 'text_only',
-            title: 'Start Fresh — Text Only',
-            reason: `Score ${score}/100 indicates fundamental issues. The previous image would carry over problems. Use the refined prompt with no reference image.`,
-        };
-        // Exception: if character_identity scored well but other things failed,
-        // you might still want --cref for character consistency
-        const charScore = auditResult.dimensions?.character_identity?.score || 0;
-        if (charScore >= 7 && modelInfo?.supports_ref) {
-            strategy.action = 'ref_optional';
-            strategy.title = 'Text Only (Character Ref Optional)';
-            strategy.reason = `Score ${score}/100 needs regeneration, but character identity scored ${charScore}/10. You may optionally use ${modelInfo.method} to preserve character appearance while the refined prompt fixes other issues.`;
-        }
-        return strategy;
-    }
-
-    if (recommendation === 'REFINE') {
-        // Score 70-94: good foundation — use as reference
-        if (modelInfo?.supports_ref) {
-            return {
-                action: 'use_reference',
-                title: `Use Previous Image — ${modelInfo.label}`,
-                reason: `Score ${score}/100 means the composition and foundation are solid. Use the previous image as a reference via ${modelInfo.method} with the refined prompt to preserve what works while fixing the identified issues.`,
-            };
-        }
-        return {
-            action: 'text_only',
-            title: 'Use Refined Prompt — Text Only',
-            reason: `Score ${score}/100 has a good foundation. ${modelName} doesn't support image references directly, so use the refined prompt on its own. The corrections target the specific issues found.`,
-        };
-    }
-
-    // LOCK IT IN — shouldn't reach here since we don't refine locked prompts, but handle gracefully
-    return {
-        action: 'none',
-        title: 'No Changes Needed',
-        reason: `Score ${score}/100 — this image is production-ready.`,
-    };
 }
 
 export {
