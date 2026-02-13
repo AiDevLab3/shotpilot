@@ -211,7 +211,7 @@ describe('Phase 3.1: Aesthetic Suggestions', () => {
             .send();
 
         expect(res.body.kbFilesUsed).toContain('01_Core_Realism_Principles.md');
-        expect(res.body.kbFilesUsed).toContain('03_Pack_Quality_Control.md');
+        expect(res.body.kbFilesUsed).toContain('03_Pack_Image_Quality_Control.md');
     });
 
     it('should suggest recognized project fields', async () => {
@@ -376,7 +376,7 @@ describe('Phase 3.4: Quality Dialogue', () => {
             .post(`/api/shots/${testShotId}/quality-dialogue`)
             .send({ message: 'What KB rules apply?' });
 
-        expect(res.body.kbFilesUsed).toContain('03_Pack_Quality_Control.md');
+        expect(res.body.kbFilesUsed).toContain('03_Pack_Image_Quality_Control.md');
         expect(res.body.kbFilesUsed).toContain('01_Core_Realism_Principles.md');
         expect(res.body.kbFilesUsed).toContain('03_Pack_Spatial_Composition.md');
     });

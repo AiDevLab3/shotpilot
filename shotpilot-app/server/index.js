@@ -229,7 +229,7 @@ app.post('/api/shots/:shotId/get-recommendations', requireAuth, async (req, res)
         let kbContent = '';
         try {
             const coreKB = readKBFile('01_Core_Realism_Principles.md');
-            const qualityKB = readKBFile('03_Pack_Quality_Control.md');
+            const qualityKB = readKBFile('03_Pack_Image_Quality_Control.md');
             kbContent = [coreKB, qualityKB].filter(Boolean).join('\n\n');
         } catch (err) {
             console.warn('[recommendations] Could not load KB:', err.message);
@@ -260,7 +260,7 @@ app.post('/api/projects/:projectId/aesthetic-suggestions', requireAuth, async (r
         let kbContent = '';
         try {
             const coreKB = readKBFile('01_Core_Realism_Principles.md');
-            const qualityKB = readKBFile('03_Pack_Quality_Control.md');
+            const qualityKB = readKBFile('03_Pack_Image_Quality_Control.md');
             kbContent = [coreKB, qualityKB].filter(Boolean).join('\n\n');
         } catch (err) {
             console.warn('[aesthetic-suggestions] Could not load KB:', err.message);
@@ -271,7 +271,7 @@ app.post('/api/projects/:projectId/aesthetic-suggestions', requireAuth, async (r
         });
 
         logAIFeatureUsage(db, req.session.userId, 'aesthetic_suggestions', projectId);
-        res.json({ suggestions, kbFilesUsed: ['01_Core_Realism_Principles.md', '03_Pack_Quality_Control.md'] });
+        res.json({ suggestions, kbFilesUsed: ['01_Core_Realism_Principles.md', '03_Pack_Image_Quality_Control.md'] });
     } catch (error) {
         console.error('Aesthetic suggestions error:', error);
         res.status(500).json({ error: error.message });
@@ -364,7 +364,7 @@ app.post('/api/shots/:shotId/readiness-dialogue', requireAuth, async (req, res) 
 
         let kbContent = '';
         try {
-            const qualityKB = readKBFile('03_Pack_Quality_Control.md');
+            const qualityKB = readKBFile('03_Pack_Image_Quality_Control.md');
             const coreKB = readKBFile('01_Core_Realism_Principles.md');
             const spatialKB = readKBFile('03_Pack_Spatial_Composition.md');
             kbContent = [qualityKB, coreKB, spatialKB].filter(Boolean).join('\n\n');
@@ -381,7 +381,7 @@ app.post('/api/shots/:shotId/readiness-dialogue', requireAuth, async (req, res) 
         });
 
         logAIFeatureUsage(db, req.session.userId, 'readiness_dialogue', shotId);
-        res.json({ ...result, kbFilesUsed: ['03_Pack_Quality_Control.md', '01_Core_Realism_Principles.md', '03_Pack_Spatial_Composition.md'] });
+        res.json({ ...result, kbFilesUsed: ['03_Pack_Image_Quality_Control.md', '01_Core_Realism_Principles.md', '03_Pack_Spatial_Composition.md'] });
     } catch (error) {
         console.error('Readiness dialogue error:', error);
         res.status(500).json({ error: error.message });
@@ -526,7 +526,8 @@ app.post('/api/projects/:projectId/creative-director', requireAuth, async (req, 
         const coreKBFiles = [
             '01_Core_Realism_Principles.md',
             '03_Pack_Spatial_Composition.md',
-            '03_Pack_Quality_Control.md',
+            '03_Pack_Image_Quality_Control.md',
+            '03_Pack_Video_Quality_Control.md',
             '03_Pack_Character_Consistency.md',
             '03_Pack_Motion_Readiness.md',
         ];
@@ -952,10 +953,10 @@ app.post('/api/variants/:variantId/audit', requireAuth, checkCredits(db), async 
         const characters = project ? db.prepare('SELECT * FROM characters WHERE project_id = ?').all(project.id) : [];
         const objects = project ? db.prepare('SELECT * FROM objects WHERE project_id = ?').all(project.id) : [];
 
-        // Load KB: QC pack + core principles + model-specific guide
+        // Load KB: Image QC pack + core principles + model-specific guide
         let kbContent = '';
         try {
-            const qualityKB = readKBFile('03_Pack_Quality_Control.md');
+            const qualityKB = readKBFile('03_Pack_Image_Quality_Control.md');
             const coreKB = readKBFile('01_Core_Realism_Principles.md');
             let modelKB = null;
             if (variant.model_used) {
@@ -1050,7 +1051,7 @@ app.post('/api/audit-image', requireAuth, checkCredits(db), upload.single('image
 
         let kbContent = '';
         try {
-            const qualityKB = readKBFile('03_Pack_Quality_Control.md');
+            const qualityKB = readKBFile('03_Pack_Image_Quality_Control.md');
             const coreKB = readKBFile('01_Core_Realism_Principles.md');
             kbContent = [qualityKB, coreKB].filter(Boolean).join('\n\n');
         } catch (err) {

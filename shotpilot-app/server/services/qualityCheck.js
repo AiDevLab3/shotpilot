@@ -125,7 +125,7 @@ async function checkReadinessWithKB(context) {
     // Load KB files for quality analysis (condensed, optimized versions)
     const kbFiles = [
         '01_Core_Realism_Principles.md',
-        '03_Pack_Quality_Control.md',
+        '03_Pack_Image_Quality_Control.md',
         '03_Pack_Spatial_Composition.md',
     ];
 

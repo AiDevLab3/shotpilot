@@ -23,11 +23,11 @@ const LITE_MODELS = {
         capabilities: 'Best for: Complex camera work, dynamic scenes, professional cinematography'
     },
     'midjourney': {
-        stub: '02_Model_Midjourney.md',
+        stub: 'models/midjourney/Prompting_Mastery.md',
         name: 'Midjourney',
         type: 'image',
-        description: 'Artistic & stylized imagery',
-        capabilities: 'Best for: Concept art, stylized aesthetics, creative interpretations'
+        description: 'Artistic & stylized imagery with V7 personalization, character consistency & draft mode',
+        capabilities: 'Best for: Concept art, stylized aesthetics, photorealistic stills, character consistency via --cref'
     },
     'kling-2.6': {
         stub: '02_Model_Kling_26.md',
@@ -62,7 +62,8 @@ const LITE_MODELS = {
 // Supplementary packs (condensed, optimized versions)
 const PACK_FILES = {
     character_consistency: '03_Pack_Character_Consistency.md',
-    quality_control: '03_Pack_Quality_Control.md',
+    image_quality_control: '03_Pack_Image_Quality_Control.md',
+    video_quality_control: '03_Pack_Video_Quality_Control.md',
     motion_readiness: '03_Pack_Motion_Readiness.md',
     spatial_composition: '03_Pack_Spatial_Composition.md',
 };
