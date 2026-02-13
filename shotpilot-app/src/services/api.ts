@@ -439,6 +439,13 @@ export const getVariantAudit = async (variantId: number): Promise<ImageAuditResu
     return apiCall(`/variants/${variantId}/audit`);
 };
 
+// AI-powered prompt refinement based on audit results
+export const refineVariantPrompt = async (variantId: number): Promise<{ refined_prompt: string; variant: any }> => {
+    return apiCall(`/variants/${variantId}/refine-prompt`, {
+        method: 'POST',
+    });
+};
+
 // Audit a standalone image (for character/object references)
 export const auditStandaloneImage = async (file: File, projectId?: number, contextType?: string): Promise<ImageAuditResult> => {
     const formData = new FormData();

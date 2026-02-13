@@ -1386,6 +1386,110 @@ OUTPUT VALID JSON ONLY:
     }
 }
 
+/**
+ * AI-powered prompt refinement based on audit results and model-specific KB.
+ * Takes the original prompt, audit feedback, and model KB, then generates a corrected prompt.
+ */
+async function refinePromptFromAudit({ originalPrompt, auditResult, modelName, modelKBContent, project, scene, shot, characters, objects }) {
+    const projectBlock = buildContextBlock('PROJECT', project);
+    const sceneBlock = scene ? buildContextBlock('SCENE', {
+        name: scene.name,
+        location_setting: scene.location_setting,
+        time_of_day: scene.time_of_day,
+        mood_tone: scene.mood_tone,
+        lighting_notes: scene.lighting_notes,
+    }) : '';
+    const shotBlock = shot ? buildContextBlock('SHOT', {
+        shot_number: shot.shot_number,
+        description: shot.description,
+        shot_type: shot.shot_type,
+        camera_angle: shot.camera_angle,
+        camera_movement: shot.camera_movement,
+        focal_length: shot.focal_length,
+        camera_lens: shot.camera_lens,
+        blocking: shot.blocking,
+    }) : '';
+
+    let characterBlock = '';
+    if (characters && characters.length > 0) {
+        characterBlock = '\nCHARACTERS:\n' + characters.map(c =>
+            `- ${c.name}: ${c.description || 'No description'}${c.personality ? ' | ' + c.personality : ''}`
+        ).join('\n');
+    }
+
+    let objectBlock = '';
+    if (objects && objects.length > 0) {
+        objectBlock = '\nOBJECTS/PROPS:\n' + objects.map(o =>
+            `- ${o.name}: ${o.description || 'No description'}`
+        ).join('\n');
+    }
+
+    // Build issues + adjustments summary from audit
+    const issuesList = (auditResult.issues || []).map((iss, i) => `${i + 1}. ${iss}`).join('\n');
+    const adjustmentsList = (auditResult.prompt_adjustments || []).map((adj, i) => `${i + 1}. ${adj}`).join('\n');
+
+    const dimensionSummary = Object.entries(auditResult.dimensions || {}).map(([key, dim]) =>
+        `- ${key.replace(/_/g, ' ').toUpperCase()}: ${dim.score}/10 — ${dim.notes}`
+    ).join('\n');
+
+    const systemInstruction = `You are an expert AI prompt engineer specializing in ${modelName}. Your job is to take a prompt that was used to generate an image, analyze the audit feedback from that generated image, and produce a REFINED prompt that corrects all identified issues.
+
+CRITICAL RULES:
+- Follow the ${modelName} syntax and formatting rules from the KB EXACTLY
+- Address EVERY issue identified in the audit
+- Apply EVERY suggested prompt adjustment
+- Preserve what worked well (high-scoring dimensions)
+- Reference characters by their EXACT names from context
+- Do NOT add unnecessary elements not in the original intent
+- Output ONLY the refined prompt — no explanations, no preamble`;
+
+    const userPrompt = `TASK: Refine this ${modelName} prompt based on image audit feedback.
+
+ORIGINAL PROMPT:
+${originalPrompt}
+
+AUDIT RESULTS (Score: ${auditResult.overall_score}/100, Recommendation: ${auditResult.recommendation}):
+${auditResult.summary || ''}
+
+DIMENSION SCORES:
+${dimensionSummary}
+
+ISSUES FOUND:
+${issuesList || 'None'}
+
+SUGGESTED PROMPT ADJUSTMENTS:
+${adjustmentsList || 'None'}
+
+CONTEXT:
+${projectBlock}
+${sceneBlock}
+${shotBlock}
+${characterBlock}
+${objectBlock}
+
+${modelName.toUpperCase()} KB (follow syntax rules exactly):
+${modelKBContent || 'No model-specific KB available'}
+
+OUTPUT: Generate the refined prompt only. No explanations, no markdown formatting, no code blocks. Just the corrected prompt ready to paste into ${modelName}.`;
+
+    try {
+        const text = await callGemini({
+            parts: [{ text: userPrompt }],
+            systemInstruction,
+            thinkingLevel: 'high',
+            maxOutputTokens: 4096,
+        });
+
+        // Clean any markdown formatting that might slip through
+        const refinedPrompt = text.trim().replace(/^```.*\n?/gm, '').replace(/```$/gm, '').trim();
+
+        return { refined_prompt: refinedPrompt };
+    } catch (error) {
+        console.error('[gemini] Prompt refinement error:', error);
+        throw error;
+    }
+}
+
 export {
     generateRecommendations,
     generatePrompt,
@@ -1401,4 +1505,5 @@ export {
     creativeDirectorCollaborate,
     summarizeConversation,
     holisticImageAudit,
+    refinePromptFromAudit,
 };

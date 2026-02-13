@@ -10,7 +10,7 @@ import { setupAuth, requireAuth, checkCredits } from './middleware/auth.js';
 import { deductCredit, getUserCredits, getUsageStats, logAIFeatureUsage, getAIUsageStats } from './services/creditService.js';
 import { loadKBForModel, getAvailableModels, readKBFile } from './services/kbLoader.js';
 import { calculateCompleteness, checkReadinessWithKB } from './services/qualityCheck.js';
-import { generateRecommendations, generatePrompt, analyzeReadiness, generateAestheticSuggestions, generateCharacterSuggestions, generateShotPlan, readinessDialogue, analyzeScript, generateObjectSuggestions, refineContent, creativeDirectorCollaborate, summarizeConversation, holisticImageAudit } from './services/geminiService.js';
+import { generateRecommendations, generatePrompt, analyzeReadiness, generateAestheticSuggestions, generateCharacterSuggestions, generateShotPlan, readinessDialogue, analyzeScript, generateObjectSuggestions, refineContent, creativeDirectorCollaborate, summarizeConversation, holisticImageAudit, refinePromptFromAudit } from './services/geminiService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -790,6 +790,77 @@ app.put('/api/variants/:id', requireAuth, (req, res) => {
         const variant = db.prepare('SELECT * FROM image_variants WHERE id = ?').get(req.params.id);
         res.json(variant);
     } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// AI-powered prompt refinement based on audit results
+app.post('/api/variants/:variantId/refine-prompt', requireAuth, checkCredits(db), async (req, res) => {
+    try {
+        const { variantId } = req.params;
+        const variant = db.prepare('SELECT * FROM image_variants WHERE id = ?').get(variantId);
+        if (!variant) return res.status(404).json({ error: 'Variant not found' });
+
+        // Must have audit data to refine
+        if (!variant.audit_data) {
+            return res.status(400).json({ error: 'Run an audit first before refining the prompt' });
+        }
+
+        let auditResult;
+        try {
+            auditResult = JSON.parse(variant.audit_data);
+        } catch {
+            return res.status(400).json({ error: 'Invalid audit data. Run a new audit first.' });
+        }
+
+        const originalPrompt = variant.generated_prompt || variant.prompt_used || '';
+        if (!originalPrompt) {
+            return res.status(400).json({ error: 'No original prompt found on this variant' });
+        }
+
+        const modelName = variant.model_used || 'unknown';
+
+        // Load context
+        const shot = db.prepare('SELECT * FROM shots WHERE id = ?').get(variant.shot_id);
+        const scene = shot ? db.prepare('SELECT * FROM scenes WHERE id = ?').get(shot.scene_id) : null;
+        const project = scene ? db.prepare('SELECT * FROM projects WHERE id = ?').get(scene.project_id) : null;
+        const characters = project ? db.prepare('SELECT * FROM characters WHERE project_id = ?').all(project.id) : [];
+        const objects = project ? db.prepare('SELECT * FROM objects WHERE project_id = ?').all(project.id) : [];
+
+        // Load model-specific KB
+        let modelKBContent = '';
+        try {
+            modelKBContent = loadKBForModel(modelName);
+        } catch (err) {
+            console.warn(`[refine-prompt] Could not load model KB for ${modelName}:`, err.message);
+        }
+
+        const result = await refinePromptFromAudit({
+            originalPrompt,
+            auditResult,
+            modelName,
+            modelKBContent,
+            project,
+            scene,
+            shot,
+            characters,
+            objects,
+        });
+
+        // Save the refined prompt as user_edited_prompt
+        db.prepare('UPDATE image_variants SET user_edited_prompt = ? WHERE id = ?')
+            .run(result.refined_prompt, variantId);
+
+        deductCredit(db, req.session.userId, 'prompt_refinement', variant.shot_id);
+        logAIFeatureUsage(db, req.session.userId, 'prompt_refinement', variant.shot_id);
+
+        const updatedVariant = db.prepare('SELECT * FROM image_variants WHERE id = ?').get(variantId);
+        res.json({
+            refined_prompt: result.refined_prompt,
+            variant: updatedVariant,
+        });
+    } catch (error) {
+        console.error('Prompt refinement error:', error);
         res.status(500).json({ error: error.message });
     }
 });
