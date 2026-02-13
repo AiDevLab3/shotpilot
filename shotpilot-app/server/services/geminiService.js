@@ -1483,11 +1483,108 @@ OUTPUT: Generate the refined prompt only. No explanations, no markdown formattin
         // Clean any markdown formatting that might slip through
         const refinedPrompt = text.trim().replace(/^```.*\n?/gm, '').replace(/```$/gm, '').trim();
 
-        return { refined_prompt: refinedPrompt };
+        // Determine reference strategy based on audit score + model capabilities
+        const referenceStrategy = buildReferenceStrategy(modelName, auditResult);
+
+        return { refined_prompt: refinedPrompt, reference_strategy: referenceStrategy };
     } catch (error) {
         console.error('[gemini] Prompt refinement error:', error);
         throw error;
     }
+}
+
+/**
+ * Determines whether to use the previous image as a reference or go text-only,
+ * based on the audit recommendation and model-specific capabilities.
+ */
+function buildReferenceStrategy(modelName, auditResult) {
+    const score = auditResult.overall_score || 0;
+    const recommendation = auditResult.recommendation;
+    const lower = modelName.toLowerCase().replace(/[\s.-]+/g, '_');
+
+    // Model-specific reference capabilities
+    const modelRef = {
+        midjourney: {
+            supports_ref: true,
+            method: '--cref [image URL]',
+            label: 'Character Reference (--cref)',
+        },
+        gpt_image: {
+            supports_ref: true,
+            method: 'Upload as Image 1 input',
+            label: 'Multi-Image Input',
+        },
+        veo: {
+            supports_ref: true,
+            method: 'Upload as Image-to-Video source',
+            label: 'Image-to-Video',
+        },
+        kling: {
+            supports_ref: true,
+            method: 'Upload as Image-to-Video source',
+            label: 'Image-to-Video (I2V)',
+        },
+        higgsfield: {
+            supports_ref: true,
+            method: 'Use as ref for video mode',
+            label: 'Hero Frame Reference',
+        },
+        nano_banana: {
+            supports_ref: false,
+            method: null,
+            label: null,
+        },
+    };
+
+    // Find matching model
+    let modelInfo = null;
+    for (const [key, info] of Object.entries(modelRef)) {
+        if (lower.includes(key)) {
+            modelInfo = info;
+            break;
+        }
+    }
+
+    if (recommendation === 'REGENERATE') {
+        // Score 0-69: fundamental issues — start fresh
+        const strategy = {
+            action: 'text_only',
+            title: 'Start Fresh — Text Only',
+            reason: `Score ${score}/100 indicates fundamental issues. The previous image would carry over problems. Use the refined prompt with no reference image.`,
+        };
+        // Exception: if character_identity scored well but other things failed,
+        // you might still want --cref for character consistency
+        const charScore = auditResult.dimensions?.character_identity?.score || 0;
+        if (charScore >= 7 && modelInfo?.supports_ref) {
+            strategy.action = 'ref_optional';
+            strategy.title = 'Text Only (Character Ref Optional)';
+            strategy.reason = `Score ${score}/100 needs regeneration, but character identity scored ${charScore}/10. You may optionally use ${modelInfo.method} to preserve character appearance while the refined prompt fixes other issues.`;
+        }
+        return strategy;
+    }
+
+    if (recommendation === 'REFINE') {
+        // Score 70-94: good foundation — use as reference
+        if (modelInfo?.supports_ref) {
+            return {
+                action: 'use_reference',
+                title: `Use Previous Image — ${modelInfo.label}`,
+                reason: `Score ${score}/100 means the composition and foundation are solid. Use the previous image as a reference via ${modelInfo.method} with the refined prompt to preserve what works while fixing the identified issues.`,
+            };
+        }
+        return {
+            action: 'text_only',
+            title: 'Use Refined Prompt — Text Only',
+            reason: `Score ${score}/100 has a good foundation. ${modelName} doesn't support image references directly, so use the refined prompt on its own. The corrections target the specific issues found.`,
+        };
+    }
+
+    // LOCK IT IN — shouldn't reach here since we don't refine locked prompts, but handle gracefully
+    return {
+        action: 'none',
+        title: 'No Changes Needed',
+        reason: `Score ${score}/100 — this image is production-ready.`,
+    };
 }
 
 export {

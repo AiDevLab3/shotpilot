@@ -857,6 +857,7 @@ app.post('/api/variants/:variantId/refine-prompt', requireAuth, checkCredits(db)
         const updatedVariant = db.prepare('SELECT * FROM image_variants WHERE id = ?').get(variantId);
         res.json({
             refined_prompt: result.refined_prompt,
+            reference_strategy: result.reference_strategy,
             variant: updatedVariant,
         });
     } catch (error) {

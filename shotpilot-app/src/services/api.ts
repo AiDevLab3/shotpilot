@@ -440,7 +440,11 @@ export const getVariantAudit = async (variantId: number): Promise<ImageAuditResu
 };
 
 // AI-powered prompt refinement based on audit results
-export const refineVariantPrompt = async (variantId: number): Promise<{ refined_prompt: string; variant: any }> => {
+export const refineVariantPrompt = async (variantId: number): Promise<{
+    refined_prompt: string;
+    reference_strategy: { action: string; title: string; reason: string };
+    variant: any;
+}> => {
     return apiCall(`/variants/${variantId}/refine-prompt`, {
         method: 'POST',
     });

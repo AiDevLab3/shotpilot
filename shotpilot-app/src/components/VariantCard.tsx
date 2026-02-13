@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ReadinessBadge } from './ReadinessBadge';
 import { ImageAuditReport } from './ImageAuditReport';
 import { uploadVariantImage, auditVariantImage, getVariantAudit, refineVariantPrompt } from '../services/api';
-import { Copy, Check, Trash2, ChevronDown, ChevronUp, Upload, Shield, Loader2, Wand2 } from 'lucide-react';
+import { Copy, Check, Trash2, ChevronDown, ChevronUp, Upload, Shield, Loader2, Wand2, ImageIcon, Type } from 'lucide-react';
 import type { ImageAuditResult } from '../types/schema';
 
 interface Variant {
@@ -74,6 +74,7 @@ export const VariantCard: React.FC<VariantCardProps> = ({ variant, onDelete }) =
     const [error, setError] = useState<string | null>(null);
     const [refining, setRefining] = useState(false);
     const [refinedPrompt, setRefinedPrompt] = useState(variant.user_edited_prompt || '');
+    const [referenceStrategy, setReferenceStrategy] = useState<{ action: string; title: string; reason: string } | null>(null);
     const [showOriginal, setShowOriginal] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -91,6 +92,7 @@ export const VariantCard: React.FC<VariantCardProps> = ({ variant, onDelete }) =
         try {
             const result = await refineVariantPrompt(variant.id);
             setRefinedPrompt(result.refined_prompt);
+            setReferenceStrategy(result.reference_strategy);
         } catch (err: any) {
             setError(err.message || 'Refinement failed');
         } finally {
@@ -260,6 +262,54 @@ export const VariantCard: React.FC<VariantCardProps> = ({ variant, onDelete }) =
                             )}
                         </button>
                     )}
+                </div>
+            )}
+
+            {/* Reference Strategy Guidance */}
+            {referenceStrategy && (
+                <div style={{
+                    marginBottom: '8px',
+                    padding: '8px 10px',
+                    borderRadius: '6px',
+                    backgroundColor: referenceStrategy.action === 'use_reference'
+                        ? 'rgba(96, 165, 250, 0.08)'
+                        : referenceStrategy.action === 'ref_optional'
+                            ? 'rgba(245, 158, 11, 0.08)'
+                            : 'rgba(139, 92, 246, 0.08)',
+                    border: `1px solid ${referenceStrategy.action === 'use_reference'
+                        ? 'rgba(96, 165, 250, 0.2)'
+                        : referenceStrategy.action === 'ref_optional'
+                            ? 'rgba(245, 158, 11, 0.2)'
+                            : 'rgba(139, 92, 246, 0.2)'}`,
+                }}>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        marginBottom: '4px',
+                    }}>
+                        {referenceStrategy.action === 'use_reference'
+                            ? <ImageIcon size={12} style={{ color: '#60a5fa' }} />
+                            : <Type size={12} style={{ color: referenceStrategy.action === 'ref_optional' ? '#f59e0b' : '#8b5cf6' }} />
+                        }
+                        <span style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            color: referenceStrategy.action === 'use_reference' ? '#60a5fa'
+                                : referenceStrategy.action === 'ref_optional' ? '#f59e0b' : '#8b5cf6',
+                            textTransform: 'uppercase' as const,
+                            letterSpacing: '0.03em',
+                        }}>
+                            {referenceStrategy.title}
+                        </span>
+                    </div>
+                    <div style={{
+                        fontSize: '11px',
+                        color: '#a1a1aa',
+                        lineHeight: '1.5',
+                    }}>
+                        {referenceStrategy.reason}
+                    </div>
                 </div>
             )}
 
