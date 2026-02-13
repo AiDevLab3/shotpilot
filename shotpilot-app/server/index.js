@@ -843,7 +843,7 @@ app.post('/api/variants/:variantId/upload-image', requireAuth, upload.single('im
 });
 
 // Run holistic image audit on a variant's uploaded image
-app.post('/api/variants/:variantId/audit', requireAuth, checkCredits, async (req, res) => {
+app.post('/api/variants/:variantId/audit', requireAuth, checkCredits(db), async (req, res) => {
     try {
         const { variantId } = req.params;
         const variant = db.prepare('SELECT * FROM image_variants WHERE id = ?').get(variantId);
@@ -943,7 +943,7 @@ app.get('/api/variants/:variantId/audit', requireAuth, (req, res) => {
 });
 
 // Audit a standalone image (not tied to a variant) — for character/object reference images
-app.post('/api/audit-image', requireAuth, checkCredits, upload.single('image'), async (req, res) => {
+app.post('/api/audit-image', requireAuth, checkCredits(db), upload.single('image'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'No image file provided' });
 
