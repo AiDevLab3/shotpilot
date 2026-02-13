@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { AIModel, Shot, Scene, Project } from '../types/schema';
-import { X, Sparkles, Loader2, Copy, Check, Clapperboard, Camera } from 'lucide-react';
+import { X, Sparkles, Loader2, Copy, Check, Clapperboard, Camera, Info } from 'lucide-react';
 import { getAvailableModels, generatePrompt, checkShotQuality } from '../services/api';
 // Assuming api export issues, adapting to imports. 
 // If api is a default export object in service, verify. 
@@ -51,6 +51,7 @@ export function GeneratePromptModal({
     const [result, setResult] = useState<GenerationResult | null>(null);
     const [copied, setCopied] = useState(false);
     const [qualityScore, setQualityScore] = useState<QualityScore | null>(null);
+    const [showQualityInfo, setShowQualityInfo] = useState(false);
 
     // Dynamic UI
     const isVideoMode = modelType === 'video';
@@ -183,14 +184,65 @@ export function GeneratePromptModal({
                                     <span style={{ color: '#6b7280' }}>Scene:</span> <span style={{ color: 'white' }}>{scene?.name || 'Unknown'}</span>
                                 </div>
                                 {qualityScore && (
-                                    <div style={{ ...styles.contextRow, marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <span style={{ color: '#6b7280' }}>Quality Score:</span>
-                                        <span style={{
-                                            color: qualityScore.tier === 'production' ? '#10b981' : '#fbbf24',
-                                            fontWeight: 700
-                                        }}>
-                                            {qualityScore.score} / 100 ({qualityScore.tier.toUpperCase()})
-                                        </span>
+                                    <div style={{ marginTop: '8px' }}>
+                                        <div style={{ ...styles.contextRow, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span style={{ color: '#6b7280' }}>Quality Score:</span>
+                                            <span style={{
+                                                color: qualityScore.tier === 'production' ? '#10b981' : '#fbbf24',
+                                                fontWeight: 700
+                                            }}>
+                                                {qualityScore.score} / 100 ({qualityScore.tier.toUpperCase()})
+                                            </span>
+                                            <button
+                                                onClick={() => setShowQualityInfo(!showQualityInfo)}
+                                                style={{
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    padding: '2px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    color: showQualityInfo ? '#60a5fa' : '#6b7280',
+                                                }}
+                                                title="What is this score?"
+                                            >
+                                                <Info size={14} />
+                                            </button>
+                                        </div>
+                                        {showQualityInfo && (
+                                            <div style={{
+                                                marginTop: '8px',
+                                                padding: '10px 12px',
+                                                backgroundColor: '#1e1e22',
+                                                borderRadius: '6px',
+                                                border: '1px solid #3f3f46',
+                                                fontSize: '11px',
+                                                lineHeight: '1.6',
+                                                color: '#a1a1aa',
+                                            }}>
+                                                <div style={{ color: '#d1d5db', fontWeight: 600, marginBottom: '6px' }}>
+                                                    How is this calculated?
+                                                </div>
+                                                <div style={{ marginBottom: '6px' }}>
+                                                    The score measures how completely this shot is defined for prompt generation.
+                                                </div>
+                                                <div style={{ marginBottom: '4px', color: '#9ca3af', fontWeight: 600 }}>
+                                                    Shot Specifics (80%)
+                                                </div>
+                                                <div style={{ paddingLeft: '8px', marginBottom: '6px' }}>
+                                                    Description (25), Shot Type (20), Camera Angle (15), Camera Movement (10), Focal Length (5), Blocking (5), Lens (5)
+                                                </div>
+                                                <div style={{ marginBottom: '4px', color: '#9ca3af', fontWeight: 600 }}>
+                                                    Scene Context (20%)
+                                                </div>
+                                                <div style={{ paddingLeft: '8px', marginBottom: '6px' }}>
+                                                    Lighting (5), Mood/Tone (5), Style (5), Location (5), Time of Day (5)
+                                                </div>
+                                                <div style={{ color: '#6b7280', fontStyle: 'italic' }}>
+                                                    70+ = Production (ready for generation) &middot; Below 70 = Draft
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>

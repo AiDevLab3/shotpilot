@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import type { Project, Scene, Shot, ImageVariant } from '../types/schema';
 import { getScenes, getShots, createShot, updateShot, deleteShot, updateScene, createScene, deleteScene, getAllProjects, updateProject, fileToBase64, createImageVariant, getImageVariants, deleteImageVariant, getUserCredits } from '../services/api';
-import { Plus, Image as ImageIcon, Check, Video, Edit2, Trash2, ChevronDown, ChevronRight, FileText, Clock, Maximize2, Minimize2, Sparkles, Settings, MessageCircle, Film } from 'lucide-react';
+import { Plus, Image as ImageIcon, Check, Video, Edit2, Trash2, ChevronDown, ChevronRight, FileText, Clock, Maximize2, Minimize2, Sparkles, Settings, Film } from 'lucide-react';
 
 import { GeneratePromptModal } from '../components/GeneratePromptModal';
 import { RecommendationsDialog } from '../components/RecommendationsDialog';
@@ -735,8 +735,7 @@ const ShotBoardPage: React.FC = () => {
                                                                 <div style={{ ...styles.cardHeader, flexShrink: 0 }}>
                                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                                         <span style={styles.shotBadge}>Shot {shot.shot_number}</span>
-                                                                        <QualityBadge tier={shot.quality_tier} score={shot.quality_percentage} onClick={() => handleOpenQualityDialogue(shot.id, shot.quality_percentage || 0)} />
-                                                                        <button onClick={(e) => { e.stopPropagation(); handleOpenQualityDialogue(shot.id, shot.quality_percentage || 0); }} style={{ background: 'none', border: 'none', color: '#8b5cf6', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }} title="Ask AI about quality"><MessageCircle size={14} /></button>
+                                                                        <QualityBadge tier={shot.quality_tier} onClick={() => handleOpenQualityDialogue(shot.id, shot.quality_percentage || 0)} />
                                                                     </div>
                                                                     <div style={{ position: 'relative' }} ref={isDropdownOpen ? dropdownRef : null}>
                                                                         <button
