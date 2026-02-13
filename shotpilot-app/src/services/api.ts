@@ -52,7 +52,13 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     }
 
     if (!response.ok) {
-        throw new Error(`API Error: ${response.statusText}`);
+        // Try to extract the server's actual error message
+        let errMsg = response.statusText;
+        try {
+            const errBody = await response.json();
+            if (errBody.error) errMsg = errBody.error;
+        } catch { /* use statusText fallback */ }
+        throw new Error(errMsg);
     }
     return response.json();
 };
