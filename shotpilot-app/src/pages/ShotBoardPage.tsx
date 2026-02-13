@@ -302,6 +302,8 @@ const ShotBoardPage: React.FC = () => {
 
                 const variants = await getImageVariants(shotId);
                 setShotImages(prev => ({ ...prev, [shotId]: variants }));
+                // Notify VariantList to refresh
+                window.dispatchEvent(new CustomEvent('variantCreated', { detail: { shotId } }));
             } catch (error: any) {
                 console.error("Failed to upload image", error);
                 alert(`Failed to upload: ${error instanceof Error ? error.message : 'Unknown error'} `);
@@ -492,6 +494,8 @@ const ShotBoardPage: React.FC = () => {
         if (generateModalShot && generateModalSceneId) {
             const variants = await getImageVariants(generateModalShot.id);
             setShotImages(prev => ({ ...prev, [generateModalShot.id]: variants }));
+            // Notify VariantList to refresh its generated prompts
+            window.dispatchEvent(new CustomEvent('variantCreated', { detail: { shotId: generateModalShot.id } }));
         }
         try {
             const credits = await getUserCredits();

@@ -57,16 +57,29 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     return response.json();
 };
 
-// Helper for file uploads (multipart/form-data)
+// Helper for file uploads (multipart/form-data) — retries once on 401 after auto-login
 const uploadCall = async (file: File) => {
-    const formData = new FormData();
-    formData.append('image', file);
+    const doUpload = () => {
+        const formData = new FormData();
+        formData.append('image', file);
+        return fetch('/api/upload', {
+            method: 'POST',
+            credentials: 'include',
+            body: formData
+        });
+    };
 
-    const response = await fetch('/api/upload', {
-        method: 'POST',
-        credentials: 'include',
-        body: formData
-    });
+    let response = await doUpload();
+
+    // If 401, auto-login and retry once (matching apiCall behavior)
+    if (response.status === 401) {
+        console.log('[API v3] Got 401 on upload — auto-logging in...');
+        const ok = await autoLogin();
+        if (ok) {
+            console.log('[API v3] Retrying upload after login...');
+            response = await doUpload();
+        }
+    }
 
     if (!response.ok) {
         throw new Error('Upload failed');
