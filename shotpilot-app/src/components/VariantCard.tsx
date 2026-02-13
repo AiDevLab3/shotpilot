@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ReadinessBadge } from './ReadinessBadge';
 import { ImageAuditReport } from './ImageAuditReport';
-import { uploadVariantImage, auditVariantImage, getVariantAudit } from '../services/api';
-import { Copy, Check, Trash2, ChevronDown, ChevronUp, Upload, Shield, Loader2 } from 'lucide-react';
+import { uploadVariantImage, auditVariantImage, getVariantAudit, updateVariant } from '../services/api';
+import { Copy, Check, Trash2, ChevronDown, ChevronUp, Upload, Shield, Loader2, Pencil, X, Save } from 'lucide-react';
 import type { ImageAuditResult } from '../types/schema';
 
 interface Variant {
@@ -72,15 +72,48 @@ export const VariantCard: React.FC<VariantCardProps> = ({ variant, onDelete }) =
     const [auditResult, setAuditResult] = useState<ImageAuditResult | null>(null);
     const [showAudit, setShowAudit] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [editing, setEditing] = useState(false);
+    const [editText, setEditText] = useState('');
+    const [saving, setSaving] = useState(false);
+    const [savedEditedPrompt, setSavedEditedPrompt] = useState(variant.user_edited_prompt || '');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const modelName = variant.model_name || variant.model_used || 'Unknown';
-    const isRevised = !!variant.user_edited_prompt;
-    const prompt = variant.user_edited_prompt || variant.generated_prompt || variant.prompt_used || '';
+    const isRevised = !!savedEditedPrompt;
+    const prompt = savedEditedPrompt || variant.generated_prompt || variant.prompt_used || '';
     const promptLabel = isRevised ? 'Revised Prompt' : 'Original Prompt';
     const tier = variant.quality_tier || 'draft';
     const preview = prompt.length > 150 ? prompt.slice(0, 150) + '...' : prompt;
     const needsExpand = prompt.length > 150;
+
+    const handleStartEdit = () => {
+        setEditText(prompt);
+        setEditing(true);
+        setError(null);
+    };
+
+    const handleCancelEdit = () => {
+        setEditing(false);
+        setEditText('');
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editText.trim() || editText.trim() === prompt) {
+            setEditing(false);
+            return;
+        }
+        setSaving(true);
+        setError(null);
+        try {
+            await updateVariant(variant.id, { user_edited_prompt: editText.trim() });
+            setSavedEditedPrompt(editText.trim());
+            setEditing(false);
+        } catch (err: any) {
+            setError(err.message || 'Failed to save');
+        } finally {
+            setSaving(false);
+        }
+    };
 
     // Load existing audit data on mount
     useEffect(() => {
@@ -228,20 +261,66 @@ export const VariantCard: React.FC<VariantCardProps> = ({ variant, onDelete }) =
                 color: isRevised ? '#8b5cf6' : '#6b7280',
                 marginBottom: '4px',
             }}>
-                {promptLabel}
-            </div>
-            <div style={styles.promptText}>
-                {expanded ? prompt : preview}
+                {editing ? 'Editing Prompt' : promptLabel}
             </div>
 
-            {needsExpand && (
-                <button onClick={() => setExpanded(!expanded)} style={styles.expandBtn}>
-                    {expanded ? (
-                        <><ChevronUp size={12} /> Show Less</>
-                    ) : (
-                        <><ChevronDown size={12} /> Show Full Prompt</>
+            {editing ? (
+                <div>
+                    <textarea
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        style={{
+                            width: '100%',
+                            minHeight: '100px',
+                            backgroundColor: '#09090b',
+                            border: '1px solid #3f3f46',
+                            borderRadius: '6px',
+                            padding: '8px',
+                            color: '#e4e4e7',
+                            fontSize: '12px',
+                            lineHeight: '1.5',
+                            resize: 'vertical' as const,
+                            outline: 'none',
+                            fontFamily: 'inherit',
+                            boxSizing: 'border-box' as const,
+                        }}
+                        autoFocus
+                    />
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '6px', justifyContent: 'flex-end' }}>
+                        <button
+                            onClick={handleCancelEdit}
+                            disabled={saving}
+                            style={{ ...styles.actionBtn, color: '#9ca3af' }}
+                        >
+                            <X size={12} /> Cancel
+                        </button>
+                        <button
+                            onClick={handleSaveEdit}
+                            disabled={saving}
+                            style={{
+                                ...styles.actionBtn,
+                                color: saving ? '#6b7280' : '#10b981',
+                            }}
+                        >
+                            {saving ? <><Loader2 size={12} className="spin" /> Saving...</> : <><Save size={12} /> Save Revision</>}
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <>
+                    <div style={styles.promptText}>
+                        {expanded ? prompt : preview}
+                    </div>
+                    {needsExpand && (
+                        <button onClick={() => setExpanded(!expanded)} style={styles.expandBtn}>
+                            {expanded ? (
+                                <><ChevronUp size={12} /> Show Less</>
+                            ) : (
+                                <><ChevronDown size={12} /> Show Full Prompt</>
+                            )}
+                        </button>
                     )}
-                </button>
+                </>
             )}
 
             {/* Error */}
@@ -285,6 +364,16 @@ export const VariantCard: React.FC<VariantCardProps> = ({ variant, onDelete }) =
                         {auditing ? <><Loader2 size={12} className="spin" /> Auditing...</> : <><Shield size={12} /> Audit</>}
                     </button>
                 )}
+
+                {/* Refine Prompt */}
+                <button
+                    onClick={handleStartEdit}
+                    disabled={editing}
+                    style={{ ...styles.actionBtn, color: editing ? '#6b7280' : '#f59e0b' }}
+                    title="Edit and refine this prompt"
+                >
+                    <Pencil size={12} /> Refine
+                </button>
 
                 <div style={{ flex: 1 }} />
 
