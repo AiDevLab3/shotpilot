@@ -133,6 +133,7 @@ export const VariantList: React.FC<VariantListProps> = ({ shotId }) => {
                                 model_name: (v as any).model_name || v.model_used,
                                 prompt_used: v.prompt_used,
                                 generated_prompt: v.generated_prompt,
+                                user_edited_prompt: v.user_edited_prompt,
                                 quality_tier: v.quality_tier,
                                 quality_percentage: v.quality_percentage,
                                 image_url: v.image_url,

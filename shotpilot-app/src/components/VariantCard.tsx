@@ -11,6 +11,7 @@ interface Variant {
     model_used?: string;
     prompt_used?: string;
     generated_prompt?: string;
+    user_edited_prompt?: string;
     quality_tier?: string;
     quality_percentage?: number;
     image_url?: string;
@@ -74,7 +75,9 @@ export const VariantCard: React.FC<VariantCardProps> = ({ variant, onDelete }) =
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const modelName = variant.model_name || variant.model_used || 'Unknown';
-    const prompt = variant.generated_prompt || variant.prompt_used || '';
+    const isRevised = !!variant.user_edited_prompt;
+    const prompt = variant.user_edited_prompt || variant.generated_prompt || variant.prompt_used || '';
+    const promptLabel = isRevised ? 'Revised Prompt' : 'Original Prompt';
     const tier = variant.quality_tier || 'draft';
     const preview = prompt.length > 150 ? prompt.slice(0, 150) + '...' : prompt;
     const needsExpand = prompt.length > 150;
@@ -216,7 +219,17 @@ export const VariantCard: React.FC<VariantCardProps> = ({ variant, onDelete }) =
                 </div>
             )}
 
-            {/* Prompt text */}
+            {/* Prompt label + text */}
+            <div style={{
+                fontSize: '10px',
+                fontWeight: 700,
+                textTransform: 'uppercase' as const,
+                letterSpacing: '0.04em',
+                color: isRevised ? '#8b5cf6' : '#6b7280',
+                marginBottom: '4px',
+            }}>
+                {promptLabel}
+            </div>
             <div style={styles.promptText}>
                 {expanded ? prompt : preview}
             </div>

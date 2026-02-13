@@ -40,9 +40,9 @@ function ScoreBar({ score, max, label, icon, notes }: { score: number; max: numb
                 style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: notes ? 'pointer' : 'default' }}
                 onClick={() => notes && setExpanded(!expanded)}
             >
-                <span style={{ fontSize: '13px', width: '18px', textAlign: 'center' }}>{icon}</span>
-                <span style={{ fontSize: '12px', color: '#d1d5db', width: '130px', flexShrink: 0 }}>{label}</span>
-                <div style={{ flex: 1, height: '8px', backgroundColor: '#27272a', borderRadius: '4px', overflow: 'hidden' }}>
+                <span style={{ fontSize: '13px', width: '16px', textAlign: 'center', flexShrink: 0 }}>{icon}</span>
+                <span style={{ fontSize: '11px', color: '#d1d5db', width: '90px', flexShrink: 0 }}>{label}</span>
+                <div style={{ flex: 1, minWidth: '40px', height: '8px', backgroundColor: '#27272a', borderRadius: '4px', overflow: 'hidden' }}>
                     <div style={{
                         height: '100%',
                         width: `${pct}%`,
@@ -51,7 +51,7 @@ function ScoreBar({ score, max, label, icon, notes }: { score: number; max: numb
                         transition: 'width 0.5s ease',
                     }} />
                 </div>
-                <span style={{ fontSize: '12px', fontWeight: 700, color, width: '40px', textAlign: 'right' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color, width: '32px', textAlign: 'right', flexShrink: 0 }}>
                     {score}/{max}
                 </span>
                 {notes && (
