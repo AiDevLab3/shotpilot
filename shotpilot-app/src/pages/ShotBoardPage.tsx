@@ -8,9 +8,9 @@ import { GeneratePromptModal } from '../components/GeneratePromptModal';
 import { RecommendationsDialog } from '../components/RecommendationsDialog';
 import { VariantList } from '../components/VariantList';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { QualityBadge } from '../components/QualityBadge';
+import { ReadinessBadge } from '../components/ReadinessBadge';
 import { ShotPlanningPanel } from '../components/ShotPlanningPanel';
-import { QualityDialogue } from '../components/QualityDialogue';
+import { ReadinessDialogue } from '../components/ReadinessDialogue';
 
 // Specialized Dropdown Option Component
 const DropdownOption = ({
@@ -110,10 +110,10 @@ const ShotBoardPage: React.FC = () => {
     const [shotPlanSceneId, setShotPlanSceneId] = useState<number | null>(null);
     const [shotPlanSceneName, setShotPlanSceneName] = useState('');
 
-    // Phase 3.4: Quality Dialogue
-    const [isQualityDialogueOpen, setIsQualityDialogueOpen] = useState(false);
-    const [qualityDialogueShotId, setQualityDialogueShotId] = useState<number | null>(null);
-    const [qualityDialogueScore, setQualityDialogueScore] = useState(0);
+    // Phase 3.4: Readiness Dialogue
+    const [isReadinessDialogueOpen, setIsReadinessDialogueOpen] = useState(false);
+    const [readinessDialogueShotId, setReadinessDialogueShotId] = useState<number | null>(null);
+    const [readinessDialogueScore, setReadinessDialogueScore] = useState(0);
 
     // Initial Load — re-run when projectId becomes available from context
     useEffect(() => {
@@ -457,11 +457,11 @@ const ShotBoardPage: React.FC = () => {
         setIsShotPlanOpen(false);
     };
 
-    // Phase 3.4: Quality Dialogue handlers
-    const handleOpenQualityDialogue = (shotId: number, score: number) => {
-        setQualityDialogueShotId(shotId);
-        setQualityDialogueScore(score);
-        setIsQualityDialogueOpen(true);
+    // Phase 3.4: Readiness Dialogue handlers
+    const handleOpenReadinessDialogue = (shotId: number, score: number) => {
+        setReadinessDialogueShotId(shotId);
+        setReadinessDialogueScore(score);
+        setIsReadinessDialogueOpen(true);
     };
 
     const handleRecsClose = () => {
@@ -729,7 +729,7 @@ const ShotBoardPage: React.FC = () => {
                                                                 <div style={{ ...styles.cardHeader, flexShrink: 0 }}>
                                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                                         <span style={styles.shotBadge}>Shot {shot.shot_number}</span>
-                                                                        <QualityBadge tier={shot.quality_tier} onClick={() => handleOpenQualityDialogue(shot.id, shot.quality_percentage || 0)} />
+                                                                        <ReadinessBadge tier={shot.readiness_tier || shot.quality_tier} onClick={() => handleOpenReadinessDialogue(shot.id, shot.readiness_percentage || shot.quality_percentage || 0)} />
                                                                     </div>
                                                                     <div style={{ position: 'relative' }} ref={isDropdownOpen ? dropdownRef : null}>
                                                                         <button
@@ -1080,13 +1080,13 @@ const ShotBoardPage: React.FC = () => {
                     />
                 )}
 
-                {/* Phase 3.4: Quality Dialogue Modal */}
-                {qualityDialogueShotId && (
-                    <QualityDialogue
-                        isOpen={isQualityDialogueOpen}
-                        onClose={() => setIsQualityDialogueOpen(false)}
-                        shotId={qualityDialogueShotId}
-                        qualityScore={qualityDialogueScore}
+                {/* Phase 3.4: Readiness Dialogue Modal */}
+                {readinessDialogueShotId && (
+                    <ReadinessDialogue
+                        isOpen={isReadinessDialogueOpen}
+                        onClose={() => setIsReadinessDialogueOpen(false)}
+                        shotId={readinessDialogueShotId}
+                        readinessScore={readinessDialogueScore}
                     />
                 )}
             </div>

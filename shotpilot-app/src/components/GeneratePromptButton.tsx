@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { checkShotQuality } from '../services/api';
+import { checkShotReadiness } from '../services/api';
 import { Wand2, Loader2 } from 'lucide-react';
 
 interface QualityResult {
@@ -23,10 +23,10 @@ export const GeneratePromptButton: React.FC<GeneratePromptButtonProps> = ({ shot
         setLoading(true);
         setError(null);
         try {
-            const result = await checkShotQuality(shotId);
+            const result = await checkShotReadiness(shotId);
             onQualityCheck(result);
         } catch (err: any) {
-            setError(err.message || 'Quality check failed');
+            setError(err.message || 'Readiness check failed');
         } finally {
             setLoading(false);
         }
@@ -60,7 +60,7 @@ export const GeneratePromptButton: React.FC<GeneratePromptButtonProps> = ({ shot
                 onMouseLeave={() => setHover(false)}
             >
                 {loading ? (
-                    <><Loader2 size={14} className="spin" /> Checking Quality...</>
+                    <><Loader2 size={14} className="spin" /> Checking Readiness...</>
                 ) : (
                     <><Wand2 size={14} /> Generate Prompt</>
                 )}

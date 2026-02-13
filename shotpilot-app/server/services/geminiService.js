@@ -181,9 +181,11 @@ async function callGemini({ parts, systemInstruction, thinkingLevel = 'high', re
 }
 
 /**
- * FIX 2: KB-Guided Quality Analysis using Quality Control Pack + Core Principles.
+ * KB-Guided Prompt Readiness Analysis using Quality Control Pack + Core Principles.
+ * Scores how completely a shot is defined for prompt generation (field completeness).
+ * This is NOT image quality analysis — see holisticImageAudit() for actual image scoring.
  */
-async function analyzeQuality({ context, kbContent, thinkingLevel = 'high' }) {
+async function analyzeReadiness({ context, kbContent, thinkingLevel = 'high' }) {
     const { project, scene, shot, characters, objects } = context;
 
     const projectBlock = buildContextBlock('PROJECT', project);
@@ -269,7 +271,7 @@ OUTPUT VALID JSON ONLY:
     try {
         const text = await callGemini({
             parts: [{ text: prompt }],
-            systemInstruction: 'You are an expert cinematographer. Analyze shot quality using the provided KB. Only flag fields from the provided valid field list. Output valid JSON only.',
+            systemInstruction: 'You are an expert cinematographer. Analyze shot readiness for prompt generation using the provided KB. Only flag fields from the provided valid field list. Output valid JSON only.',
             thinkingLevel,
             responseMimeType: 'application/json',
             maxOutputTokens: 4096,
@@ -301,7 +303,7 @@ OUTPUT VALID JSON ONLY:
 
         return parsed;
     } catch (error) {
-        console.error('[gemini] Quality analysis error:', error);
+        console.error('[gemini] Readiness analysis error:', error);
         throw error;
     }
 }
@@ -712,11 +714,11 @@ OUTPUT VALID JSON ONLY:
 }
 
 /**
- * Phase 3.4: Quality check dialogue — answer user questions about quality.
- * Supports multi-turn conversation about shot quality with KB context.
+ * Phase 3.4: Prompt readiness dialogue — answer user questions about shot readiness.
+ * Supports multi-turn conversation about prompt readiness with KB context.
  */
-async function qualityDialogue(context) {
-    const { project, scene, shot, characters, objects, userMessage, history, qualityData, kbContent } = context;
+async function readinessDialogue(context) {
+    const { project, scene, shot, characters, objects, userMessage, history, readinessData, kbContent } = context;
 
     const projectBlock = buildContextBlock('PROJECT', project);
     const sceneBlock = buildContextBlock('SCENE', scene);
@@ -729,21 +731,21 @@ async function qualityDialogue(context) {
         ).join('\n');
     }
 
-    let qualityBlock = '';
-    if (qualityData) {
-        qualityBlock = `\nCURRENT QUALITY: ${qualityData.percentage}% (${qualityData.tier})`;
-        if (qualityData.missingFields && qualityData.missingFields.length > 0) {
-            qualityBlock += '\nMISSING FIELDS: ' + qualityData.missingFields.map(f => f.label || f.field).join(', ');
+    let readinessBlock = '';
+    if (readinessData) {
+        readinessBlock = `\nCURRENT READINESS: ${readinessData.percentage}% (${readinessData.tier})`;
+        if (readinessData.missingFields && readinessData.missingFields.length > 0) {
+            readinessBlock += '\nMISSING FIELDS: ' + readinessData.missingFields.map(f => f.label || f.field).join(', ');
         }
     }
 
-    const systemInstruction = `You are an expert cinematographer discussing shot quality with a filmmaker. Use KB knowledge to explain WHY things matter, discuss trade-offs, and suggest alternatives. Be conversational but authoritative. Reference specific KB principles when relevant. Keep responses concise (2-4 sentences for simple questions, up to a paragraph for complex ones).`;
+    const systemInstruction = `You are an expert cinematographer discussing shot prompt readiness with a filmmaker. Use KB knowledge to explain WHY things matter, discuss trade-offs, and suggest alternatives. Be conversational but authoritative. Reference specific KB principles when relevant. Keep responses concise (2-4 sentences for simple questions, up to a paragraph for complex ones).`;
 
     const userPrompt = `${kbContent ? `KB CONTEXT:\n${kbContent}\n` : ''}
 ${projectBlock}
 ${sceneBlock}
 ${shotBlock}
-${qualityBlock}
+${readinessBlock}
 ${historyBlock}
 
 USER QUESTION: ${userMessage}
@@ -760,7 +762,7 @@ Respond as an expert cinematographer. Reference KB principles where relevant. Be
 
         return { response: text.trim() };
     } catch (error) {
-        console.error('[gemini] Quality dialogue error:', error);
+        console.error('[gemini] Readiness dialogue error:', error);
         throw error;
     }
 }
@@ -1206,18 +1208,196 @@ Summarize this conversation into a context digest.`;
     }
 }
 
+/**
+ * HOLISTIC IMAGE AUDIT — The real quality system.
+ * Analyzes an actual generated/uploaded image across 6 cinematic dimensions
+ * using Gemini's multimodal vision capabilities.
+ *
+ * Returns scores (0-10 per dimension, 0-100 overall), recommendation
+ * (LOCK IT IN / REFINE / REGENERATE), specific issues, and prompt adjustments.
+ */
+async function holisticImageAudit({ imageBuffer, mimeType, project, scene, shot, characters, objects, kbContent }) {
+    const projectBlock = buildContextBlock('PROJECT', project);
+    const sceneBlock = scene ? buildContextBlock('SCENE', {
+        name: scene.name,
+        location_setting: scene.location_setting,
+        time_of_day: scene.time_of_day,
+        mood_tone: scene.mood_tone,
+        lighting_notes: scene.lighting_notes,
+    }) : '';
+    const shotBlock = shot ? buildContextBlock('SHOT', {
+        shot_number: shot.shot_number,
+        description: shot.description,
+        shot_type: shot.shot_type,
+        camera_angle: shot.camera_angle,
+        camera_movement: shot.camera_movement,
+        focal_length: shot.focal_length,
+        camera_lens: shot.camera_lens,
+        blocking: shot.blocking,
+    }) : '';
+
+    let characterBlock = '';
+    if (characters && characters.length > 0) {
+        characterBlock = '\nCHARACTERS (check identity consistency):\n' + characters.map(c =>
+            `- ${c.name}: ${c.description || 'No description'}${c.personality ? ' | ' + c.personality : ''}`
+        ).join('\n');
+    }
+
+    let objectBlock = '';
+    if (objects && objects.length > 0) {
+        objectBlock = '\nOBJECTS/PROPS (check placement & scale):\n' + objects.map(o =>
+            `- ${o.name}: ${o.description || 'No description'}`
+        ).join('\n');
+    }
+
+    const systemInstruction = `You are an expert Holistic Image Auditor for AI-generated cinematography. You analyze images with the eye of a seasoned Director of Photography, evaluating them across 6 critical dimensions for professional production quality.
+
+Your analysis must be precise, actionable, and grounded in real cinematography principles. Score honestly — a mediocre AI-generated image should NOT score 90+. Reserve high scores for genuinely production-quality results.
+
+SCORING GUIDELINES:
+- 0-3: Severe issues, fundamentally broken
+- 4-5: Below average, noticeable problems
+- 6-7: Acceptable with clear room for improvement
+- 8-9: Strong, minor refinements only
+- 10: Exceptional, professional production quality
+
+OVERALL SCORE = weighted sum of dimensions (not a simple average):
+- Physics (weight 2): 20% of total
+- Style Consistency (weight 2): 20% of total
+- Lighting & Atmosphere (weight 1.5): 15% of total
+- Clarity (weight 1): 10% of total
+- Objects & Composition (weight 1.5): 15% of total
+- Character Identity (weight 2): 20% of total
+
+RECOMMENDATION THRESHOLDS:
+- LOCK IT IN: 95-100 (exceptional, ready for production)
+- REFINE: 70-94 (good foundation, targeted improvements needed)
+- REGENERATE: 0-69 (fundamental issues, needs new generation with adjusted prompt)`;
+
+    const userPrompt = `${kbContent ? `KNOWLEDGE BASE (use for evaluation criteria):\n${kbContent}\n\n` : ''}${projectBlock}
+${sceneBlock}
+${shotBlock}
+${characterBlock}
+${objectBlock}
+
+Analyze the uploaded image across ALL 6 dimensions. Compare against the project DNA, scene context, and shot intent described above.
+
+For each dimension, provide:
+1. A score (0-10)
+2. Specific observations (what works, what doesn't)
+
+Then provide:
+- Overall weighted score (0-100)
+- Recommendation (LOCK IT IN / REFINE / REGENERATE)
+- List of specific issues found
+- Suggested prompt adjustments to fix identified issues
+
+OUTPUT VALID JSON ONLY:
+{
+  "overall_score": <0-100>,
+  "recommendation": "LOCK IT IN" | "REFINE" | "REGENERATE",
+  "dimensions": {
+    "physics": {
+      "score": <0-10>,
+      "notes": "Analysis of lighting direction consistency, shadow accuracy, perspective/vanishing points, physical plausibility of objects and their interactions, gravity, reflections"
+    },
+    "style_consistency": {
+      "score": <0-10>,
+      "notes": "How well the image matches the project's established aesthetic, tone, mood, color palette, and visual language. Check for AI artifacts like HDR sheen, plastic textures, or over-processed look"
+    },
+    "lighting_atmosphere": {
+      "score": <0-10>,
+      "notes": "Artistic intent of lighting, motivated light sources, atmospheric depth (haze, volumetrics), contrast ratio, color temperature consistency, key/fill/rim balance"
+    },
+    "clarity": {
+      "score": <0-10>,
+      "notes": "Sharpness where needed, appropriate depth of field, focus accuracy, absence of unwanted blur/noise, optical quality matching specified lens character"
+    },
+    "composition": {
+      "score": <0-10>,
+      "notes": "Subject placement, rule of thirds/golden ratio, leading lines, negative space, scale relationships, foreground/midground/background layering, framing that matches specified shot type"
+    },
+    "character_identity": {
+      "score": <0-10>,
+      "notes": "Facial accuracy, clothing/wardrobe consistency with character descriptions, body proportions, expression appropriateness for scene context, absence of uncanny valley artifacts"
+    }
+  },
+  "issues": ["Specific issue 1", "Specific issue 2"],
+  "prompt_adjustments": ["Suggested fix 1 — add/modify this in the prompt", "Suggested fix 2"],
+  "summary": "2-3 sentence overall assessment"
+}`;
+
+    // Build parts: image first, then text prompt
+    const parts = [
+        {
+            inlineData: {
+                mimeType: mimeType || 'image/jpeg',
+                data: imageBuffer.toString('base64'),
+            }
+        },
+        { text: '↑ Analyze this image using the Holistic Image Audit framework.\n\n' + userPrompt }
+    ];
+
+    try {
+        const text = await callGemini({
+            parts,
+            systemInstruction,
+            thinkingLevel: 'high',
+            responseMimeType: 'application/json',
+            maxOutputTokens: 4096,
+        });
+
+        let parsed;
+        try {
+            parsed = JSON.parse(text);
+        } catch (e) {
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                parsed = JSON.parse(jsonMatch[0]);
+            } else {
+                throw new Error('Could not parse holistic audit JSON');
+            }
+        }
+
+        // Validate and normalize the response
+        const result = {
+            overall_score: Math.min(100, Math.max(0, parsed.overall_score || 0)),
+            recommendation: ['LOCK IT IN', 'REFINE', 'REGENERATE'].includes(parsed.recommendation)
+                ? parsed.recommendation
+                : (parsed.overall_score >= 95 ? 'LOCK IT IN' : parsed.overall_score >= 70 ? 'REFINE' : 'REGENERATE'),
+            dimensions: {
+                physics: { score: Math.min(10, Math.max(0, parsed.dimensions?.physics?.score || 0)), notes: parsed.dimensions?.physics?.notes || '' },
+                style_consistency: { score: Math.min(10, Math.max(0, parsed.dimensions?.style_consistency?.score || 0)), notes: parsed.dimensions?.style_consistency?.notes || '' },
+                lighting_atmosphere: { score: Math.min(10, Math.max(0, parsed.dimensions?.lighting_atmosphere?.score || 0)), notes: parsed.dimensions?.lighting_atmosphere?.notes || '' },
+                clarity: { score: Math.min(10, Math.max(0, parsed.dimensions?.clarity?.score || 0)), notes: parsed.dimensions?.clarity?.notes || '' },
+                composition: { score: Math.min(10, Math.max(0, parsed.dimensions?.composition?.score || 0)), notes: parsed.dimensions?.composition?.notes || '' },
+                character_identity: { score: Math.min(10, Math.max(0, parsed.dimensions?.character_identity?.score || 0)), notes: parsed.dimensions?.character_identity?.notes || '' },
+            },
+            issues: Array.isArray(parsed.issues) ? parsed.issues : [],
+            prompt_adjustments: Array.isArray(parsed.prompt_adjustments) ? parsed.prompt_adjustments : [],
+            summary: parsed.summary || '',
+        };
+
+        return result;
+    } catch (error) {
+        console.error('[gemini] Holistic image audit error:', error);
+        throw error;
+    }
+}
+
 export {
     generateRecommendations,
     generatePrompt,
-    analyzeQuality,
+    analyzeReadiness,
     generateAestheticSuggestions,
     generateCharacterSuggestions,
     generateShotPlan,
-    qualityDialogue,
+    readinessDialogue,
     analyzeScript,
     generateObjectSuggestions,
     buildContextBlock,
     refineContent,
     creativeDirectorCollaborate,
     summarizeConversation,
+    holisticImageAudit,
 };

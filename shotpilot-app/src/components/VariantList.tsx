@@ -135,6 +135,10 @@ export const VariantList: React.FC<VariantListProps> = ({ shotId }) => {
                                 generated_prompt: v.generated_prompt,
                                 quality_tier: v.quality_tier,
                                 quality_percentage: v.quality_percentage,
+                                image_url: v.image_url,
+                                audit_score: (v as any).audit_score,
+                                audit_recommendation: (v as any).audit_recommendation,
+                                audit_data: (v as any).audit_data,
                                 created_at: v.created_at,
                             }}
                             onDelete={handleDelete}

@@ -211,6 +211,21 @@ export const initDatabase = () => {
         console.error("Phase 2 Migration check failed:", e);
     }
 
+    // Phase 4: Holistic Image Audit Migrations
+    try {
+        const variantsInfo2 = db.pragma('table_info(image_variants)');
+        const variantCols = new Set(variantsInfo2.map(col => col.name));
+
+        if (!variantCols.has('audit_score')) {
+            console.log('Migrating: Adding holistic audit columns to image_variants table...');
+            db.exec('ALTER TABLE image_variants ADD COLUMN audit_score INTEGER');
+            db.exec('ALTER TABLE image_variants ADD COLUMN audit_recommendation TEXT');
+            db.exec('ALTER TABLE image_variants ADD COLUMN audit_data TEXT');
+        }
+    } catch (e) {
+        console.error("Phase 4 (Image Audit) Migration failed:", e);
+    }
+
     // Create default test user if not exists
     try {
         const testUser = db.prepare('SELECT * FROM users WHERE email = ?').get('test@shotpilot.com');

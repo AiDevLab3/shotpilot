@@ -1,9 +1,10 @@
 import { readKBFile } from './kbLoader.js';
-import { analyzeQuality } from './geminiService.js';
+import { analyzeReadiness } from './geminiService.js';
 
 /**
  * Fast local completeness check (no API call).
- * Used for quick scoring before deciding whether to show recommendations.
+ * Scores how completely a shot's fields are defined for prompt generation.
+ * This is "Prompt Readiness" — NOT image quality analysis.
  */
 function calculateCompleteness(project, scene, shot) {
     // 1. Definition: Shot Specifics (80% of score)
@@ -114,10 +115,11 @@ function calculateCompleteness(project, scene, shot) {
 }
 
 /**
- * FIX 2: KB-guided quality check using Gemini + Knowledge Base.
- * Loads KB files based on project context and returns expert analysis.
+ * KB-guided prompt readiness check using Gemini + Knowledge Base.
+ * Loads KB files based on project context and returns expert analysis
+ * of how well-defined the shot is for prompt generation.
  */
-async function checkQualityWithKB(context) {
+async function checkReadinessWithKB(context) {
     const { project, scene, shot, characters, objects } = context;
 
     // Load KB files for quality analysis (condensed, optimized versions)
@@ -157,12 +159,12 @@ async function checkQualityWithKB(context) {
 
     if (!kbContent.trim()) {
         // Fallback to basic check if no KB content available
-        console.warn('[qualityCheck] No KB content available, falling back to basic check');
+        console.warn('[readinessCheck] No KB content available, falling back to basic check');
         return calculateCompleteness(project, scene, shot);
     }
 
     try {
-        const analysis = await analyzeQuality({
+        const analysis = await analyzeReadiness({
             context: { project, scene, shot, characters, objects },
             kbContent,
             thinkingLevel: 'high',
@@ -228,5 +230,5 @@ function getFieldDescription(field) {
 
 export {
     calculateCompleteness,
-    checkQualityWithKB
+    checkReadinessWithKB
 };

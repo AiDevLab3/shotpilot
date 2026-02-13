@@ -9,8 +9,8 @@ import { db, initDatabase } from './database.js';
 import { setupAuth, requireAuth, checkCredits } from './middleware/auth.js';
 import { deductCredit, getUserCredits, getUsageStats, logAIFeatureUsage, getAIUsageStats } from './services/creditService.js';
 import { loadKBForModel, getAvailableModels, readKBFile } from './services/kbLoader.js';
-import { calculateCompleteness, checkQualityWithKB } from './services/qualityCheck.js';
-import { generateRecommendations, generatePrompt, analyzeQuality, generateAestheticSuggestions, generateCharacterSuggestions, generateShotPlan, qualityDialogue, analyzeScript, generateObjectSuggestions, refineContent, creativeDirectorCollaborate, summarizeConversation } from './services/geminiService.js';
+import { calculateCompleteness, checkReadinessWithKB } from './services/qualityCheck.js';
+import { generateRecommendations, generatePrompt, analyzeReadiness, generateAestheticSuggestions, generateCharacterSuggestions, generateShotPlan, readinessDialogue, analyzeScript, generateObjectSuggestions, refineContent, creativeDirectorCollaborate, summarizeConversation, holisticImageAudit } from './services/geminiService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -165,8 +165,9 @@ app.get('/api/models', (req, res) => {
     }
 });
 
-// Check quality — uses KB-guided analysis when available, falls back to basic scoring
-app.post('/api/shots/:shotId/check-quality', requireAuth, async (req, res) => {
+// Check prompt readiness — uses KB-guided analysis when available, falls back to basic scoring
+// Measures how completely a shot is defined for prompt generation (field completeness, NOT image quality)
+app.post('/api/shots/:shotId/check-readiness', requireAuth, async (req, res) => {
     try {
         const { shotId } = req.params;
         const { useKB } = req.body || {};
@@ -177,35 +178,39 @@ app.post('/api/shots/:shotId/check-quality', requireAuth, async (req, res) => {
         const scene = db.prepare('SELECT * FROM scenes WHERE id = ?').get(shot.scene_id);
         const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(scene.project_id);
 
-        // FIX 2: Load characters + objects for KB-guided quality check
         const characters = db.prepare('SELECT * FROM characters WHERE project_id = ?').all(scene.project_id);
         const objects = db.prepare('SELECT * FROM objects WHERE project_id = ?').all(scene.project_id);
 
         // First: fast local check for immediate scoring
-        const basicQuality = calculateCompleteness(project, scene, shot);
+        const basicReadiness = calculateCompleteness(project, scene, shot);
 
         // If KB-guided check requested (or by default), enhance with Gemini analysis
         if (useKB !== false) {
             try {
-                const kbQuality = await checkQualityWithKB({
+                const kbReadiness = await checkReadinessWithKB({
                     project, scene, shot, characters, objects
                 });
                 res.json({
-                    ...basicQuality,
-                    ...kbQuality,
-                    // Keep basic percentage as fallback reference
-                    basicPercentage: basicQuality.percentage,
+                    ...basicReadiness,
+                    ...kbReadiness,
+                    basicPercentage: basicReadiness.percentage,
                 });
                 return;
             } catch (err) {
-                console.warn('[check-quality] KB check failed, using basic:', err.message);
+                console.warn('[check-readiness] KB check failed, using basic:', err.message);
             }
         }
 
-        res.json(basicQuality);
+        res.json(basicReadiness);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
+});
+
+// Backward compat alias — old clients may still call check-quality
+app.post('/api/shots/:shotId/check-quality', requireAuth, (req, res) => {
+    req.url = req.url.replace('check-quality', 'check-readiness');
+    app.handle(req, res);
 });
 
 // Get recommendations (free - no credit cost) — now includes KB context
@@ -338,8 +343,8 @@ app.post('/api/scenes/:sceneId/shot-plan', requireAuth, async (req, res) => {
     }
 });
 
-// Phase 3.4: Quality dialogue (free - no credit cost)
-app.post('/api/shots/:shotId/quality-dialogue', requireAuth, async (req, res) => {
+// Phase 3.4: Prompt readiness dialogue (free - no credit cost)
+app.post('/api/shots/:shotId/readiness-dialogue', requireAuth, async (req, res) => {
     try {
         const { shotId } = req.params;
         const { message, history } = req.body;
@@ -354,8 +359,8 @@ app.post('/api/shots/:shotId/quality-dialogue', requireAuth, async (req, res) =>
         const characters = db.prepare('SELECT * FROM characters WHERE project_id = ?').all(scene.project_id);
         const objects = db.prepare('SELECT * FROM objects WHERE project_id = ?').all(scene.project_id);
 
-        // Get current quality data
-        const qualityData = calculateCompleteness(project, scene, shot);
+        // Get current readiness data
+        const readinessData = calculateCompleteness(project, scene, shot);
 
         let kbContent = '';
         try {
@@ -364,23 +369,29 @@ app.post('/api/shots/:shotId/quality-dialogue', requireAuth, async (req, res) =>
             const spatialKB = readKBFile('03_Pack_Spatial_Composition.md');
             kbContent = [qualityKB, coreKB, spatialKB].filter(Boolean).join('\n\n');
         } catch (err) {
-            console.warn('[quality-dialogue] Could not load KB:', err.message);
+            console.warn('[readiness-dialogue] Could not load KB:', err.message);
         }
 
-        const result = await qualityDialogue({
+        const result = await readinessDialogue({
             project, scene, shot, characters, objects,
             userMessage: message,
             history: history || [],
-            qualityData,
+            readinessData,
             kbContent,
         });
 
-        logAIFeatureUsage(db, req.session.userId, 'quality_dialogue', shotId);
+        logAIFeatureUsage(db, req.session.userId, 'readiness_dialogue', shotId);
         res.json({ ...result, kbFilesUsed: ['03_Pack_Quality_Control.md', '01_Core_Realism_Principles.md', '03_Pack_Spatial_Composition.md'] });
     } catch (error) {
-        console.error('Quality dialogue error:', error);
+        console.error('Readiness dialogue error:', error);
         res.status(500).json({ error: error.message });
     }
+});
+
+// Backward compat alias
+app.post('/api/shots/:shotId/quality-dialogue', requireAuth, (req, res) => {
+    req.url = req.url.replace('quality-dialogue', 'readiness-dialogue');
+    app.handle(req, res);
 });
 
 // Phase 3.5: Script analysis (free - no credit cost)
@@ -692,8 +703,8 @@ app.post('/api/shots/:shotId/generate-prompt',
             const characters = db.prepare('SELECT * FROM characters WHERE project_id = ?').all(scene.project_id);
             const objects = db.prepare('SELECT * FROM objects WHERE project_id = ?').all(scene.project_id);
 
-            // Check quality (basic fast check for tier determination)
-            const quality = calculateCompleteness(project, scene, shot);
+            // Check prompt readiness (basic fast check for tier determination)
+            const readiness = calculateCompleteness(project, scene, shot);
 
             // Load KB
             const kbContent = loadKBForModel(modelName);
@@ -703,7 +714,7 @@ app.post('/api/shots/:shotId/generate-prompt',
                 project, scene, shot,
                 characters, objects,
                 modelName, kbContent,
-                qualityTier: quality.tier
+                qualityTier: readiness.tier
             });
 
             // Save variant
@@ -720,8 +731,11 @@ app.post('/api/shots/:shotId/generate-prompt',
 
             res.json({
                 ...variant,
-                quality_tier: quality.tier,
-                quality_percentage: quality.percentage,
+                readiness_tier: readiness.tier,
+                readiness_percentage: readiness.percentage,
+                // Backward compat
+                quality_tier: readiness.tier,
+                quality_percentage: readiness.percentage,
                 assumptions: result.assumptions,
                 credits_remaining: remainingCredits
             });
@@ -802,6 +816,186 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
     }
     const relativePath = `/uploads/images/${req.file.filename}`;
     res.json({ url: relativePath });
+});
+
+// ============================================================
+// HOLISTIC IMAGE AUDIT — The real quality analysis system
+// Analyzes actual images across 6 cinematic dimensions
+// ============================================================
+
+// Upload image to an existing variant and optionally run audit
+app.post('/api/variants/:variantId/upload-image', requireAuth, upload.single('image'), async (req, res) => {
+    try {
+        const { variantId } = req.params;
+        const variant = db.prepare('SELECT * FROM image_variants WHERE id = ?').get(variantId);
+        if (!variant) return res.status(404).json({ error: 'Variant not found' });
+
+        if (!req.file) return res.status(400).json({ error: 'No image file provided' });
+
+        const relativePath = `/uploads/images/${req.file.filename}`;
+        db.prepare('UPDATE image_variants SET image_url = ? WHERE id = ?').run(relativePath, variantId);
+
+        res.json({ image_url: relativePath, variant_id: variantId });
+    } catch (error) {
+        console.error('Variant image upload error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Run holistic image audit on a variant's uploaded image
+app.post('/api/variants/:variantId/audit', requireAuth, checkCredits, async (req, res) => {
+    try {
+        const { variantId } = req.params;
+        const variant = db.prepare('SELECT * FROM image_variants WHERE id = ?').get(variantId);
+        if (!variant) return res.status(404).json({ error: 'Variant not found' });
+        if (!variant.image_url) return res.status(400).json({ error: 'No image uploaded for this variant. Upload an image first.' });
+
+        // Resolve image path
+        const imagePath = variant.image_url.startsWith('/')
+            ? path.join(__dirname, '..', variant.image_url)
+            : variant.image_url;
+
+        if (!fs.existsSync(imagePath)) {
+            return res.status(404).json({ error: 'Image file not found on disk' });
+        }
+
+        const imageBuffer = fs.readFileSync(imagePath);
+
+        // Detect MIME type
+        let mimeType = 'image/jpeg';
+        const ext = path.extname(imagePath).toLowerCase();
+        if (ext) {
+            const mimeMap = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp' };
+            mimeType = mimeMap[ext] || 'image/jpeg';
+        } else {
+            if (imageBuffer[0] === 0x89 && imageBuffer[1] === 0x50) mimeType = 'image/png';
+            else if (imageBuffer[0] === 0x47 && imageBuffer[1] === 0x49) mimeType = 'image/gif';
+            else if (imageBuffer[0] === 0x52 && imageBuffer[1] === 0x49) mimeType = 'image/webp';
+        }
+
+        // Load context
+        const shot = db.prepare('SELECT * FROM shots WHERE id = ?').get(variant.shot_id);
+        const scene = shot ? db.prepare('SELECT * FROM scenes WHERE id = ?').get(shot.scene_id) : null;
+        const project = scene ? db.prepare('SELECT * FROM projects WHERE id = ?').get(scene.project_id) : null;
+        const characters = project ? db.prepare('SELECT * FROM characters WHERE project_id = ?').all(project.id) : [];
+        const objects = project ? db.prepare('SELECT * FROM objects WHERE project_id = ?').all(project.id) : [];
+
+        // Load KB
+        let kbContent = '';
+        try {
+            const qualityKB = readKBFile('03_Pack_Quality_Control.md');
+            const coreKB = readKBFile('01_Core_Realism_Principles.md');
+            kbContent = [qualityKB, coreKB].filter(Boolean).join('\n\n');
+        } catch (err) {
+            console.warn('[audit] Could not load KB:', err.message);
+        }
+
+        // Run the audit
+        const auditResult = await holisticImageAudit({
+            imageBuffer,
+            mimeType,
+            project,
+            scene,
+            shot,
+            characters,
+            objects,
+            kbContent,
+        });
+
+        // Persist audit results
+        db.prepare(`
+            UPDATE image_variants
+            SET audit_score = ?, audit_recommendation = ?, audit_data = ?
+            WHERE id = ?
+        `).run(
+            auditResult.overall_score,
+            auditResult.recommendation,
+            JSON.stringify(auditResult),
+            variantId
+        );
+
+        deductCredit(db, req.session.userId, 'image_audit', variant.shot_id);
+        logAIFeatureUsage(db, req.session.userId, 'holistic_image_audit', variant.shot_id);
+
+        res.json(auditResult);
+    } catch (error) {
+        console.error('Holistic image audit error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get stored audit results for a variant
+app.get('/api/variants/:variantId/audit', requireAuth, (req, res) => {
+    try {
+        const { variantId } = req.params;
+        const variant = db.prepare('SELECT audit_score, audit_recommendation, audit_data FROM image_variants WHERE id = ?').get(variantId);
+        if (!variant) return res.status(404).json({ error: 'Variant not found' });
+
+        if (!variant.audit_data) {
+            return res.json({ audited: false });
+        }
+
+        const auditResult = JSON.parse(variant.audit_data);
+        res.json({ audited: true, ...auditResult });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Audit a standalone image (not tied to a variant) — for character/object reference images
+app.post('/api/audit-image', requireAuth, checkCredits, upload.single('image'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: 'No image file provided' });
+
+        const { projectId, context_type } = req.body; // context_type: 'character' | 'object' | 'general'
+
+        const imagePath = req.file.path;
+        const imageBuffer = fs.readFileSync(imagePath);
+
+        // Detect MIME type
+        let mimeType = 'image/jpeg';
+        if (imageBuffer[0] === 0x89 && imageBuffer[1] === 0x50) mimeType = 'image/png';
+        else if (imageBuffer[0] === 0x47 && imageBuffer[1] === 0x49) mimeType = 'image/gif';
+        else if (imageBuffer[0] === 0x52 && imageBuffer[1] === 0x49) mimeType = 'image/webp';
+
+        // Load project context if provided
+        let project = null, characters = [], objects = [];
+        if (projectId) {
+            project = db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId);
+            if (project) {
+                characters = db.prepare('SELECT * FROM characters WHERE project_id = ?').all(projectId);
+                objects = db.prepare('SELECT * FROM objects WHERE project_id = ?').all(projectId);
+            }
+        }
+
+        let kbContent = '';
+        try {
+            const qualityKB = readKBFile('03_Pack_Quality_Control.md');
+            const coreKB = readKBFile('01_Core_Realism_Principles.md');
+            kbContent = [qualityKB, coreKB].filter(Boolean).join('\n\n');
+        } catch (err) {
+            console.warn('[audit-image] Could not load KB:', err.message);
+        }
+
+        const auditResult = await holisticImageAudit({
+            imageBuffer,
+            mimeType,
+            project,
+            scene: null,
+            shot: null,
+            characters,
+            objects,
+            kbContent,
+        });
+
+        deductCredit(db, req.session.userId, 'image_audit');
+        logAIFeatureUsage(db, req.session.userId, 'holistic_image_audit_standalone');
+
+        res.json(auditResult);
+    } catch (error) {
+        console.error('Standalone image audit error:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // Projects
@@ -1070,30 +1264,34 @@ app.get('/api/scenes/:id/shots', (req, res) => {
         const scene = db.prepare('SELECT * FROM scenes WHERE id = ?').get(id);
         const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(scene.project_id);
 
-        // Calculate quality for each shot
-        const shotsWithQuality = shots.map(shot => {
+        // Calculate prompt readiness for each shot
+        const shotsWithReadiness = shots.map(shot => {
             try {
-                const quality = calculateCompleteness(project, scene, shot);
+                const readiness = calculateCompleteness(project, scene, shot);
                 return {
                     ...shot,
-                    quality_tier: quality.tier,
-                    quality_percentage: quality.percentage
+                    readiness_tier: readiness.tier,
+                    readiness_percentage: readiness.percentage,
+                    // Backward compat
+                    quality_tier: readiness.tier,
+                    quality_percentage: readiness.percentage,
                 };
             } catch (err) {
-                console.error(`[Quality] Error calculating for shot ${shot.id}:`, err.message);
-                // Fallback values if calculation fails
+                console.error(`[Readiness] Error calculating for shot ${shot.id}:`, err.message);
                 return {
                     ...shot,
-                    quality_tier: 'Draft',
-                    quality_percentage: 0
+                    readiness_tier: 'draft',
+                    readiness_percentage: 0,
+                    quality_tier: 'draft',
+                    quality_percentage: 0,
                 };
             }
         });
 
         const duration = Date.now() - startTime;
-        console.log(`[Quality] Calculated ${shots.length} shot scores in ${duration}ms`);
+        console.log(`[Readiness] Calculated ${shots.length} shot scores in ${duration}ms`);
 
-        res.json(shotsWithQuality);
+        res.json(shotsWithReadiness);
     } catch (error) {
         console.error('[Shots Fetch] Error:', error);
         res.status(500).json({ error: error.message });

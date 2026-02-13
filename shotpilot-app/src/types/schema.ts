@@ -71,6 +71,9 @@ export interface Shot {
     status?: 'planning' | 'in-progress' | 'complete';
     order_index?: number;
     created_at: string;
+    readiness_tier: string;
+    readiness_percentage: number;
+    // Backward compat
     quality_tier: string;
     quality_percentage: number;
 }
@@ -88,10 +91,33 @@ export interface ImageVariant {
     status: 'pending' | 'draft' | 'generated' | 'completed' | 'failed';
     analysis_notes?: string;
     created_at: string;
+    readiness_tier?: string;
+    readiness_percentage?: number;
+    // Backward compat
     quality_tier?: string;
     quality_percentage?: number;
     assumptions?: string;
     credits_remaining?: number;
+    // Holistic Image Audit fields
+    audit_score?: number;
+    audit_recommendation?: 'LOCK IT IN' | 'REFINE' | 'REGENERATE';
+    audit_data?: string; // JSON string of 6-dimension scores
+}
+
+export interface ImageAuditResult {
+    overall_score: number;
+    recommendation: 'LOCK IT IN' | 'REFINE' | 'REGENERATE';
+    dimensions: {
+        physics: { score: number; notes: string };
+        style_consistency: { score: number; notes: string };
+        lighting_atmosphere: { score: number; notes: string };
+        clarity: { score: number; notes: string };
+        composition: { score: number; notes: string };
+        character_identity: { score: number; notes: string };
+    };
+    issues: string[];
+    prompt_adjustments: string[];
+    summary: string;
 }
 
 export interface UserCredits {

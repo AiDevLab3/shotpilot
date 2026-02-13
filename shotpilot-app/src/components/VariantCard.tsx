@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
-import { QualityBadge } from './QualityBadge';
-import { Copy, Check, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { ReadinessBadge } from './ReadinessBadge';
+import { ImageAuditReport } from './ImageAuditReport';
+import { uploadVariantImage, auditVariantImage, getVariantAudit } from '../services/api';
+import { Copy, Check, Trash2, ChevronDown, ChevronUp, Upload, Shield, Loader2 } from 'lucide-react';
+import type { ImageAuditResult } from '../types/schema';
 
 interface Variant {
     id: number;
@@ -10,6 +13,10 @@ interface Variant {
     generated_prompt?: string;
     quality_tier?: string;
     quality_percentage?: number;
+    image_url?: string;
+    audit_score?: number;
+    audit_recommendation?: string;
+    audit_data?: string;
     created_at: string;
 }
 
@@ -42,7 +49,6 @@ function timeAgo(dateStr: string): string {
         const then = new Date(dateStr).getTime();
         if (isNaN(then)) return '';
         const diffSec = Math.floor((now - then) / 1000);
-
         if (diffSec < 60) return 'just now';
         const diffMin = Math.floor(diffSec / 60);
         if (diffMin < 60) return `${diffMin}m ago`;
@@ -59,12 +65,35 @@ function timeAgo(dateStr: string): string {
 export const VariantCard: React.FC<VariantCardProps> = ({ variant, onDelete }) => {
     const [expanded, setExpanded] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [imageUrl, setImageUrl] = useState(variant.image_url || '');
+    const [uploading, setUploading] = useState(false);
+    const [auditing, setAuditing] = useState(false);
+    const [auditResult, setAuditResult] = useState<ImageAuditResult | null>(null);
+    const [showAudit, setShowAudit] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const modelName = variant.model_name || variant.model_used || 'Unknown';
     const prompt = variant.generated_prompt || variant.prompt_used || '';
     const tier = variant.quality_tier || 'draft';
     const preview = prompt.length > 150 ? prompt.slice(0, 150) + '...' : prompt;
     const needsExpand = prompt.length > 150;
+
+    // Load existing audit data on mount
+    useEffect(() => {
+        if (variant.audit_data) {
+            try {
+                setAuditResult(JSON.parse(variant.audit_data));
+            } catch { /* ignore */ }
+        } else if (variant.image_url) {
+            // Check if there's stored audit data on the server
+            getVariantAudit(variant.id).then(data => {
+                if (data.audited) {
+                    setAuditResult(data as ImageAuditResult);
+                }
+            }).catch(() => { /* no audit yet */ });
+        }
+    }, [variant.id]);
 
     const handleCopy = async () => {
         try {
@@ -87,6 +116,50 @@ export const VariantCard: React.FC<VariantCardProps> = ({ variant, onDelete }) =
         }
     };
 
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 20 * 1024 * 1024) {
+            setError('Image must be under 20MB');
+            return;
+        }
+
+        setUploading(true);
+        setError(null);
+
+        try {
+            const result = await uploadVariantImage(variant.id, file);
+            setImageUrl(result.image_url);
+            // Auto-clear any old audit since image changed
+            setAuditResult(null);
+        } catch (err: any) {
+            setError(err.message || 'Upload failed');
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleRunAudit = async () => {
+        if (!imageUrl) {
+            setError('Upload an image first');
+            return;
+        }
+
+        setAuditing(true);
+        setError(null);
+
+        try {
+            const result = await auditVariantImage(variant.id);
+            setAuditResult(result);
+            setShowAudit(true);
+        } catch (err: any) {
+            setError(err.message || 'Audit failed');
+        } finally {
+            setAuditing(false);
+        }
+    };
+
     return (
         <div style={styles.card}>
             {/* Header row */}
@@ -94,10 +167,54 @@ export const VariantCard: React.FC<VariantCardProps> = ({ variant, onDelete }) =
                 <div style={styles.headerLeft}>
                     <span style={{ fontSize: '14px' }}>{getModelIcon(modelName)}</span>
                     <span style={styles.modelName}>{modelName}</span>
-                    <QualityBadge tier={tier} />
+                    <ReadinessBadge tier={tier} />
+                    {auditResult && (
+                        <span
+                            style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '4px',
+                                padding: '2px 8px', borderRadius: '9999px', fontSize: '11px', fontWeight: 600,
+                                cursor: 'pointer',
+                                color: auditResult.recommendation === 'LOCK IT IN' ? '#10b981'
+                                    : auditResult.recommendation === 'REFINE' ? '#f59e0b' : '#ef4444',
+                                backgroundColor: auditResult.recommendation === 'LOCK IT IN' ? 'rgba(16,185,129,0.12)'
+                                    : auditResult.recommendation === 'REFINE' ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)',
+                                border: `1px solid ${auditResult.recommendation === 'LOCK IT IN' ? 'rgba(16,185,129,0.3)'
+                                    : auditResult.recommendation === 'REFINE' ? 'rgba(245,158,11,0.3)' : 'rgba(239,68,68,0.3)'}`,
+                            }}
+                            onClick={() => setShowAudit(!showAudit)}
+                            title="Click to view full audit report"
+                        >
+                            <Shield size={10} />
+                            {auditResult.overall_score}/100
+                        </span>
+                    )}
                 </div>
                 <span style={styles.time}>{timeAgo(variant.created_at)}</span>
             </div>
+
+            {/* Uploaded Image Preview */}
+            {imageUrl && (
+                <div style={{
+                    marginBottom: '8px',
+                    borderRadius: '6px',
+                    overflow: 'hidden',
+                    border: '1px solid #27272a',
+                    position: 'relative',
+                }}>
+                    <img
+                        src={imageUrl}
+                        alt="Generated result"
+                        style={{ width: '100%', height: 'auto', display: 'block' }}
+                    />
+                </div>
+            )}
+
+            {/* Audit Report (expandable) */}
+            {showAudit && auditResult && (
+                <div style={{ marginBottom: '8px' }}>
+                    <ImageAuditReport audit={auditResult} />
+                </div>
+            )}
 
             {/* Prompt text */}
             <div style={styles.promptText}>
@@ -114,8 +231,50 @@ export const VariantCard: React.FC<VariantCardProps> = ({ variant, onDelete }) =
                 </button>
             )}
 
-            {/* Actions */}
+            {/* Error */}
+            {error && (
+                <div style={{
+                    marginTop: '6px', padding: '6px 8px', borderRadius: '4px',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)',
+                    fontSize: '11px', color: '#ef4444',
+                }}>
+                    {error}
+                </div>
+            )}
+
+            {/* Actions — now includes Upload + Audit */}
             <div style={styles.actions}>
+                {/* Upload Image */}
+                <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    style={{ ...styles.actionBtn, color: uploading ? '#6b7280' : '#60a5fa' }}
+                    title="Upload generated image for audit"
+                >
+                    {uploading ? <><Loader2 size={12} className="spin" /> Uploading...</> : <><Upload size={12} /> {imageUrl ? 'Replace' : 'Upload'} Image</>}
+                </button>
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={handleImageUpload}
+                />
+
+                {/* Run Audit */}
+                {imageUrl && (
+                    <button
+                        onClick={handleRunAudit}
+                        disabled={auditing}
+                        style={{ ...styles.actionBtn, color: auditing ? '#6b7280' : '#8b5cf6' }}
+                        title="Run 6-dimension holistic image audit"
+                    >
+                        {auditing ? <><Loader2 size={12} className="spin" /> Auditing...</> : <><Shield size={12} /> Audit</>}
+                    </button>
+                )}
+
+                <div style={{ flex: 1 }} />
+
                 <button onClick={handleCopy} style={{
                     ...styles.actionBtn,
                     color: copied ? '#10b981' : '#9ca3af',
@@ -147,6 +306,7 @@ const styles: Record<string, React.CSSProperties> = {
         display: 'flex',
         alignItems: 'center',
         gap: '8px',
+        flexWrap: 'wrap' as const,
     },
     modelName: {
         fontSize: '13px',
@@ -178,11 +338,12 @@ const styles: Record<string, React.CSSProperties> = {
     },
     actions: {
         display: 'flex',
-        justifyContent: 'flex-end',
+        alignItems: 'center',
         gap: '12px',
         marginTop: '8px',
         paddingTop: '8px',
         borderTop: '1px solid #27272a',
+        flexWrap: 'wrap' as const,
     },
     actionBtn: {
         display: 'inline-flex',

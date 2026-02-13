@@ -1,4 +1,4 @@
-import type { Project, Character, ObjectItem, Scene, Shot, ImageVariant, AestheticSuggestion, CharacterSuggestions, ShotPlan, QualityDialogueResponse, ScriptAnalysis, ObjectSuggestions } from '../types/schema';
+import type { Project, Character, ObjectItem, Scene, Shot, ImageVariant, AestheticSuggestion, CharacterSuggestions, ShotPlan, QualityDialogueResponse, ScriptAnalysis, ObjectSuggestions, ImageAuditResult } from '../types/schema';
 
 // v3: Module-level fingerprint to verify this version loaded in browser
 console.log('[API v3] api.ts loaded — has 401 interceptor + eager login');
@@ -243,11 +243,14 @@ export const generatePrompt = async (shotId: number, modelName: string): Promise
     });
 };
 
-export const checkShotQuality = async (shotId: number): Promise<any> => {
-    return apiCall(`/shots/${shotId}/check-quality`, {
+export const checkShotReadiness = async (shotId: number): Promise<any> => {
+    return apiCall(`/shots/${shotId}/check-readiness`, {
         method: 'POST'
     });
 };
+
+// Backward compat alias
+export const checkShotQuality = checkShotReadiness;
 
 export const getRecommendations = async (shotId: number, missingFields: any[]): Promise<any[]> => {
     return apiCall(`/shots/${shotId}/get-recommendations`, {
@@ -298,14 +301,17 @@ export const getShotPlan = async (sceneId: number): Promise<ShotPlan> => {
     return res;
 };
 
-// Phase 3.4: Quality dialogue
-export const sendQualityDialogue = async (shotId: number, message: string, history: { role: string; content: string }[]): Promise<QualityDialogueResponse> => {
-    const res = await apiCall(`/shots/${shotId}/quality-dialogue`, {
+// Phase 3.4: Prompt readiness dialogue
+export const sendReadinessDialogue = async (shotId: number, message: string, history: { role: string; content: string }[]): Promise<QualityDialogueResponse> => {
+    const res = await apiCall(`/shots/${shotId}/readiness-dialogue`, {
         method: 'POST',
         body: JSON.stringify({ message, history }),
     });
     return res;
 };
+
+// Backward compat alias
+export const sendQualityDialogue = sendReadinessDialogue;
 
 // Phase 3.5: Script analysis
 export const analyzeScriptText = async (projectId: number, scriptText: string): Promise<ScriptAnalysis> => {
@@ -377,6 +383,62 @@ export const compactConversation = async (
         method: 'POST',
         body: JSON.stringify({ messages, scriptContent }),
     });
+};
+
+// ============================================================
+// HOLISTIC IMAGE AUDIT — Real image quality analysis
+// ============================================================
+
+// Upload image to a variant
+export const uploadVariantImage = async (variantId: number, file: File): Promise<{ image_url: string; variant_id: number }> => {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const response = await fetch(`/api/variants/${variantId}/upload-image`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `Upload failed: ${response.status}`);
+    }
+
+    return response.json();
+};
+
+// Run holistic image audit on a variant's uploaded image
+export const auditVariantImage = async (variantId: number): Promise<ImageAuditResult> => {
+    return apiCall(`/variants/${variantId}/audit`, {
+        method: 'POST',
+    });
+};
+
+// Get stored audit results for a variant
+export const getVariantAudit = async (variantId: number): Promise<ImageAuditResult & { audited: boolean }> => {
+    return apiCall(`/variants/${variantId}/audit`);
+};
+
+// Audit a standalone image (for character/object references)
+export const auditStandaloneImage = async (file: File, projectId?: number, contextType?: string): Promise<ImageAuditResult> => {
+    const formData = new FormData();
+    formData.append('image', file);
+    if (projectId) formData.append('projectId', projectId.toString());
+    if (contextType) formData.append('context_type', contextType);
+
+    const response = await fetch(`/api/audit-image`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `Audit failed: ${response.status}`);
+    }
+
+    return response.json();
 };
 
 // Deprecated or Unused in Server Mode

@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import type { AIModel, Shot, Scene, Project } from '../types/schema';
 import { X, Sparkles, Loader2, Copy, Check, Clapperboard, Camera, Info } from 'lucide-react';
-import { getAvailableModels, generatePrompt, checkShotQuality } from '../services/api';
+import { getAvailableModels, generatePrompt, checkShotReadiness } from '../services/api';
 // Assuming api export issues, adapting to imports. 
 // If api is a default export object in service, verify. 
 // Based on previous file, it was `import { getAvailableModels... } from '../services/api'`.
 
-interface QualityScore {
+interface ReadinessScore {
     score: number;
     tier: 'draft' | 'production';
 }
@@ -50,8 +50,8 @@ export function GeneratePromptModal({
     const [error, setError] = useState<string | null>(null);
     const [result, setResult] = useState<GenerationResult | null>(null);
     const [copied, setCopied] = useState(false);
-    const [qualityScore, setQualityScore] = useState<QualityScore | null>(null);
-    const [showQualityInfo, setShowQualityInfo] = useState(false);
+    const [readinessScore, setReadinessScore] = useState<ReadinessScore | null>(null);
+    const [showReadinessInfo, setShowReadinessInfo] = useState(false);
 
     // Dynamic UI
     const isVideoMode = modelType === 'video';
@@ -101,13 +101,13 @@ export function GeneratePromptModal({
                 setModel('');
             }
 
-            // Quality Score
+            // Prompt Readiness Score
             if (shot?.id) {
-                const qs = await checkShotQuality(shot.id).catch(e => {
-                    console.warn('Failed to load quality score', e);
+                const rs = await checkShotReadiness(shot.id).catch(e => {
+                    console.warn('Failed to load readiness score', e);
                     return null;
                 });
-                if (qs) setQualityScore(qs);
+                if (rs) setReadinessScore(rs);
             }
 
         } catch (err) {
@@ -183,18 +183,18 @@ export function GeneratePromptModal({
                                 <div style={styles.contextRow}>
                                     <span style={{ color: '#6b7280' }}>Scene:</span> <span style={{ color: 'white' }}>{scene?.name || 'Unknown'}</span>
                                 </div>
-                                {qualityScore && (
+                                {readinessScore && (
                                     <div style={{ marginTop: '8px' }}>
                                         <div style={{ ...styles.contextRow, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <span style={{ color: '#6b7280' }}>Quality Score:</span>
+                                            <span style={{ color: '#6b7280' }}>Prompt Readiness:</span>
                                             <span style={{
-                                                color: qualityScore.tier === 'production' ? '#10b981' : '#fbbf24',
+                                                color: readinessScore.tier === 'production' ? '#10b981' : '#fbbf24',
                                                 fontWeight: 700
                                             }}>
-                                                {qualityScore.score} / 100 ({qualityScore.tier.toUpperCase()})
+                                                {readinessScore.score} / 100 ({readinessScore.tier === 'production' ? 'READY' : 'DRAFT'})
                                             </span>
                                             <button
-                                                onClick={() => setShowQualityInfo(!showQualityInfo)}
+                                                onClick={() => setShowReadinessInfo(!showReadinessInfo)}
                                                 style={{
                                                     background: 'none',
                                                     border: 'none',
@@ -202,14 +202,14 @@ export function GeneratePromptModal({
                                                     padding: '2px',
                                                     display: 'flex',
                                                     alignItems: 'center',
-                                                    color: showQualityInfo ? '#60a5fa' : '#6b7280',
+                                                    color: showReadinessInfo ? '#60a5fa' : '#6b7280',
                                                 }}
                                                 title="What is this score?"
                                             >
                                                 <Info size={14} />
                                             </button>
                                         </div>
-                                        {showQualityInfo && (
+                                        {showReadinessInfo && (
                                             <div style={{
                                                 marginTop: '8px',
                                                 padding: '10px 12px',
@@ -221,10 +221,10 @@ export function GeneratePromptModal({
                                                 color: '#a1a1aa',
                                             }}>
                                                 <div style={{ color: '#d1d5db', fontWeight: 600, marginBottom: '6px' }}>
-                                                    How is this calculated?
+                                                    Prompt Readiness Score
                                                 </div>
                                                 <div style={{ marginBottom: '6px' }}>
-                                                    The score measures how completely this shot is defined for prompt generation.
+                                                    Measures how completely this shot is defined for prompt generation. Higher = better prompts.
                                                 </div>
                                                 <div style={{ marginBottom: '4px', color: '#9ca3af', fontWeight: 600 }}>
                                                     Shot Specifics (80%)
@@ -239,7 +239,7 @@ export function GeneratePromptModal({
                                                     Lighting (5), Mood/Tone (5), Style (5), Location (5), Time of Day (5)
                                                 </div>
                                                 <div style={{ color: '#6b7280', fontStyle: 'italic' }}>
-                                                    70+ = Production (ready for generation) &middot; Below 70 = Draft
+                                                    70+ = Ready for generation &middot; Below 70 = Draft (AI fills gaps)
                                                 </div>
                                             </div>
                                         )}
