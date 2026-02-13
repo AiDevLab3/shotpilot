@@ -952,12 +952,20 @@ app.post('/api/variants/:variantId/audit', requireAuth, checkCredits(db), async 
         const characters = project ? db.prepare('SELECT * FROM characters WHERE project_id = ?').all(project.id) : [];
         const objects = project ? db.prepare('SELECT * FROM objects WHERE project_id = ?').all(project.id) : [];
 
-        // Load KB
+        // Load KB: QC pack + core principles + model-specific guide
         let kbContent = '';
         try {
             const qualityKB = readKBFile('03_Pack_Quality_Control.md');
             const coreKB = readKBFile('01_Core_Realism_Principles.md');
-            kbContent = [qualityKB, coreKB].filter(Boolean).join('\n\n');
+            let modelKB = null;
+            if (variant.model_used) {
+                try {
+                    modelKB = loadKBForModel(variant.model_used);
+                } catch (e) {
+                    console.warn(`[audit] Could not load model KB for ${variant.model_used}:`, e.message);
+                }
+            }
+            kbContent = [qualityKB, coreKB, modelKB].filter(Boolean).join('\n\n');
         } catch (err) {
             console.warn('[audit] Could not load KB:', err.message);
         }
