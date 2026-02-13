@@ -20,6 +20,7 @@ Thumbs.db
 
 # SQLite database (user data — never overwrite via git merge)
 shotpilot-app/data/*.db
+shotpilot-app/*.db
 
 # Compressed files (we want the source files, not zips)
 *.zip

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, FileText, Check, Upload, Send, ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
+import { Save, FileText, Check, Upload, Send, ChevronDown, ChevronUp, Plus, Trash2, FolderPlus } from 'lucide-react';
 import { getAllProjects, updateProject, createProject, deleteProject } from '../services/api';
 import { useCreativeDirectorStore } from '../stores/creativeDirectorStore';
 import { useProjectContext } from '../components/ProjectLayout';
@@ -26,7 +26,7 @@ export const CreativeDirectorPage: React.FC = () => {
     const session = store.getSession(projectId);
 
     const [savedNotice, setSavedNotice] = useState(false);
-    const [scriptExpanded, setScriptExpanded] = useState(false);
+    const [scriptExpanded, setScriptExpanded] = useState(true);
     const [projectInfoExpanded, setProjectInfoExpanded] = useState(true);
     const [editingField, setEditingField] = useState<string | null>(null);
     const [editingTitle, setEditingTitle] = useState(false);
@@ -118,22 +118,52 @@ export const CreativeDirectorPage: React.FC = () => {
     };
 
     const compactFields = [
-        { key: 'cinematic_references', label: 'References' },
+        { key: 'cinematic_references', label: 'References', placeholder: 'e.g. Blade Runner 2049, Wes Anderson, Roger Deakins' },
     ];
 
     const mediumFields = [
-        { key: 'purpose', label: 'Purpose' },
-        { key: 'style_aesthetic', label: 'Style & Aesthetic' },
-        { key: 'atmosphere_mood', label: 'Atmosphere & Mood' },
-        { key: 'lighting_directions', label: 'Lighting' },
-        { key: 'cinematography', label: 'Cinematography' },
+        { key: 'purpose', label: 'Purpose', placeholder: 'e.g. Short film, music video, commercial, proof of concept...' },
+        { key: 'style_aesthetic', label: 'Style & Aesthetic', placeholder: 'e.g. Gritty neo-noir, warm golden tones, film grain...' },
+        { key: 'atmosphere_mood', label: 'Atmosphere & Mood', placeholder: 'e.g. Tense and claustrophobic, dreamlike and ethereal...' },
+        { key: 'lighting_directions', label: 'Lighting', placeholder: 'e.g. Natural light, high contrast, neon-lit night scenes...' },
+        { key: 'cinematography', label: 'Cinematography', placeholder: 'e.g. Handheld, slow tracking shots, shallow depth of field...' },
     ];
 
     const largeFields = [
-        { key: 'storyline_narrative', label: 'Storyline / Narrative' },
+        { key: 'storyline_narrative', label: 'Storyline / Narrative', placeholder: 'Describe your story, themes, and narrative arc...' },
     ];
 
-    if (!project) return <div style={{ padding: '32px', color: 'white' }}>No project found.</div>;
+    // Auto-create project if none exists
+    const [creating, setCreating] = useState(false);
+
+    const handleCreateFirstProject = async (title?: string) => {
+        setCreating(true);
+        try {
+            await createProject({ title: title || 'Untitled Project' });
+            const projects = await getAllProjects();
+            if (projects.length > 0) {
+                navigate(`/projects/${projects[0].id}`);
+            }
+        } catch (error) {
+            console.error('Create project error:', error);
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    if (!project) {
+        return (
+            <div style={styles.workArea}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: '20px', padding: '40px' }}>
+                    <div style={{ fontSize: '20px', fontWeight: 700, color: '#e5e7eb' }}>Welcome to ShotPilot</div>
+                    <div style={{ fontSize: '14px', color: '#6b7280', textAlign: 'center', maxWidth: '400px' }}>
+                        Create a project to start collaborating with your AI Creative Director on scripts, visual direction, and shot planning.
+                    </div>
+                    <NewProjectForm onSubmit={handleCreateFirstProject} creating={creating} />
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div style={styles.workArea}>
@@ -251,12 +281,13 @@ export const CreativeDirectorPage: React.FC = () => {
                                     ))}
                                 </select>
                             </div>
-                            {compactFields.map(({ key, label }) => (
+                            {compactFields.map(({ key, label, placeholder }) => (
                                 <FieldCard
                                     key={key}
                                     field={key}
                                     label={label}
                                     value={(project as any)[key] || ''}
+                                    placeholder={placeholder}
                                     editing={editingField === key}
                                     onStartEdit={() => setEditingField(key)}
                                     onEndEdit={() => setEditingField(null)}
@@ -266,12 +297,13 @@ export const CreativeDirectorPage: React.FC = () => {
                             ))}
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                            {mediumFields.map(({ key, label }) => (
+                            {mediumFields.map(({ key, label, placeholder }) => (
                                 <FieldCard
                                     key={key}
                                     field={key}
                                     label={label}
                                     value={(project as any)[key] || ''}
+                                    placeholder={placeholder}
                                     editing={editingField === key}
                                     onStartEdit={() => setEditingField(key)}
                                     onEndEdit={() => setEditingField(null)}
@@ -279,12 +311,13 @@ export const CreativeDirectorPage: React.FC = () => {
                                 />
                             ))}
                         </div>
-                        {largeFields.map(({ key, label }) => (
+                        {largeFields.map(({ key, label, placeholder }) => (
                             <FieldCard
                                 key={key}
                                 field={key}
                                 label={label}
                                 value={(project as any)[key] || ''}
+                                placeholder={placeholder}
                                 editing={editingField === key}
                                 onStartEdit={() => setEditingField(key)}
                                 onEndEdit={() => setEditingField(null)}
@@ -296,8 +329,72 @@ export const CreativeDirectorPage: React.FC = () => {
                 )}
             </div>
 
+            {/* Create New Project */}
+            <div style={{ ...styles.section, marginTop: '8px', paddingTop: '12px', borderTop: '1px solid #27272a' }}>
+                <NewProjectForm onSubmit={async (title) => {
+                    try {
+                        await createProject({ title: title || 'Untitled Project' });
+                        const projects = await getAllProjects();
+                        const newest = projects[0];
+                        if (newest) navigate(`/projects/${newest.id}`);
+                    } catch (error) {
+                        console.error('Create project error:', error);
+                    }
+                }} creating={false} />
+            </div>
+
             {/* Hidden file input */}
             <input ref={fileInputRef} type="file" accept=".txt,.fdx,.fountain,.md" onChange={handleScriptUpload} style={{ display: 'none' }} />
+        </div>
+    );
+};
+
+// New project creation form
+const NewProjectForm: React.FC<{
+    onSubmit: (title: string) => Promise<void>;
+    creating: boolean;
+}> = ({ onSubmit, creating }) => {
+    const [title, setTitle] = useState('');
+
+    return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', maxWidth: '500px' }}>
+            <FolderPlus size={16} color="#8b5cf6" style={{ flexShrink: 0 }} />
+            <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !creating) onSubmit(title);
+                }}
+                placeholder="New project name..."
+                style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    backgroundColor: '#27272a',
+                    border: '1px solid #3f3f46',
+                    borderRadius: '6px',
+                    color: '#e5e7eb',
+                    fontSize: '13px',
+                    outline: 'none',
+                }}
+            />
+            <button
+                onClick={() => onSubmit(title)}
+                disabled={creating}
+                style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#8b5cf6',
+                    border: 'none',
+                    borderRadius: '6px',
+                    color: 'white',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: creating ? 'not-allowed' : 'pointer',
+                    opacity: creating ? 0.6 : 1,
+                    whiteSpace: 'nowrap',
+                }}
+            >
+                {creating ? 'Creating...' : 'Create Project'}
+            </button>
         </div>
     );
 };
@@ -307,13 +404,14 @@ const FieldCard: React.FC<{
     field: string;
     label: string;
     value: string;
+    placeholder?: string;
     editing: boolean;
     onStartEdit: () => void;
     onEndEdit: () => void;
     onChange: (value: string) => void;
     compact?: boolean;
     large?: boolean;
-}> = ({ label, value, editing, onStartEdit, onEndEdit, onChange, compact, large }) => {
+}> = ({ label, value, placeholder, editing, onStartEdit, onEndEdit, onChange, compact, large }) => {
     if (editing) {
         return (
             <div style={styles.infoCard}>
@@ -325,6 +423,7 @@ const FieldCard: React.FC<{
                         onChange={(e) => onChange(e.target.value)}
                         onBlur={onEndEdit}
                         onKeyDown={(e) => e.key === 'Enter' && onEndEdit()}
+                        placeholder={placeholder}
                         style={styles.fieldInput}
                     />
                 ) : (
@@ -333,6 +432,7 @@ const FieldCard: React.FC<{
                         value={value}
                         onChange={(e) => onChange(e.target.value)}
                         onBlur={onEndEdit}
+                        placeholder={placeholder}
                         style={{ ...styles.fieldInput, minHeight: large ? '120px' : '60px', resize: 'vertical' as const }}
                     />
                 )}
@@ -347,11 +447,12 @@ const FieldCard: React.FC<{
                 color: value ? '#e5e7eb' : '#52525b',
                 fontSize: '12px',
                 lineHeight: '1.4',
+                fontStyle: value ? 'normal' : 'italic',
                 maxHeight: large ? '200px' : compact ? '20px' : '80px',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
             }}>
-                {value || 'Click to edit...'}
+                {value || placeholder || 'Click to edit...'}
             </div>
         </div>
     );

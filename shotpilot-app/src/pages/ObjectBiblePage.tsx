@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import type { ObjectItem } from '../types/schema';
-import { getObjects, createObject, updateObject, deleteObject, getAllProjects, fileToBase64 } from '../services/api';
+import { getObjects, createObject, updateObject, deleteObject, fileToBase64 } from '../services/api';
 import { ObjectAIAssistant } from '../components/ObjectAIAssistant';
+import { useProjectContext } from '../components/ProjectLayout';
 
 export const ObjectBiblePage: React.FC = () => {
+    const { projectId } = useProjectContext();
     const [objects, setObjects] = useState<ObjectItem[]>([]);
-    const [projectId, setProjectId] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingObj, setEditingObj] = useState<ObjectItem | null>(null);
@@ -13,18 +14,14 @@ export const ObjectBiblePage: React.FC = () => {
 
     useEffect(() => {
         loadData();
-    }, []);
+    }, [projectId]);
 
     const loadData = async () => {
+        if (!projectId) return;
         setLoading(true);
         try {
-            const projects = await getAllProjects();
-            if (projects.length > 0) {
-                const pid = projects[0].id;
-                setProjectId(pid);
-                const objs = await getObjects(pid);
-                setObjects(objs);
-            }
+            const objs = await getObjects(projectId);
+            setObjects(objs);
         } catch (error) {
             console.error("Failed to load objects", error);
         } finally {

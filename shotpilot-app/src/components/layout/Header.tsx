@@ -20,15 +20,19 @@ export const Header: React.FC = () => {
     }, [projectIdFromUrl]);
 
     const loadProjects = async () => {
-        const projs = await getAllProjects();
-        setProjects(projs);
+        try {
+            const projs = await getAllProjects();
+            setProjects(projs);
 
-        if (projectIdFromUrl) {
-            const current = projs.find(p => p.id === projectIdFromUrl);
-            if (current) setCurrentProject(current);
-        } else if (projs.length > 0 && !currentProject) {
-            // Default to first if none selected and not in URL
-            setCurrentProject(projs[0]);
+            if (projectIdFromUrl) {
+                const current = projs.find(p => p.id === projectIdFromUrl);
+                if (current) setCurrentProject(current);
+            } else if (projs.length > 0 && !currentProject) {
+                // Default to first if none selected and not in URL
+                setCurrentProject(projs[0]);
+            }
+        } catch (err) {
+            console.error('Header: failed to load projects', err);
         }
     };
 
@@ -43,11 +47,8 @@ export const Header: React.FC = () => {
         }
     };
 
-    if (!currentProject && projects.length === 0) {
-        return <div className="p-4 bg-[#151A21] border-b border-[#1E2530] text-white">Loading...</div>;
-    }
-
-    const pid = currentProject?.id || (projects.length > 0 ? projects[0].id : 0);
+    // Use projectIdFromUrl as fallback even before projects load
+    const pid = currentProject?.id || projectIdFromUrl || (projects.length > 0 ? projects[0].id : 0);
 
     const styles = {
         header: {

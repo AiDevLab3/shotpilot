@@ -1,7 +1,7 @@
 # ShotPilot: Project Context & Vision
 
-**Last Updated:** February 11, 2026
-**Version:** Phase 4 Complete (Creative Director + Persistent Sidebar)
+**Last Updated:** February 12, 2026
+**Version:** Phase 4 Complete + Polish (Creative Director + Persistent Sidebar + UX Cleanup)
 **Creator:** Caleb
 **Repository:** cine-ai-knowledge-base
 **Branch:** `claude/add-aesthetic-suggestions-FOYuK`
@@ -101,7 +101,11 @@ The differentiator is **persistent AI collaboration** — the Creative Director 
 ```
 cine-ai-knowledge-base/
 ├── PROJECT_CONTEXT_SUMMARY.md         # This file — project restore point
-├── PHASE_2C_TO_3_HANDOFF.md           # Phase handoff document
+├── AGENTS.md                          # Agent instructions
+├── CONCEPT_PITCH.md                   # Product concept & pitch
+├── MASTER_INDEX.md                    # Master knowledge index
+├── PRODUCTION_WORKFLOW.md             # Production workflow reference
+├── production_ledger.json             # Production tracking ledger
 │
 ├── kb/                                # FULL KNOWLEDGE BASE (250K+ words)
 │   ├── models/                        # 24 comprehensive model guides
@@ -250,7 +254,7 @@ App (BrowserRouter + auto-login)
         │   ├── Conversation compaction (20 msg threshold)
         │   └── Project field updates from AI
         └── Outlet (content area, switches per route):
-            ├── / → CreativeDirectorPage (project info + script editor)
+            ├── / → CreativeDirectorPage (project info + script + welcome screen)
             ├── /characters → CharacterBiblePage
             ├── /objects → ObjectBiblePage
             └── /scenes → ShotBoardPage
@@ -338,6 +342,15 @@ SessionData: {
 - Project CRUD (create, rename, delete)
 - Frame size dropdown with 7 presets
 
+#### Post-Phase 4 Polish (Feb 12)
+- **Welcome Screen:** New project creation form when no project exists
+- **Placeholder Hints:** All project info fields show grey italic guidance text
+- **Quality Score Info Popup:** Expandable panel in GeneratePromptModal explaining scoring breakdown (80% Shot / 20% Context)
+- **Shot Card Cleanup:** Removed quality percentage from shot cards, removed redundant chat icon
+- **ProjectContext Wiring:** ShotBoardPage, CharacterBiblePage, ObjectBiblePage now use `useProjectContext()` instead of `getAllProjects()`
+- **Header Fix:** Removed loading gate — Header always renders using URL-parsed projectId as fallback
+- **Repository Cleanup:** Removed obsolete folders (app_spec/, .agent/, audit_reports/, assets/, README_v8_backup.md, REORGANIZATION_REPORT.md)
+
 ### Test Status
 - **72 Vitest tests passing**
 - 2 Playwright test files with pre-existing import failures
@@ -353,7 +366,7 @@ SessionData: {
 |------|---------|-------|
 | `src/components/ChatSidebar.tsx` | Persistent AI chat sidebar | ~350 |
 | `src/components/ProjectLayout.tsx` | Layout + project context provider | ~120 |
-| `src/pages/CreativeDirectorPage.tsx` | Project info + script (no chat) | ~480 |
+| `src/pages/CreativeDirectorPage.tsx` | Project info + script + welcome screen | ~520 |
 | `src/pages/ShotBoardPage.tsx` | Scene/shot management | ~1050 |
 | `server/services/geminiService.js` | 13 AI functions | ~1200 |
 | `server/index.js` | Express server + all routes | ~700 |
@@ -467,8 +480,9 @@ npx tsc --noEmit   # Type check
 | Feb 5, 2026 | 0.1 | Phase 2B Complete — Backend services + Gemini integrated |
 | Feb 9, 2026 | 0.2 | Phase 2C + Phase 3 Complete — AI collaboration layer |
 | Feb 11, 2026 | 0.3 | Phase 4 Complete — Creative Director + persistent sidebar |
+| Feb 12, 2026 | 0.3.1 | Post-Phase 4 Polish — Welcome screen, UX cleanup, repo cleanup, bug fixes |
 | [Future] | 1.0 | Public Launch — ShotPilot Lite v1.0 live |
 
 ---
 
-**This document serves as the complete project context restore point. If context is lost, this restores you to exactly where we are today: February 11, 2026.**
+**This document serves as the complete project context restore point. If context is lost, this restores you to exactly where we are today: February 12, 2026.**

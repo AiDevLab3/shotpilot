@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import type { Character } from '../types/schema';
-import { getCharacters, createCharacter, updateCharacter, deleteCharacter, getAllProjects, fileToBase64 } from '../services/api';
+import { getCharacters, createCharacter, updateCharacter, deleteCharacter, fileToBase64 } from '../services/api';
 import { CharacterAIAssistant } from '../components/CharacterAIAssistant';
+import { useProjectContext } from '../components/ProjectLayout';
 
 export const CharacterBiblePage: React.FC = () => {
+    const { projectId } = useProjectContext();
     const [characters, setCharacters] = useState<Character[]>([]);
-    const [projectId, setProjectId] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingChar, setEditingChar] = useState<Character | null>(null);
@@ -13,18 +14,14 @@ export const CharacterBiblePage: React.FC = () => {
 
     useEffect(() => {
         loadData();
-    }, []);
+    }, [projectId]);
 
     const loadData = async () => {
+        if (!projectId) return;
         setLoading(true);
         try {
-            const projects = await getAllProjects();
-            if (projects.length > 0) {
-                const pid = projects[0].id;
-                setProjectId(pid);
-                const chars = await getCharacters(pid);
-                setCharacters(chars);
-            }
+            const chars = await getCharacters(projectId);
+            setCharacters(chars);
         } catch (error) {
             console.error("Failed to load characters", error);
         } finally {

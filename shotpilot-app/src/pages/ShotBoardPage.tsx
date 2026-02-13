@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import type { Project, Scene, Shot, ImageVariant } from '../types/schema';
-import { getScenes, getShots, createShot, updateShot, deleteShot, updateScene, createScene, deleteScene, getAllProjects, updateProject, fileToBase64, createImageVariant, getImageVariants, deleteImageVariant, getUserCredits } from '../services/api';
+import { getScenes, getShots, createShot, updateShot, deleteShot, updateScene, createScene, deleteScene, updateProject, fileToBase64, createImageVariant, getImageVariants, deleteImageVariant, getUserCredits } from '../services/api';
+import { useProjectContext } from '../components/ProjectLayout';
 import { Plus, Image as ImageIcon, Check, Video, Edit2, Trash2, ChevronDown, ChevronRight, FileText, Clock, Maximize2, Minimize2, Sparkles, Settings, Film } from 'lucide-react';
 
 import { GeneratePromptModal } from '../components/GeneratePromptModal';
@@ -55,8 +56,7 @@ const DropdownOption = ({
 };
 
 const ShotBoardPage: React.FC = () => {
-    const [projectId, setProjectId] = useState<number | null>(null);
-    const [project, setProject] = useState<Project | null>(null);
+    const { project, projectId, setProject } = useProjectContext();
     const [scenes, setScenes] = useState<Scene[]>([]);
     const [shotsByScene, setShotsByScene] = useState<Record<number, Shot[]>>({});
     const [shotImages, setShotImages] = useState<Record<number, ImageVariant[]>>({});
@@ -115,10 +115,10 @@ const ShotBoardPage: React.FC = () => {
     const [qualityDialogueShotId, setQualityDialogueShotId] = useState<number | null>(null);
     const [qualityDialogueScore, setQualityDialogueScore] = useState(0);
 
-    // Initial Load
+    // Initial Load — re-run when projectId becomes available from context
     useEffect(() => {
         loadData();
-    }, []);
+    }, [projectId]);
 
     // Close dropdown on click outside
     useEffect(() => {
@@ -132,53 +132,47 @@ const ShotBoardPage: React.FC = () => {
     }, []);
 
     const loadData = async () => {
+        if (!projectId) return;
         setLoading(true);
         try {
-            const projects = await getAllProjects();
-            if (projects.length > 0) {
-                const pid = projects[0].id;
-                setProjectId(pid);
-                setProject(projects[0]);
+            const fetchedScenes = await getScenes(projectId);
+            setScenes(fetchedScenes);
 
-                const fetchedScenes = await getScenes(pid);
-                setScenes(fetchedScenes);
+            // Load shots for ALL scenes to populate counts and ready the view
+            const allShotsMap: Record<number, Shot[]> = {};
+            const allImagesMap: Record<number, ImageVariant[]> = {};
 
-                // Load shots for ALL scenes to populate counts and ready the view
-                const allShotsMap: Record<number, Shot[]> = {};
-                const allImagesMap: Record<number, ImageVariant[]> = {};
-
-                await Promise.all(fetchedScenes.map(async (scene) => {
-                    try {
-                        const sShots = await getShots(scene.id);
-                        // Normalize status
-                        const normalizedShots = sShots.map(s => ({ ...s, status: s.status || 'planning' }));
-                        allShotsMap[scene.id] = normalizedShots;
-
-                        for (const shot of sShots) {
-                            const variants = await getImageVariants(shot.id);
-                            allImagesMap[shot.id] = variants;
-                        }
-                    } catch (e) {
-                        console.error(`Error loading shots for scene ${scene.id}`, e);
-                        allShotsMap[scene.id] = [];
-                    }
-                }));
-
-                setShotsByScene(allShotsMap);
-                setShotImages(allImagesMap);
-
-                // Auto-expand first scene
-                if (fetchedScenes.length > 0) {
-                    setExpandedScenes([fetchedScenes[0].id]);
-                }
-
-                // Load Credits
+            await Promise.all(fetchedScenes.map(async (scene) => {
                 try {
-                    const credits = await getUserCredits();
-                    setUserCredits(credits.credits);
+                    const sShots = await getShots(scene.id);
+                    // Normalize status
+                    const normalizedShots = sShots.map(s => ({ ...s, status: s.status || 'planning' }));
+                    allShotsMap[scene.id] = normalizedShots;
+
+                    for (const shot of sShots) {
+                        const variants = await getImageVariants(shot.id);
+                        allImagesMap[shot.id] = variants;
+                    }
                 } catch (e) {
-                    console.error("Failed to load credits", e);
+                    console.error(`Error loading shots for scene ${scene.id}`, e);
+                    allShotsMap[scene.id] = [];
                 }
+            }));
+
+            setShotsByScene(allShotsMap);
+            setShotImages(allImagesMap);
+
+            // Auto-expand first scene
+            if (fetchedScenes.length > 0) {
+                setExpandedScenes([fetchedScenes[0].id]);
+            }
+
+            // Load Credits
+            try {
+                const credits = await getUserCredits();
+                setUserCredits(credits.credits);
+            } catch (e) {
+                console.error("Failed to load credits", e);
             }
         } catch (error) {
             console.error("Failed to load project/scenes", error);
