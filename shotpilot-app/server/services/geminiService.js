@@ -1530,9 +1530,9 @@ function buildReferenceStrategy(modelName, auditResult) {
             label: 'Hero Frame Reference',
         },
         nano_banana: {
-            supports_ref: false,
-            method: null,
-            label: null,
+            supports_ref: true,
+            method: 'Conversational edit with reference images (up to 14)',
+            label: 'Natural Language Edit',
         },
     };
 

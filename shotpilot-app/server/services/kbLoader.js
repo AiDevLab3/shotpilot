@@ -37,11 +37,11 @@ const LITE_MODELS = {
         capabilities: 'Best for: Quick drafts, scene consistency, reliable output'
     },
     'gpt-image': {
-        stub: '02_Model_GPT_Image.md',
-        name: 'GPT Image (DALL-E 3)',
+        stub: 'models/gpt_image_1_5/Prompting_Mastery.md',
+        name: 'GPT Image 1.5',
         type: 'image',
-        description: 'Text interpretation & creative concepts',
-        capabilities: 'Best for: Abstract ideas, text-heavy prompts, conceptual imagery'
+        description: 'Natively multimodal LLM with photorealism, multi-image editing & text rendering',
+        capabilities: 'Best for: Photorealistic stills, image editing/iteration, multi-image compositing, text rendering, character consistency'
     },
     'kling-3.0': {
         stub: 'models/kling-3.0.md',
@@ -50,12 +50,12 @@ const LITE_MODELS = {
         description: 'Multi-shot intelligence & 15s duration',
         capabilities: 'Best for: Multi-character dialogue, complete narrative arcs, character-driven stories with Elements 3.0'
     },
-    'nano-banana-pro': { // Updated key to match
-        stub: '02_Model_Nano_Banana_Pro.md',
+    'nano-banana-pro': {
+        stub: 'models/nano_banana_pro/Prompting_Mastery.md',
         name: 'Nano Banana Pro',
         type: 'image',
-        description: 'Natural language image editing & generation',
-        capabilities: 'Best for: Image iteration, natural language edits, style refinement'
+        description: 'Thinking model with conversational editing, 4K output & reference image support',
+        capabilities: 'Best for: Natural language editing, 4K asset production, text rendering (100+ languages), character consistency (up to 14 reference images), physics-aware composition'
     }
 };
 
