@@ -66,10 +66,9 @@ export default function createAIRoutes({
         }
     });
 
-    // Backward compat alias
+    // Backward compat alias — redirect preserving POST method
     router.post('/api/shots/:shotId/check-quality', requireAuth, (req, res) => {
-        req.url = req.url.replace('check-quality', 'check-readiness');
-        router.handle(req, res);
+        res.redirect(307, req.originalUrl.replace('check-quality', 'check-readiness'));
     });
 
     // Get recommendations (free)
@@ -244,10 +243,9 @@ export default function createAIRoutes({
         }
     });
 
-    // Backward compat alias
+    // Backward compat alias — redirect preserving POST method
     router.post('/api/shots/:shotId/quality-dialogue', requireAuth, (req, res) => {
-        req.url = req.url.replace('quality-dialogue', 'readiness-dialogue');
-        router.handle(req, res);
+        res.redirect(307, req.originalUrl.replace('quality-dialogue', 'readiness-dialogue'));
     });
 
     // Script analysis (free)
