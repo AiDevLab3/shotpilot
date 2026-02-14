@@ -498,7 +498,7 @@ app.post('/api/projects/:projectId/refine-content', requireAuth, async (req, res
 app.post('/api/projects/:projectId/creative-director', requireAuth, async (req, res) => {
     try {
         const { projectId } = req.params;
-        const { message, history, scriptContent, mode, imageUrl, targetModel } = req.body;
+        const { message, history, scriptContent, mode, imageUrls, imageUrl, targetModel } = req.body;
 
         if (!message) return res.status(400).json({ error: 'message required' });
 
@@ -542,7 +542,8 @@ app.post('/api/projects/:projectId/creative-director', requireAuth, async (req, 
 
         const result = await creativeDirectorCollaborate({
             project, message, history, scriptContent, mode, kbContent,
-            characters, objects, scenes, imageUrl,
+            characters, objects, scenes,
+            imageUrls: Array.isArray(imageUrls) ? imageUrls : (imageUrl ? [imageUrl] : []),
             targetModel, modelKBContent,
         });
 

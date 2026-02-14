@@ -958,7 +958,7 @@ OUTPUT VALID JSON ONLY:
  * Returns { response, projectUpdates, scriptUpdates, kbFilesUsed }.
  */
 async function creativeDirectorCollaborate(context) {
-    const { project, message, history, scriptContent, mode, kbContent, characters, objects, scenes, imageUrl, targetModel, modelKBContent } = context;
+    const { project, message, history, scriptContent, mode, kbContent, characters, objects, scenes, imageUrls, targetModel, modelKBContent } = context;
     const projectBlock = buildContextBlock('PROJECT', project);
 
     // Build context blocks for characters, objects, scenes
@@ -1059,40 +1059,44 @@ OUTPUT VALID JSON ONLY:
   "sceneCreations": null or [{ "name": "Scene name", "description": "Scene description", "location_setting": "Where", "time_of_day": "Day/Night/Dawn/Dusk", "mood_tone": "Emotional tone", "suggestedShots": [{ "shot_type": "Wide Shot", "camera_angle": "Eye Level", "description": "What this shot captures", "purpose": "Why needed" }] }]
 }`;
 
-    // Build parts array — include image if provided
+    // Build parts array — include images if provided
     const parts = [];
-    if (imageUrl) {
+    const resolvedImages = Array.isArray(imageUrls) ? imageUrls : [];
+    let loadedImageCount = 0;
+
+    for (const url of resolvedImages) {
         try {
-            // imageUrl is a relative path like /uploads/images/filename
-            // Use process.cwd() for path resolution (same pattern as buildImageParts)
-            const imagePath = imageUrl.startsWith('/')
-                ? path.join(process.cwd(), imageUrl)
-                : imageUrl;
+            const imagePath = url.startsWith('/')
+                ? path.join(process.cwd(), url)
+                : url;
 
             if (fs.existsSync(imagePath)) {
                 const imageData = fs.readFileSync(imagePath);
-                // Multer dest mode may not add extensions — detect mime from file header bytes
                 let mimeType = 'image/jpeg';
                 const ext = path.extname(imagePath).toLowerCase();
                 if (ext) {
                     const mimeMap = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp' };
                     mimeType = mimeMap[ext] || 'image/jpeg';
                 } else {
-                    // Detect from magic bytes
                     if (imageData[0] === 0x89 && imageData[1] === 0x50) mimeType = 'image/png';
                     else if (imageData[0] === 0x47 && imageData[1] === 0x49) mimeType = 'image/gif';
                     else if (imageData[0] === 0x52 && imageData[1] === 0x49) mimeType = 'image/webp';
                 }
                 parts.push({ inlineData: { mimeType, data: imageData.toString('base64') } });
-                parts.push({ text: '↑ User shared this reference image.\n\n' + userPrompt });
+                loadedImageCount++;
             } else {
                 console.warn('[gemini] Creative director: image file not found:', imagePath);
-                parts.push({ text: userPrompt });
             }
         } catch (err) {
             console.warn('[gemini] Creative director: could not load image:', err.message);
-            parts.push({ text: userPrompt });
         }
+    }
+
+    if (loadedImageCount > 0) {
+        const imageLabel = loadedImageCount === 1
+            ? '↑ User shared this reference image.'
+            : `↑ User shared ${loadedImageCount} reference images.`;
+        parts.push({ text: imageLabel + '\n\n' + userPrompt });
     } else {
         parts.push({ text: userPrompt });
     }

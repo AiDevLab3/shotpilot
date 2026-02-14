@@ -33,7 +33,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
     const [inputMessage, setInputMessage] = useState('');
     const [isThinking, setIsThinking] = useState(false);
     const [availableModels, setAvailableModels] = useState<any[]>([]);
-    const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
+    const [pendingImages, setPendingImages] = useState<string[]>([]);
     const [isCompacting, setIsCompacting] = useState(false);
 
     const chatEndRef = useRef<HTMLDivElement>(null);
@@ -70,10 +70,15 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
     const handleSendMessage = async (message: string, imageUrl?: string) => {
         if (!message.trim() || isThinking || !project) return;
 
-        const attachedImage = imageUrl || pendingImageUrl || undefined;
-        if (pendingImageUrl) setPendingImageUrl(null);
+        const attachedImages = imageUrl ? [imageUrl] : (pendingImages.length > 0 ? [...pendingImages] : undefined);
+        if (pendingImages.length > 0) setPendingImages([]);
 
-        const userMsg: Message = { role: 'user', content: message, imageUrl: attachedImage };
+        const userMsg: Message = {
+            role: 'user',
+            content: message,
+            imageUrl: attachedImages?.[0] || undefined,
+            imageUrls: attachedImages && attachedImages.length > 0 ? attachedImages : undefined,
+        };
         const newMessages = [...session.messages, userMsg];
         store.setMessages(projectId, newMessages);
         setInputMessage('');
@@ -99,7 +104,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 history,
                 session.scriptContent,
                 currentMode,
-                attachedImage,
+                attachedImages,
                 session.targetModel || undefined,
             );
 
@@ -225,33 +230,53 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
     };
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
 
-        if (!file.type.startsWith('image/')) {
-            alert('Please upload an image file.');
+        const validFiles: File[] = [];
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            if (!file.type.startsWith('image/')) continue;
+            if (file.size > 25 * 1024 * 1024) {
+                alert(`"${file.name}" is too large. Maximum 25MB per image.`);
+                continue;
+            }
+            validFiles.push(file);
+        }
+
+        if (validFiles.length === 0) {
+            alert('No valid image files selected.');
+            e.target.value = '';
             return;
         }
 
-        if (file.size > 25 * 1024 * 1024) {
-            alert('Image too large. Maximum 25MB.');
-            return;
+        const maxTotal = 10;
+        const remaining = maxTotal - pendingImages.length;
+        if (validFiles.length > remaining) {
+            alert(`Maximum ${maxTotal} images per message. ${remaining} more allowed.`);
+            validFiles.splice(remaining);
         }
 
-        try {
-            const formData = new FormData();
-            formData.append('image', file);
-            const response = await fetch('/api/upload', {
-                method: 'POST',
-                credentials: 'include',
-                body: formData,
-            });
-            if (!response.ok) throw new Error('Upload failed');
-            const result = await response.json();
-            setPendingImageUrl(result.url);
-        } catch (error) {
-            console.error('Image upload error:', error);
-            alert('Failed to upload image.');
+        const uploadedUrls: string[] = [];
+        for (const file of validFiles) {
+            try {
+                const formData = new FormData();
+                formData.append('image', file);
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData,
+                });
+                if (!response.ok) throw new Error('Upload failed');
+                const result = await response.json();
+                uploadedUrls.push(result.url);
+            } catch (error) {
+                console.error(`Image upload error for ${file.name}:`, error);
+            }
+        }
+
+        if (uploadedUrls.length > 0) {
+            setPendingImages(prev => [...prev, ...uploadedUrls]);
         }
         e.target.value = '';
     };
@@ -371,12 +396,22 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                         }}>
                             {msg.role === 'user' ? 'YOU' : 'DIRECTOR'}
                         </div>
-                        {msg.imageUrl && (
-                            <img
-                                src={msg.imageUrl}
-                                alt="Shared reference"
-                                style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '6px', marginBottom: '8px', objectFit: 'cover' }}
-                            />
+                        {(msg.imageUrls || (msg.imageUrl ? [msg.imageUrl] : [])).length > 0 && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
+                                {(msg.imageUrls || (msg.imageUrl ? [msg.imageUrl] : [])).map((url, imgIdx) => (
+                                    <img
+                                        key={imgIdx}
+                                        src={url}
+                                        alt={`Reference ${imgIdx + 1}`}
+                                        style={{
+                                            maxWidth: (msg.imageUrls?.length || 1) > 1 ? 'calc(50% - 2px)' : '100%',
+                                            maxHeight: '200px',
+                                            borderRadius: '6px',
+                                            objectFit: 'cover',
+                                        }}
+                                    />
+                                ))}
+                            </div>
                         )}
                         <div style={{
                             ...styles.messageBubble,
@@ -427,17 +462,28 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
             </div>
 
             {/* Pending image preview */}
-            {pendingImageUrl && (
+            {pendingImages.length > 0 && (
                 <div style={styles.pendingImageBar}>
-                    <img src={pendingImageUrl} alt="Attached" style={{ height: '48px', borderRadius: '4px', objectFit: 'cover' }} />
-                    <span style={{ fontSize: '11px', color: '#a78bfa' }}>Image attached</span>
-                    <button
-                        onClick={() => setPendingImageUrl(null)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'flex' }}
-                        title="Remove image"
-                    >
-                        <X size={14} color="#6b7280" />
-                    </button>
+                    {pendingImages.map((url, idx) => (
+                        <div key={idx} style={{ position: 'relative', display: 'inline-block' }}>
+                            <img src={url} alt={`Attached ${idx + 1}`} style={{ height: '48px', borderRadius: '4px', objectFit: 'cover' }} />
+                            <button
+                                onClick={() => setPendingImages(prev => prev.filter((_, j) => j !== idx))}
+                                style={{
+                                    position: 'absolute', top: '-4px', right: '-4px',
+                                    background: '#27272a', border: '1px solid #3f3f46', borderRadius: '50%',
+                                    cursor: 'pointer', padding: '1px', display: 'flex', width: '16px', height: '16px',
+                                    alignItems: 'center', justifyContent: 'center',
+                                }}
+                                title="Remove image"
+                            >
+                                <X size={10} color="#a1a1aa" />
+                            </button>
+                        </div>
+                    ))}
+                    <span style={{ fontSize: '11px', color: '#a78bfa', alignSelf: 'center' }}>
+                        {pendingImages.length} image{pendingImages.length !== 1 ? 's' : ''} attached
+                    </span>
                 </div>
             )}
 
@@ -448,11 +494,11 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                     style={styles.iconBtn}
                     title="Share reference image"
                 >
-                    <Image size={16} color={pendingImageUrl ? '#8b5cf6' : '#6b7280'} />
+                    <Image size={16} color={pendingImages.length > 0 ? '#8b5cf6' : '#6b7280'} />
                 </button>
                 <input
                     type="text"
-                    placeholder={pendingImageUrl ? 'Type a message about this image...' : 'Talk to your Creative Director...'}
+                    placeholder={pendingImages.length > 0 ? `Type a message about ${pendingImages.length > 1 ? 'these images' : 'this image'}...` : 'Talk to your Creative Director...'}
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSendMessage(inputMessage)}
@@ -474,7 +520,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
             {/* Hidden file inputs */}
             <input ref={fileInputRef} type="file" accept=".txt,.fdx,.fountain,.md" onChange={handleScriptUpload} style={{ display: 'none' }} />
-            <input ref={imageInputRef} type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
+            <input ref={imageInputRef} type="file" accept="image/*" multiple onChange={handleImageUpload} style={{ display: 'none' }} />
         </div>
     );
 };
@@ -576,6 +622,8 @@ const styles: Record<string, React.CSSProperties> = {
         borderTop: '1px solid #27272a',
         backgroundColor: 'rgba(139, 92, 246, 0.08)',
         flexShrink: 0,
+        flexWrap: 'wrap' as const,
+        overflowX: 'auto',
     },
     inputArea: {
         display: 'flex',
