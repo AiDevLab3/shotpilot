@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, AlertTriangle, CheckCircle, XCircle, ChevronDown, ChevronUp, Wrench, Lightbulb } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle, XCircle, ChevronDown, ChevronUp, Wrench, Lightbulb, Eye } from 'lucide-react';
 import type { ImageAuditResult } from '../types/schema';
 
 interface ImageAuditReportProps {
@@ -184,6 +184,56 @@ export const ImageAuditReport: React.FC<ImageAuditReportProps> = ({ audit, compa
                                     </li>
                                 ))}
                             </ul>
+                        </div>
+                    )}
+
+                    {/* Realism Diagnosis */}
+                    {audit.realism_diagnosis && audit.realism_diagnosis.length > 0 && (
+                        <div style={{ marginBottom: '10px' }}>
+                            <div style={{
+                                display: 'flex', alignItems: 'center', gap: '6px',
+                                fontSize: '11px', fontWeight: 700, color: '#f97316',
+                                textTransform: 'uppercase', letterSpacing: '0.03em',
+                                marginBottom: '6px',
+                            }}>
+                                <Eye size={12} /> Realism Diagnosis
+                            </div>
+                            {audit.realism_diagnosis.map((diag, i) => (
+                                <div key={i} style={{
+                                    padding: '8px 10px',
+                                    marginBottom: '4px',
+                                    backgroundColor: diag.severity === 'severe' ? 'rgba(239, 68, 68, 0.08)' : 'rgba(245, 158, 11, 0.08)',
+                                    border: `1px solid ${diag.severity === 'severe' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(245, 158, 11, 0.25)'}`,
+                                    borderRadius: '6px',
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                        <span style={{
+                                            fontSize: '11px',
+                                            fontWeight: 700,
+                                            color: diag.severity === 'severe' ? '#ef4444' : '#f59e0b',
+                                        }}>
+                                            {diag.pattern}
+                                        </span>
+                                        <span style={{
+                                            fontSize: '9px',
+                                            fontWeight: 600,
+                                            textTransform: 'uppercase',
+                                            padding: '1px 5px',
+                                            borderRadius: '3px',
+                                            backgroundColor: diag.severity === 'severe' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                                            color: diag.severity === 'severe' ? '#ef4444' : '#f59e0b',
+                                        }}>
+                                            {diag.severity}
+                                        </span>
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#a1a1aa', lineHeight: '1.5', marginBottom: '4px' }}>
+                                        {diag.details}
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#10b981', lineHeight: '1.5' }}>
+                                        Fix: {diag.fix}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     )}
 

@@ -1272,7 +1272,19 @@ OVERALL SCORE = weighted sum of dimensions (not a simple average):
 RECOMMENDATION THRESHOLDS:
 - LOCK IT IN: 95-100 (exceptional, ready for production)
 - REFINE: 70-94 (good foundation, targeted improvements needed)
-- REGENERATE: 0-69 (fundamental issues, needs new generation with adjusted prompt)`;
+- REGENERATE: 0-69 (fundamental issues, needs new generation with adjusted prompt)
+
+REALISM DIAGNOSIS — Check for these 4 common AI image failure patterns:
+
+1. "AI Plastic Look" — Overly crisp micro-contrast, HDR glow/haloing, plastic/waxy skin, perfectly clean gradients (no natural noise), sterile symmetry, unrealistic bokeh, surfaces too glossy/clean/new, unmotivated flat lighting. CAUSE: Kill-switch terms in prompt ("hyper detailed," "8K," "perfect skin"), no entropy, unmotivated lighting. FIX: Remove killer terms, add filmic tonality + grain, specify motivated lighting + falloff, add subtle entropy.
+
+2. "Flat / Lifeless" — No directional light, no contrast ratio, no atmosphere depth cues, image feels two-dimensional and unengaging. CAUSE: No directional light specified, no fill/contrast control, no atmosphere. FIX: Specify key light direction + quality, add negative space and subject separation, add subtle haze/dust if appropriate.
+
+3. "CGI / Game Engine Look" — Glossy highlights with perfect edges, too much micro-contrast, render-like background sharpness, volumetrics that look like smoke simulation. CAUSE: Excessive global sharpness, render-like lighting, no lens imperfections. FIX: Soften tonality, add rolloff, reduce global sharpness, add subtle lens imperfections, enforce photographic anchor language ("captured through a physical lens").
+
+4. "Lighting Drift" — Light direction and source inconsistent within image or doesn't match scene intent, shadows fall in wrong direction, multiple conflicting light sources without motivation. CAUSE: Light direction and source not locked. FIX: Define scene-level lighting lock (source + direction + quality + contrast ratio), treat lighting as canon.
+
+For each pattern detected, classify severity as "severe" (dominates the image), "moderate" (noticeable but not dominant), or "none" (not present). Only flag patterns that are actually present.`;
 
     const userPrompt = `${kbContent ? `KNOWLEDGE BASE (use for evaluation criteria):\n${kbContent}\n\n` : ''}${projectBlock}
 ${sceneBlock}
@@ -1324,6 +1336,14 @@ OUTPUT VALID JSON ONLY:
   },
   "issues": ["Specific issue 1", "Specific issue 2"],
   "prompt_adjustments": ["Suggested fix 1 — add/modify this in the prompt", "Suggested fix 2"],
+  "realism_diagnosis": [
+    {
+      "pattern": "AI Plastic Look" | "Flat / Lifeless" | "CGI / Game Engine Look" | "Lighting Drift",
+      "severity": "severe" | "moderate",
+      "details": "What specifically triggers this diagnosis in the image",
+      "fix": "Specific prompt-level fix from the Core Realism Principles"
+    }
+  ],
   "summary": "2-3 sentence overall assessment"
 }`;
 
@@ -1376,6 +1396,9 @@ OUTPUT VALID JSON ONLY:
             },
             issues: Array.isArray(parsed.issues) ? parsed.issues : [],
             prompt_adjustments: Array.isArray(parsed.prompt_adjustments) ? parsed.prompt_adjustments : [],
+            realism_diagnosis: Array.isArray(parsed.realism_diagnosis)
+                ? parsed.realism_diagnosis.filter(d => d && d.pattern && d.severity && d.severity !== 'none')
+                : [],
             summary: parsed.summary || '',
         };
 

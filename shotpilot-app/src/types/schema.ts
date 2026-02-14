@@ -117,6 +117,12 @@ export interface ImageAuditResult {
     };
     issues: string[];
     prompt_adjustments: string[];
+    realism_diagnosis?: Array<{
+        pattern: 'AI Plastic Look' | 'Flat / Lifeless' | 'CGI / Game Engine Look' | 'Lighting Drift';
+        severity: 'severe' | 'moderate';
+        details: string;
+        fix: string;
+    }>;
     summary: string;
 }
 
