@@ -146,6 +146,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 projectUpdates: result.projectUpdates,
                 scriptUpdates: result.scriptUpdates,
                 createdCharacters: result.createdCharacters,
+                createdObjects: result.createdObjects,
                 createdScenes: result.createdScenes,
             });
 
@@ -437,6 +438,11 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                         {msg.createdCharacters && msg.createdCharacters.length > 0 && (
                             <div style={styles.updateBadge}>
                                 <Check size={11} /> Characters added: {msg.createdCharacters.map(c => c.name).join(', ')}
+                            </div>
+                        )}
+                        {msg.createdObjects && msg.createdObjects.length > 0 && (
+                            <div style={styles.updateBadge}>
+                                <Check size={11} /> Objects added: {msg.createdObjects.map(o => o.name).join(', ')}
                             </div>
                         )}
                         {msg.createdScenes && msg.createdScenes.length > 0 && (

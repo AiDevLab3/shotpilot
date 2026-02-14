@@ -5,12 +5,20 @@ import { ObjectAIAssistant } from '../components/ObjectAIAssistant';
 import { useProjectContext } from '../components/ProjectLayout';
 
 export const ObjectBiblePage: React.FC = () => {
-    const { projectId } = useProjectContext();
+    const { projectId, project } = useProjectContext();
     const [objects, setObjects] = useState<ObjectItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingObj, setEditingObj] = useState<ObjectItem | null>(null);
     const [formData, setFormData] = useState<Partial<ObjectItem>>({});
+
+    // Parse project frame_size (e.g. "16:9 Widescreen") to CSS aspect-ratio (e.g. "16/9")
+    const frameAspectRatio = (() => {
+        const fs = project?.frame_size;
+        if (!fs) return '16/9';
+        const match = fs.match(/^([\d.]+):([\d.]+)/);
+        return match ? `${match[1]}/${match[2]}` : '16/9';
+    })();
 
     useEffect(() => {
         loadData();
@@ -339,7 +347,7 @@ export const ObjectBiblePage: React.FC = () => {
             <div style={styles.grid}>
                 {objects.map(obj => (
                     <div key={obj.id} style={styles.card}>
-                        <div style={styles.cardImage}>
+                        <div style={{ ...styles.cardImage, aspectRatio: frameAspectRatio }}>
                             {obj.reference_image_url ? (
                                 <img
                                     src={obj.reference_image_url}

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Sparkles, Loader2, Check, Copy, ChevronDown, Send, MessageCircle } from 'lucide-react';
-import type { ObjectSuggestions } from '../types/schema';
-import { getObjectSuggestions, refineContent } from '../services/api';
+import React, { useState, useEffect } from 'react';
+import { Sparkles, Loader2, Check, Copy, ChevronDown, Send, MessageCircle, RotateCw } from 'lucide-react';
+import type { ObjectSuggestions, AIModel } from '../types/schema';
+import { getObjectSuggestions, getAvailableModels, refineContent } from '../services/api';
 
 interface ObjectAIAssistantProps {
     projectId: number;
@@ -26,8 +26,20 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
     const [chatInput, setChatInput] = useState('');
     const [chatHistory, setChatHistory] = useState<{ role: string; content: string }[]>([]);
     const [refining, setRefining] = useState(false);
+    const [availableModels, setAvailableModels] = useState<AIModel[]>([]);
+    const [selectedModel, setSelectedModel] = useState<string>('');
+    const [turnaroundCopied, setTurnaroundCopied] = useState<number | null>(null);
 
     const nameIsEmpty = !objectName || objectName.trim().length === 0;
+
+    useEffect(() => {
+        getAvailableModels()
+            .then((models) => {
+                const imageModels = models.filter((m: AIModel) => m.type === 'image');
+                setAvailableModels(imageModels);
+            })
+            .catch(() => {});
+    }, []);
 
     const loadSuggestions = async () => {
         setLoading(true);
@@ -38,6 +50,7 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
             const result = await getObjectSuggestions(projectId, {
                 name: objectName,
                 description: currentDescription,
+                targetModel: selectedModel || undefined,
             });
             setSuggestions(result);
             setHasLoaded(true);
@@ -75,6 +88,21 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
         }
     };
 
+    const handleCopyTurnaround = async (prompt: string, index: number) => {
+        try {
+            await navigator.clipboard.writeText(prompt);
+        } catch {
+            const textarea = document.createElement('textarea');
+            textarea.value = prompt;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        }
+        setTurnaroundCopied(index);
+        setTimeout(() => setTurnaroundCopied(null), 2000);
+    };
+
     const handleRefine = async (msg?: string) => {
         const text = msg || chatInput.trim();
         if (!text || refining || !suggestions) return;
@@ -109,6 +137,21 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
     if (!hasLoaded && !loading) {
         return (
             <div style={styles.triggerContainer}>
+                {availableModels.length > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                        <label style={{ fontSize: '11px', color: '#9ca3af' }}>Target Model:</label>
+                        <select
+                            value={selectedModel}
+                            onChange={(e) => setSelectedModel(e.target.value)}
+                            style={styles.modelSelect}
+                        >
+                            <option value="">Auto (let AI decide)</option>
+                            {availableModels.map((m) => (
+                                <option key={m.name} value={m.name}>{m.displayName || m.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
                 <button
                     onClick={loadSuggestions}
                     disabled={nameIsEmpty}
@@ -119,7 +162,7 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                     }}
                 >
                     <Sparkles size={14} />
-                    Generate with AI
+                    Generate Prompt
                 </button>
                 <span style={styles.triggerHint}>
                     {nameIsEmpty
@@ -150,6 +193,23 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                     Regenerate
                 </button>
             </div>
+
+            {/* Model selector row */}
+            {availableModels.length > 0 && (
+                <div style={{ padding: '8px 12px', borderBottom: '1px solid #3f3f46', backgroundColor: '#1a1a1e', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <label style={{ fontSize: '11px', color: '#9ca3af', whiteSpace: 'nowrap' }}>Target Model:</label>
+                    <select
+                        value={selectedModel}
+                        onChange={(e) => setSelectedModel(e.target.value)}
+                        style={styles.modelSelect}
+                    >
+                        <option value="">Auto (let AI decide)</option>
+                        {availableModels.map((m) => (
+                            <option key={m.name} value={m.name}>{m.displayName || m.name}</option>
+                        ))}
+                    </select>
+                </div>
+            )}
 
             {loading ? (
                 <div style={styles.loadingState}>
@@ -226,6 +286,53 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                                     </li>
                                 ))}
                             </ul>
+                        </div>
+                    )}
+
+                    {/* Turnaround Prompts */}
+                    {suggestions.turnaroundPrompts && suggestions.turnaroundPrompts.length > 0 && (
+                        <div style={{ backgroundColor: '#1f1f23', padding: '12px', borderLeft: '3px solid #f59e0b' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                                <RotateCw size={13} color="#f59e0b" />
+                                <span style={styles.fieldLabel}>Turnaround Shots</span>
+                            </div>
+                            <span style={{ fontSize: '10px', color: '#6b7280', fontStyle: 'italic', display: 'block', marginBottom: '8px' }}>
+                                Generate these prompts for multi-angle reference sheets — front, side, and back views
+                            </span>
+                            {suggestions.turnaroundPrompts.map((prompt, index) => (
+                                <div key={index} style={{ marginBottom: index < suggestions.turnaroundPrompts!.length - 1 ? '6px' : '0' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                        <span style={{ fontSize: '11px', color: '#fbbf24', fontWeight: 600 }}>
+                                            {index === 0 ? 'Front View' : index === 1 ? 'Side View' : index === 2 ? '¾ / Back View' : `Angle ${index + 1}`}
+                                        </span>
+                                        <button
+                                            onClick={() => handleCopyTurnaround(prompt, index)}
+                                            style={styles.copyBtn}
+                                        >
+                                            {turnaroundCopied === index ? (
+                                                <><Check size={12} color="#10b981" /> Copied</>
+                                            ) : (
+                                                <><Copy size={12} /> Copy</>
+                                            )}
+                                        </button>
+                                    </div>
+                                    <p style={{ ...styles.promptText, margin: '0', fontSize: '11px' }}>{prompt}</p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Recommended Model */}
+                    {!selectedModel && suggestions.recommendedModel && (
+                        <div style={{ backgroundColor: '#1f1f23', padding: '10px 12px', borderLeft: '3px solid #06b6d4', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '11px', color: '#9ca3af' }}>Recommended model:</span>
+                            <span style={{ fontSize: '12px', color: '#22d3ee', fontWeight: 600 }}>{suggestions.recommendedModel}</span>
+                            <button
+                                onClick={() => setSelectedModel(suggestions.recommendedModel!)}
+                                style={{ padding: '2px 8px', backgroundColor: '#164e63', border: '1px solid #0e7490', borderRadius: '4px', color: '#22d3ee', fontSize: '10px', cursor: 'pointer' }}
+                            >
+                                Select
+                            </button>
                         </div>
                     )}
 
@@ -473,5 +580,16 @@ const styles: Record<string, React.CSSProperties> = {
         fontSize: '12px',
         color: '#9ca3af',
         lineHeight: '1.6',
+    },
+    modelSelect: {
+        padding: '4px 8px',
+        backgroundColor: '#18181b',
+        border: '1px solid #3f3f46',
+        borderRadius: '4px',
+        color: '#e5e7eb',
+        fontSize: '11px',
+        outline: 'none',
+        flex: 1,
+        maxWidth: '200px',
     },
 };

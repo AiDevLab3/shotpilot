@@ -432,27 +432,41 @@ app.post('/api/projects/:projectId/analyze-script', requireAuth, async (req, res
 app.post('/api/projects/:projectId/object-suggestions', requireAuth, async (req, res) => {
     try {
         const { projectId } = req.params;
-        const { name, description } = req.body;
+        const { name, description, targetModel } = req.body;
 
         const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId);
         if (!project) return res.status(404).json({ error: 'Project not found' });
 
         let kbContent = '';
+        const kbFilesUsed = [];
         try {
             const coreKB = readKBFile('01_Core_Realism_Principles.md');
             kbContent = coreKB || '';
+            kbFilesUsed.push('01_Core_Realism_Principles.md');
         } catch (err) {
             console.warn('[object-suggestions] Could not load KB:', err.message);
+        }
+
+        let modelKBContent = '';
+        if (targetModel) {
+            try {
+                modelKBContent = loadKBForModel(targetModel);
+                kbFilesUsed.push(`model:${targetModel}`);
+            } catch (err) {
+                console.warn(`[object-suggestions] Could not load model KB for ${targetModel}:`, err.message);
+            }
         }
 
         const suggestions = await generateObjectSuggestions({
             object: { name, description },
             project,
             kbContent,
+            modelKBContent,
+            targetModel,
         });
 
         logAIFeatureUsage(db, req.session.userId, 'object_suggestions', projectId);
-        res.json({ ...suggestions, kbFilesUsed: ['01_Core_Realism_Principles.md'] });
+        res.json({ ...suggestions, kbFilesUsed });
     } catch (error) {
         console.error('Object suggestions error:', error);
         res.status(500).json({ error: error.message });
@@ -572,6 +586,30 @@ app.post('/api/projects/:projectId/creative-director', requireAuth, async (req, 
             }
         }
 
+        // Auto-create objects/props discussed in conversation
+        const createdObjects = [];
+        if (result.objectCreations && Array.isArray(result.objectCreations)) {
+            const existingObjNames = objects.map(o => o.name.toLowerCase());
+            const insertObj = db.prepare(
+                'INSERT INTO objects (project_id, name, description) VALUES (@projectId, @name, @description)'
+            );
+            for (const obj of result.objectCreations) {
+                if (obj.name && !existingObjNames.includes(obj.name.toLowerCase())) {
+                    try {
+                        const info = insertObj.run({
+                            projectId,
+                            name: sanitize(obj.name),
+                            description: sanitize(obj.description || ''),
+                        });
+                        createdObjects.push({ id: info.lastInsertRowid, name: obj.name });
+                        existingObjNames.push(obj.name.toLowerCase());
+                    } catch (err) {
+                        console.warn(`[creative-director] Could not create object "${obj.name}":`, err.message);
+                    }
+                }
+            }
+        }
+
         // Auto-create scenes (and their suggested shots) discussed in conversation
         const createdScenes = [];
         if (result.sceneCreations && Array.isArray(result.sceneCreations)) {
@@ -631,7 +669,7 @@ app.post('/api/projects/:projectId/creative-director', requireAuth, async (req, 
         }
 
         logAIFeatureUsage(db, req.session.userId, 'creative_director', projectId);
-        res.json({ ...result, kbFilesUsed, createdCharacters, createdScenes });
+        res.json({ ...result, kbFilesUsed, createdCharacters, createdObjects, createdScenes });
     } catch (error) {
         console.error('Creative Director error:', error);
         res.status(500).json({ error: error.message });
@@ -1248,6 +1286,38 @@ app.put('/api/objects/:id', (req, res) => {
 app.delete('/api/objects/:id', (req, res) => {
     const { id } = req.params;
     db.prepare('DELETE FROM objects WHERE id = ?').run(id);
+    res.json({ success: true });
+});
+
+// Project Images (Alt Images Library)
+app.get('/api/projects/:id/images', (req, res) => {
+    const { id } = req.params;
+    const images = db.prepare('SELECT * FROM project_images WHERE project_id = ? ORDER BY created_at DESC').all(id);
+    res.json(images);
+});
+
+app.post('/api/projects/:id/images', (req, res) => {
+    const { id } = req.params;
+    const { image_url, title, notes, tags } = req.body;
+    if (!image_url) return res.status(400).json({ error: 'image_url is required' });
+    const stmt = db.prepare(
+        'INSERT INTO project_images (project_id, image_url, title, notes, tags) VALUES (?, ?, ?, ?, ?)'
+    );
+    const info = stmt.run(id, image_url, sanitize(title) || null, sanitize(notes) || null, sanitize(tags) || null);
+    res.json({ id: info.lastInsertRowid, project_id: Number(id), image_url, title, notes, tags });
+});
+
+app.put('/api/project-images/:id', (req, res) => {
+    const { id } = req.params;
+    const { title, notes, tags } = req.body;
+    db.prepare('UPDATE project_images SET title = ?, notes = ?, tags = ? WHERE id = ?')
+        .run(sanitize(title) || null, sanitize(notes) || null, sanitize(tags) || null, id);
+    const updated = db.prepare('SELECT * FROM project_images WHERE id = ?').get(id);
+    res.json(updated);
+});
+
+app.delete('/api/project-images/:id', (req, res) => {
+    db.prepare('DELETE FROM project_images WHERE id = ?').run(req.params.id);
     res.json({ success: true });
 });
 

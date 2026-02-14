@@ -226,6 +226,24 @@ export const initDatabase = () => {
         console.error("Phase 4 (Image Audit) Migration failed:", e);
     }
 
+    // Phase 5: Project Images (Alt Images Library)
+    try {
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS project_images (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                project_id INTEGER NOT NULL,
+                image_url TEXT NOT NULL,
+                title TEXT,
+                notes TEXT,
+                tags TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+            )
+        `);
+    } catch (e) {
+        console.error("Phase 5 (Project Images) Migration failed:", e);
+    }
+
     // Create default test user if not exists
     try {
         const testUser = db.prepare('SELECT * FROM users WHERE email = ?').get('test@shotpilot.com');

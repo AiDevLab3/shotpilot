@@ -10,6 +10,7 @@ interface Message {
     imageUrl?: string | null;
     imageUrls?: string[] | null;
     createdCharacters?: { id: number; name: string }[] | null;
+    createdObjects?: { id: number; name: string }[] | null;
     createdScenes?: { id: number; name: string; shotCount: number }[] | null;
     keyDecisions?: string[] | null;
 }

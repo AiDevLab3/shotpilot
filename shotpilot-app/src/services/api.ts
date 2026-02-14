@@ -1,4 +1,4 @@
-import type { Project, Character, ObjectItem, Scene, Shot, ImageVariant, AestheticSuggestion, CharacterSuggestions, ShotPlan, QualityDialogueResponse, ScriptAnalysis, ObjectSuggestions, ImageAuditResult } from '../types/schema';
+import type { Project, Character, ObjectItem, Scene, Shot, ImageVariant, AestheticSuggestion, CharacterSuggestions, ShotPlan, QualityDialogueResponse, ScriptAnalysis, ObjectSuggestions, ImageAuditResult, ProjectImage } from '../types/schema';
 
 // v3: Module-level fingerprint to verify this version loaded in browser
 console.log('[API v3] api.ts loaded — has 401 interceptor + eager login');
@@ -342,7 +342,7 @@ export const analyzeScriptText = async (projectId: number, scriptText: string): 
 };
 
 // Phase 3.6: Object AI assistant
-export const getObjectSuggestions = async (projectId: number, object: { name?: string; description?: string }): Promise<ObjectSuggestions> => {
+export const getObjectSuggestions = async (projectId: number, object: { name?: string; description?: string; targetModel?: string }): Promise<ObjectSuggestions> => {
     const res = await apiCall(`/projects/${projectId}/object-suggestions`, {
         method: 'POST',
         body: JSON.stringify(object),
@@ -469,6 +469,29 @@ export const auditStandaloneImage = async (file: File, projectId?: number, conte
     }
 
     return response.json();
+};
+
+// PROJECT IMAGES (Alt Images Library)
+export const getProjectImages = async (projectId: number): Promise<ProjectImage[]> => {
+    return apiCall(`/projects/${projectId}/images`);
+};
+
+export const createProjectImage = async (projectId: number, data: { image_url: string; title?: string; notes?: string; tags?: string }): Promise<ProjectImage> => {
+    return apiCall(`/projects/${projectId}/images`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+};
+
+export const updateProjectImage = async (id: number, data: { title?: string; notes?: string; tags?: string }): Promise<ProjectImage> => {
+    return apiCall(`/project-images/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    });
+};
+
+export const deleteProjectImage = async (id: number): Promise<void> => {
+    await apiCall(`/project-images/${id}`, { method: 'DELETE' });
 };
 
 // Deprecated or Unused in Server Mode

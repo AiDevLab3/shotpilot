@@ -193,8 +193,20 @@ export interface ScriptAnalysis {
     summary: string;
 }
 
+export interface ProjectImage {
+    id: number;
+    project_id: number;
+    image_url: string;
+    title?: string;
+    notes?: string;
+    tags?: string;
+    created_at: string;
+}
+
 export interface ObjectSuggestions {
     description: string;
     referencePrompt: string;
+    turnaroundPrompts?: string[];
     consistencyTips: string[];
+    recommendedModel?: string | null;
 }

@@ -846,27 +846,42 @@ OUTPUT VALID JSON ONLY:
  * Phase 3.6: Generate detailed object/prop suggestions.
  */
 async function generateObjectSuggestions(context) {
-    const { object, project, kbContent } = context;
+    const { object, project, kbContent, modelKBContent, targetModel } = context;
 
     const projectBlock = buildContextBlock('PROJECT', project);
 
-    const systemInstruction = `You are an expert prop master and production designer for AI-generated cinematography. Generate detailed object/prop descriptions that will produce consistent results across AI image/video models. Focus on material, color, condition, scale, and contextual placement.`;
+    const modelNote = targetModel
+        ? `You are generating prompts for ${targetModel}. Use the model-specific KB below for EXACT syntax, parameters, and formatting.`
+        : `No target model selected. Generate prompts using general cinematic photography language. Note in your response which model would be best suited for this object.`;
+
+    const systemInstruction = `You are an expert prop master and production designer for AI-generated cinematography. Generate detailed object/prop descriptions that will produce consistent results across AI image/video models. Focus on material, color, condition, scale, and contextual placement.
+
+${modelNote}`;
 
     const userPrompt = `Generate a detailed object/prop description for an AI filmmaking project.
 
-${kbContent ? `Use these KB principles:\n${kbContent}\n` : ''}
+${kbContent ? `CORE KB PRINCIPLES:\n${kbContent}\n` : ''}
+${modelKBContent ? `MODEL-SPECIFIC KB (${targetModel}):\n${modelKBContent}\n` : ''}
 ${projectBlock}
 
 OBJECT NAME: ${object.name || 'Unnamed Object'}
 ${object.description ? `EXISTING DESCRIPTION: ${object.description}` : ''}
 
-Generate comprehensive, prompt-ready object details.
+Generate comprehensive, prompt-ready object details. The reference prompt MUST use the target model's exact syntax and parameters from the KB.
+
+Also generate turnaround prompts — a set of 3 angle-specific prompts to establish the object from multiple viewpoints for consistency across shots. Each turnaround prompt should specify a different angle (front 3/4, side profile, top-down or detail close-up).
 
 OUTPUT VALID JSON ONLY:
 {
   "description": "Detailed physical description covering: material, color, texture, condition (new/worn/damaged), dimensions/scale relative to human, distinctive features, contextual placement. Written as a dense paragraph optimized for AI image generation prompts.",
-  "referencePrompt": "A suggested prompt to generate a master reference image for this object. Include specific material details, lighting, and framing.",
-  "consistencyTips": ["Tip 1 for maintaining this object across shots", "Tip 2"]
+  "referencePrompt": "A model-specific prompt to generate a master reference image for this object. Must use exact model syntax (e.g. Midjourney parameters, Higgsfield camera rig language, etc). Include specific material details, lighting, and framing.",
+  "turnaroundPrompts": [
+    "Front 3/4 view prompt — model-specific syntax",
+    "Side profile view prompt — model-specific syntax",
+    "Detail close-up or top-down view prompt — model-specific syntax"
+  ],
+  "consistencyTips": ["Tip 1 for maintaining this object across shots", "Tip 2"],
+  "recommendedModel": "Model name recommendation (only if no target model selected, otherwise null)"
 }`;
 
     try {
@@ -988,7 +1003,13 @@ You have the full ${targetModel} Prompting Mastery guide loaded below. When gene
 - Include model-specific parameters (e.g. Midjourney uses --s, --ar, --oref; Nano Banana uses physics-based specs; Higgsfield uses camera rig language)
 - NEVER generate generic prompts — every prompt MUST be optimized for ${targetModel}
 - Reference the loaded KB guide for correct syntax and best practices`
-        : `\nNO TARGET MODEL SELECTED. If the user asks for prompts, ask them to select a target model first using the model selector. Available models: Midjourney, Nano Banana Pro, Higgsfield Cinema Studio, GPT Image 1.5, VEO 3.1, Kling 2.6, Kling 3.0.`;
+        : `\nNO TARGET MODEL SELECTED. If no model is selected, proactively recommend one based on the project's needs:
+- For artistic/stylized hero stills: Midjourney
+- For precise camera rig control and cinematic realism: Higgsfield Cinema Studio
+- For iterative edits, text rendering, and identity-preserving refinement: GPT Image 1.5
+- For physics-based realism and character consistency: Nano Banana Pro
+- For video generation with natural motion: VEO 3.1 or Kling 2.6/3.0
+Mention this recommendation naturally in conversation when visual direction or shot planning comes up. Tell the user they can select a model using the dropdown in the chat header.`;
 
     const systemInstruction = `You are an expert AI Creative Director — a seasoned collaborator who helps filmmakers develop their projects from concept to camera-ready. You have deep knowledge of cinematography, visual storytelling, script analysis, production planning, AND model-specific prompt engineering.
 
@@ -1014,6 +1035,12 @@ CHARACTER CREATION (CRITICAL):
 - Each character needs at minimum a name and description. Include personality if discussed.
 - This happens silently in the background — don't tell the user "I'm creating a character entry" unless they ask.
 
+OBJECT CREATION (CRITICAL):
+- When objects or props are discussed, described, or extracted from a script, you MUST include them in the "objectCreations" output field.
+- Each object needs at minimum a name and description. Focus on material, color, texture, condition, scale, and distinctive features.
+- This happens silently in the background — don't tell the user "I'm creating an object entry" unless they ask.
+- Only create objects that are SPECIFIC PROPS relevant to the story (e.g. "The Specialist's tactical bag", "vintage rotary phone"). Do NOT create generic scene elements (e.g. "table", "chair", "wall") unless they are narratively significant.
+
 SCENE CREATION (CRITICAL):
 - ONLY create scenes when the user EXPLICITLY asks for a scene breakdown, shot list, or says something like "create the scenes", "break it down into scenes", "generate the scene list", or "I'm ready for scenes".
 - Do NOT create scenes automatically during script discussion, character development, or visual direction conversations. Finalize the script and direction FIRST.
@@ -1021,8 +1048,12 @@ SCENE CREATION (CRITICAL):
 - Each scene needs: name, description, location_setting, time_of_day, mood_tone. Include suggestedShots if you have enough context.
 - Each suggestedShot needs: shot_type (e.g. "Wide Shot", "Medium Shot", "Close-up"), camera_angle, description, and purpose.
 
-PROJECT INFO FIELDS YOU CAN UPDATE:
-- title, frame_size, purpose, lighting_directions, style_aesthetic, storyline_narrative, cinematography, atmosphere_mood, cinematic_references
+PROJECT INFO UPDATES (CRITICAL — BE CONSERVATIVE):
+- Fields you can update: title, frame_size, purpose, lighting_directions, style_aesthetic, storyline_narrative, cinematography, atmosphere_mood, cinematic_references
+- ONLY update projectUpdates when the user is DIRECTLY discussing project-level visual direction, style, or narrative. Do NOT update project info when discussing individual characters, objects, or specific scene details.
+- Project info should capture the MACRO look — the high-level aesthetic blueprint. Character-specific details (wardrobe, gear textures) belong in the character description, NOT in project info.
+- If project info fields are already populated, do NOT overwrite them unless the user explicitly asks to change the project direction. Avoid appending character-specific details to existing style fields.
+- When in doubt, set projectUpdates to null. It is always safer to NOT update than to overwrite established direction.
 
 IMAGE ANALYSIS (CRITICAL):
 - When the user shares an image, your default behavior is to AUDIT it against the project's EXISTING visual direction. Use the Quality Control Visual Audit criteria:
@@ -1056,6 +1087,7 @@ OUTPUT VALID JSON ONLY:
   "projectUpdates": null or { "field_name": "suggested value", ... },
   "scriptUpdates": null or "THE COMPLETE FULL SCRIPT with changes integrated — NEVER a partial fragment. If you modify one scene, you MUST return the entire script including ALL unchanged scenes. If the script is too long to return in full, set scriptUpdates to null and describe the changes in your response instead so the user can make the edit manually.",
   "characterCreations": null or [{ "name": "Character Name", "description": "Physical/visual description", "personality": "Personality traits" }],
+  "objectCreations": null or [{ "name": "Object Name", "description": "Physical description: material, color, texture, condition, scale, distinctive features" }],
   "sceneCreations": null or [{ "name": "Scene name", "description": "Scene description", "location_setting": "Where", "time_of_day": "Day/Night/Dawn/Dusk", "mood_tone": "Emotional tone", "suggestedShots": [{ "shot_type": "Wide Shot", "camera_angle": "Eye Level", "description": "What this shot captures", "purpose": "Why needed" }] }]
 }`;
 
@@ -1135,11 +1167,11 @@ OUTPUT VALID JSON ONLY:
                         const responseText = responseMatch
                             ? responseMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"')
                             : text.substring(0, 500);
-                        parsed = { response: responseText, projectUpdates: null, scriptUpdates: null, characterCreations: null, sceneCreations: null };
+                        parsed = { response: responseText, projectUpdates: null, scriptUpdates: null, characterCreations: null, objectCreations: null, sceneCreations: null };
                     }
                 }
             } else {
-                parsed = { response: text, projectUpdates: null, scriptUpdates: null, characterCreations: null, sceneCreations: null };
+                parsed = { response: text, projectUpdates: null, scriptUpdates: null, characterCreations: null, objectCreations: null, sceneCreations: null };
             }
         }
         return parsed;

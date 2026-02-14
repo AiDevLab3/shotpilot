@@ -6,6 +6,7 @@ import { CharacterBiblePage } from './pages/CharacterBiblePage';
 import { ObjectBiblePage } from './pages/ObjectBiblePage';
 import ShotBoardPage from './pages/ShotBoardPage';
 import { CreativeDirectorPage } from './pages/CreativeDirectorPage';
+import { ImageLibraryPage } from './pages/ImageLibraryPage';
 import { getAllProjects, createProject } from './services/api';
 
 // Error boundary: catches render crashes and shows a recovery UI
@@ -180,6 +181,7 @@ const App: React.FC = () => {
                                 <Route path="characters" element={<CharacterBiblePage />} />
                                 <Route path="objects" element={<ObjectBiblePage />} />
                                 <Route path="scenes" element={<ShotBoardPage />} />
+                                <Route path="images" element={<ImageLibraryPage />} />
                             </Route>
                         </Routes>
                     </main>

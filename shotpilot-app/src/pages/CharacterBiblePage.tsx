@@ -5,12 +5,20 @@ import { CharacterAIAssistant } from '../components/CharacterAIAssistant';
 import { useProjectContext } from '../components/ProjectLayout';
 
 export const CharacterBiblePage: React.FC = () => {
-    const { projectId } = useProjectContext();
+    const { projectId, project } = useProjectContext();
     const [characters, setCharacters] = useState<Character[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingChar, setEditingChar] = useState<Character | null>(null);
     const [formData, setFormData] = useState<Partial<Character>>({});
+
+    // Parse project frame_size (e.g. "16:9 Widescreen") to CSS aspect-ratio (e.g. "16/9")
+    const frameAspectRatio = (() => {
+        const fs = project?.frame_size;
+        if (!fs) return '16/9';
+        const match = fs.match(/^([\d.]+):([\d.]+)/);
+        return match ? `${match[1]}/${match[2]}` : '16/9';
+    })();
 
     useEffect(() => {
         loadData();
@@ -339,7 +347,7 @@ export const CharacterBiblePage: React.FC = () => {
             <div style={styles.grid}>
                 {characters.map(char => (
                     <div key={char.id} style={styles.card}>
-                        <div style={styles.cardImage}>
+                        <div style={{ ...styles.cardImage, aspectRatio: frameAspectRatio }}>
                             {char.reference_image_url ? (
                                 <img
                                     src={char.reference_image_url}

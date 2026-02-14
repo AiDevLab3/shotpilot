@@ -64,6 +64,14 @@ const ShotBoardPage: React.FC = () => {
     const [expandedScenes, setExpandedScenes] = useState<number[]>([]);
     const [statusFilter, setStatusFilter] = useState<'all' | 'planning' | 'in-progress' | 'complete'>('all');
 
+    // Parse project frame_size to CSS aspect-ratio
+    const frameAspectRatio = (() => {
+        const fs = project?.frame_size;
+        if (!fs) return '16/9';
+        const match = fs.match(/^([\d.]+):([\d.]+)/);
+        return match ? `${match[1]}/${match[2]}` : '16/9';
+    })();
+
     // UI State
     const [focusedSceneIndex, setFocusedSceneIndex] = useState(0);
     const sceneRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -759,7 +767,7 @@ const ShotBoardPage: React.FC = () => {
                                                                 </div>
                                                                 <div style={{ ...styles.cardBody, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                                                                     <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px', marginBottom: '12px' }}>
-                                                                        <div style={styles.cardImage}>
+                                                                        <div style={{ ...styles.cardImage, aspectRatio: frameAspectRatio }}>
                                                                             {mainImage ? (
                                                                                 <>
                                                                                     <img src={imageUrl || ''} alt="" style={{ width: '100%', height: 'auto' }} />
