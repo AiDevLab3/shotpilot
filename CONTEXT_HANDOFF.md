@@ -70,20 +70,35 @@ shotpilot-app/kb/
 - `image_variants` — image_url, model_used, prompts (original/generated/edited), audit_score, audit_data
 - `project_images` — **NEW** alt images library (image_url, title, notes, tags)
 
-### AI Endpoints (all in `geminiService.js`, all use KB)
-1. Creative Director chat (multi-turn, image upload, auto-creates characters/objects/scenes)
-2. Character suggestions (description + reference prompt + consistency tips)
-3. Object suggestions (description + reference prompt + turnaround prompts + model recommendation)
-4. Scene shot planning
-5. Prompt generation (model-specific)
-6. Prompt readiness scoring
-7. Prompt readiness dialogue (multi-turn)
-8. Holistic image audit (6-dimension + realism diagnosis)
-9. Prompt refinement (audit-driven, auto-generates revised prompt)
-10. Script analysis
-11. Aesthetic suggestions
-12. Content refinement (conversational follow-up for characters/objects)
-13. Conversation compaction
+### AI Services (split into `server/services/ai/` modules, barrel-exported via `geminiService.js`)
+
+| Module | Functions |
+|--------|-----------|
+| `ai/shared.js` | `buildContextBlock`, `buildImageParts`, `callGemini` (core Gemini API client) |
+| `ai/readiness.js` | `analyzeReadiness`, `generateRecommendations` |
+| `ai/promptGeneration.js` | `generatePrompt`, `refinePromptFromAudit` |
+| `ai/suggestions.js` | `generateAestheticSuggestions`, `generateCharacterSuggestions`, `generateObjectSuggestions` |
+| `ai/shotPlanning.js` | `generateShotPlan`, `readinessDialogue` |
+| `ai/scriptAnalysis.js` | `analyzeScript` |
+| `ai/creativeDirector.js` | `creativeDirectorCollaborate`, `summarizeConversation`, `refineContent` |
+| `ai/imageAudit.js` | `holisticImageAudit` |
+
+All 15 functions are re-exported from `geminiService.js` so existing imports work unchanged.
+
+### API Routes (split into `server/routes/` modules, mounted in `index.js`)
+
+| Module | Endpoints |
+|--------|-----------|
+| `routes/auth.js` | Login, logout, session, credits, usage |
+| `routes/ai.js` | All AI endpoints (readiness, suggestions, creative director, prompt gen/refine, script analysis, etc.) |
+| `routes/projects.js` | Project CRUD + project images (alt library) |
+| `routes/characters.js` | Character CRUD |
+| `routes/objects.js` | Object CRUD |
+| `routes/scenes.js` | Scene CRUD |
+| `routes/shots.js` | Shot CRUD with insert-after ordering |
+| `routes/images.js` | Upload, variants CRUD, holistic image audit |
+
+50 total endpoints across 8 route modules. Each module exports a factory function receiving dependencies (db, services, middleware).
 
 ### Frontend Pages
 - **Creative Director** — AI chat sidebar (persistent via zustand) + project info display
@@ -114,26 +129,42 @@ shotpilot-app/kb/
 
 ---
 
-## 5. What Was Done in This Session (Feb 13-14)
+## 5. What Was Done in Recent Sessions
 
-### Midjourney V7 KB Update
+### Session: Feb 14 (Current) — Architecture Refactoring
+
+#### Monolith Split
+- **`server/index.js`** (1,665 → 140 lines) — All routes extracted into 8 domain modules under `server/routes/`
+- **`server/services/geminiService.js`** (1,611 → 24 lines) — All AI functions extracted into 7 domain modules under `server/services/ai/`
+- `geminiService.js` is now a barrel re-export file — existing imports work unchanged
+- Each route module exports a factory function that receives dependencies (db, services, middleware)
+- Fixed backward-compat aliases (`check-quality`, `quality-dialogue`) that broke during refactor — now use 307 redirects
+
+#### Route Test Suite
+- Added `tests/route-test.js` — comprehensive test hitting all 50 endpoints
+- 41/50 pass locally (9 AI endpoints need external Gemini API access)
+- Tests cover full CRUD lifecycle: create → read → update → delete for all entities
+
+### Session: Feb 13-14 — Features & Fixes
+
+#### Midjourney V7 KB Update
 - Full rewrite of `Prompting_Mastery.md` to v2.0
 - `--oref` replaces `--cref` across all KB files (6 files updated)
 - Added `--sref`/`--sw` (Style Reference) to Translation Matrix
 - Updated kbLoader capabilities string
 
-### Realism Diagnosis in Audit
+#### Realism Diagnosis in Audit
 - Added explicit 4-pattern realism troubleshooting to holistic image audit:
   - AI Plastic Look, Flat/Lifeless, CGI/Game Engine Look, Lighting Drift
 - New `realism_diagnosis` field in audit JSON output with severity classification
 - New UI section in `ImageAuditReport.tsx` with color-coded severity badges
 
-### Multi-Image Upload in Chat
+#### Multi-Image Upload in Chat
 - `ChatSidebar.tsx` supports up to 10 images per message
 - Grid display for multi-image messages
 - Full pipeline: store → API → server → Gemini multi-part
 
-### 8 Testing Issues Fixed
+#### 8 Testing Issues Fixed
 1. **CD proactive model recommendation** — When no target model selected, AI now recommends one
 2. **Conservative project updates** — Project info no longer overwritten on every AI response
 3. **Object auto-creation from chat** — Objects discussed in CD chat are auto-created (like characters/scenes already were)
@@ -160,10 +191,10 @@ shotpilot-app/kb/
 - **OneDrive/data loss risk** — User previously lost all data from OneDrive conflicts. Database is gitignored, so project data doesn't persist across clones.
 
 ### Architectural Concerns
-- **`geminiService.js` is massive** — All 13+ AI functions live in one file (~1500+ lines). As features grow this will become unwieldy.
-- **`server/index.js` is massive** — All API routes in one file (~1500+ lines).
+- ~~`geminiService.js` is massive~~ — **RESOLVED**: Split into 7 domain modules under `server/services/ai/`
+- ~~`server/index.js` is massive~~ — **RESOLVED**: Split into 8 route modules under `server/routes/`
 - **No error boundaries around AI calls** — If Gemini returns malformed JSON, the parsing can fail silently or crash.
-- **Base64 images in SQLite** — Reference images and project library images are stored as base64 data URLs directly in SQLite. This will hit scaling limits quickly.
+- ~~Base64 images in SQLite~~ — **NOT AN ISSUE**: Images are stored as files in `uploads/images/`, only file paths are in the DB. Base64 conversion only happens transiently when sending to Gemini API.
 - **No image optimization** — Uploaded images aren't resized or compressed before storage.
 
 ---
@@ -172,10 +203,15 @@ shotpilot-app/kb/
 
 | File | What It Does |
 |------|-------------|
-| `server/services/geminiService.js` | ALL AI logic — system prompts, Gemini calls, JSON parsing |
+| `server/index.js` | Server setup, middleware, mounts route modules (~140 lines) |
+| `server/routes/*.js` | 8 route modules (auth, ai, projects, characters, objects, scenes, shots, images) |
+| `server/services/geminiService.js` | Barrel re-export of all AI functions from `services/ai/` |
+| `server/services/ai/*.js` | 7 AI domain modules (shared, readiness, promptGeneration, suggestions, shotPlanning, scriptAnalysis, creativeDirector, imageAudit) |
 | `server/services/kbLoader.js` | KB file loading, model registry, file concatenation |
-| `server/index.js` | ALL API routes (Express) |
+| `server/services/creditService.js` | Credit deduction, usage logging, stats |
 | `server/database.js` | SQLite schema + migrations |
+| `server/middleware/auth.js` | Express-session auth + checkCredits middleware |
+| `tests/route-test.js` | Comprehensive route test suite (50 endpoints) |
 | `src/components/ChatSidebar.tsx` | Creative Director chat UI (persistent sidebar) |
 | `src/components/ObjectAIAssistant.tsx` | Object prompt generation with model selector + turnaround |
 | `src/components/CharacterAIAssistant.tsx` | Character prompt generation (no model selector yet) |
@@ -183,7 +219,7 @@ shotpilot-app/kb/
 | `src/components/ImageAuditReport.tsx` | 6-dimension audit display + realism diagnosis |
 | `src/components/VariantList.tsx` | Image variant cards with audit/refine/upload |
 | `src/pages/ShotBoardPage.tsx` | Scene manager with shot cards |
-| `src/pages/ImageLibraryPage.tsx` | Alt images library (NEW) |
+| `src/pages/ImageLibraryPage.tsx` | Alt images library |
 | `src/stores/creativeDirectorStore.ts` | Zustand store for chat persistence |
 | `src/types/schema.ts` | All TypeScript interfaces |
 | `src/services/api.ts` | All API client functions |
@@ -208,6 +244,9 @@ shotpilot-app/kb/
 ## 9. Git Commit History (Reverse Chronological)
 
 ```
+a497e90 Fix backward-compat route aliases and add route test suite
+3656c6a Refactor: split monolithic server into route and AI service modules
+81e880a Add context handoff summary for session continuity
 9280375 Fix 8 testing issues: CD improvements, object AI, frame size, image library
 47679ce Support multiple image uploads in Creative Director chat
 1ee57e6 Add realism diagnosis to image audit and --sref/--sw to Translation Matrix
@@ -233,9 +272,9 @@ d0cc29c Phase 4 polish: welcome screen, UX cleanup, repo cleanup, bug fixes
 ## 10. What to Work on Next (Suggested Priority)
 
 1. **Character AI Assistant parity** — Add model selector + turnaround prompts (mirror ObjectAIAssistant pattern)
-2. **Testing pass** — Run the app end-to-end, verify all 8 fixes work in practice
+2. **Testing pass** — Run the app end-to-end, verify all 8 fixes work in practice. Route test suite exists at `tests/route-test.js`
 3. **KB accuracy audit** — Compare condensed `02_Model_*.md` files against full research in `models/` dirs
 4. **Update PROJECT_CONTEXT_SUMMARY.md** — Currently references old branch and Phase 4 state
 5. **Repo organization** — Caleb deferred this but root-level docs may need cleanup
-6. **Image storage optimization** — Move from base64-in-SQLite to file-based storage
+6. **Image optimization** — Uploaded images aren't resized/compressed before storage or Gemini API submission
 7. **Video generation workflow** — Models are in KB but no UI exists yet
