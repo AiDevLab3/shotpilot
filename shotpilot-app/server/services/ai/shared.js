@@ -175,7 +175,10 @@ async function callGemini({ parts, systemInstruction, thinkingLevel = 'high', re
 
     // Find the text part (not thought)
     const textParts = candidate.content.parts.filter(p => p.text !== undefined && !p.thought);
-    const text = textParts.map(p => p.text).join('');
+    let text = textParts.map(p => p.text).join('');
+
+    // Strip markdown code fences that Gemini sometimes wraps around JSON responses
+    text = text.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
 
     return text;
 }

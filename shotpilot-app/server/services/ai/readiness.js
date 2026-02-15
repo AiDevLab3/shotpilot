@@ -175,27 +175,42 @@ Output valid JSON array only:
   }
 ]`;
 
-    try {
-        const text = await callGemini({
-            parts: [{ text: userPrompt }],
-            systemInstruction,
-            thinkingLevel: 'high',
-            responseMimeType: 'application/json',
-            maxOutputTokens: 2048,
-        });
+    const geminiOpts = {
+        parts: [{ text: userPrompt }],
+        systemInstruction,
+        thinkingLevel: 'low',
+        responseMimeType: 'application/json',
+        maxOutputTokens: 4096,
+    };
 
-        try {
-            return JSON.parse(text);
-        } catch (e) {
-            const jsonMatch = text.match(/\[[\s\S]*\]/);
-            if (jsonMatch) {
-                return JSON.parse(jsonMatch[0]);
+    const parseArray = (text) => {
+        try { return JSON.parse(text); } catch (e) {
+            // Handle trailing content after valid JSON
+            const posMatch = e.message.match(/position (\d+)/);
+            if (posMatch) {
+                try { return JSON.parse(text.substring(0, parseInt(posMatch[1]))); } catch {}
             }
-            throw new Error('Could not parse recommendations JSON');
         }
-    } catch (error) {
-        console.error('[gemini] Recommendations error:', error);
-        throw error;
+        const jsonMatch = text.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+            try { return JSON.parse(jsonMatch[0]); } catch {}
+        }
+        throw new Error('Could not parse recommendations JSON');
+    };
+
+    try {
+        const text = await callGemini(geminiOpts);
+        return parseArray(text);
+    } catch (firstError) {
+        // Single retry — Gemini JSON output is occasionally malformed
+        try {
+            console.warn('[gemini] Recommendations: first attempt failed, retrying...', firstError.message);
+            const text = await callGemini(geminiOpts);
+            return parseArray(text);
+        } catch (retryError) {
+            console.error('[gemini] Recommendations error (after retry):', retryError);
+            throw retryError;
+        }
     }
 }
 

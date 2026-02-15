@@ -131,8 +131,17 @@ app.use(createImageRoutes({
 
 // Only listen when run directly (not imported for testing)
 if (process.env.NODE_ENV !== 'test') {
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
         console.log(`Server running on http://localhost:${PORT}`);
+    });
+
+    server.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            console.error(`\n❌ Port ${PORT} is already in use. Kill the stale process:\n   npx kill-port ${PORT}\n`);
+        } else {
+            console.error('Server error:', err);
+        }
+        process.exit(1);
     });
 }
 

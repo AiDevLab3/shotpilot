@@ -209,30 +209,42 @@ OUTPUT VALID JSON ONLY:
   "recommendedModel": "Model name recommendation (only if no target model selected, otherwise null)"
 }`;
 
-    try {
-        const text = await callGemini({
-            parts: [{ text: userPrompt }],
-            systemInstruction,
-            thinkingLevel: 'medium',
-            responseMimeType: 'application/json',
-            maxOutputTokens: 1536,
-        });
+    const geminiOpts = {
+        parts: [{ text: userPrompt }],
+        systemInstruction,
+        thinkingLevel: 'low',
+        responseMimeType: 'application/json',
+        maxOutputTokens: 4096,
+    };
 
-        let parsed;
-        try {
-            parsed = JSON.parse(text);
-        } catch (e) {
-            const jsonMatch = text.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-                parsed = JSON.parse(jsonMatch[0]);
-            } else {
-                throw new Error('Could not parse object suggestions JSON');
+    const parseObject = (text) => {
+        try { return JSON.parse(text); } catch (e) {
+            // Handle trailing content after valid JSON (e.g. "...} extra text")
+            const posMatch = e.message.match(/position (\d+)/);
+            if (posMatch) {
+                try { return JSON.parse(text.substring(0, parseInt(posMatch[1]))); } catch {}
             }
         }
-        return parsed;
-    } catch (error) {
-        console.error('[gemini] Object suggestions error:', error);
-        throw error;
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            try { return JSON.parse(jsonMatch[0]); } catch {}
+        }
+        throw new Error('Could not parse object suggestions JSON');
+    };
+
+    try {
+        const text = await callGemini(geminiOpts);
+        return parseObject(text);
+    } catch (firstError) {
+        // Single retry — Gemini JSON output is occasionally malformed
+        try {
+            console.warn('[gemini] Object suggestions: first attempt failed, retrying...', firstError.message);
+            const text = await callGemini(geminiOpts);
+            return parseObject(text);
+        } catch (retryError) {
+            console.error('[gemini] Object suggestions error (after retry):', retryError);
+            throw retryError;
+        }
     }
 }
 
