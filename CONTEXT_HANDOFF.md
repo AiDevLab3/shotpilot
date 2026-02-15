@@ -228,7 +228,9 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 
 ---
 
-## 8. Caleb's Design Principles (Inferred from Conversations)
+## 8. Design Principles & Strategic Decisions
+
+### Caleb's Design Principles (Inferred from Conversations)
 
 1. **KB is the source of truth** — Gemini should consult KB first, only go outside KB if info is missing
 2. **AI does the work, not the user** — Prompt refinement is automatic, not manual
@@ -238,6 +240,33 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 6. **Model-specific prompts** — Every prompt should be optimized for the specific target model's syntax and capabilities
 7. **Professional cinematography language** — This is a filmmaking tool, not a generic image generator
 8. **Don't over-trust AI** — Verify what Claude/AI produces against the original research
+
+### Strategic Decisions
+
+| Decision | Rationale | Status |
+|----------|-----------|--------|
+| Persistent Chat Sidebar | AI collaboration across all tabs differentiates from dump-and-run tools | Architectural |
+| Script-First Workflow | Script is the narrative blueprint; everything flows from it | Workflow |
+| Image = Audit, Not Overwrite | Reference images should compare against direction, not replace it | Behavioral |
+| Full Script Updates Only | AI returns complete script with edits, never fragments (50% guard) | Safety |
+| Conversation Compaction | Prevents drift, reduces costs, improves latency | Optimization |
+| Platform Owns API Keys | Professional UX, credit monetization, security | Permanent |
+| Credit System | Predictable pricing, upfront revenue, abuse prevention | Permanent |
+| 80/20 Quality Weighting | Shot data (80%) + Context (20%): users control their shots | Algorithm |
+| On-the-Fly Scoring | Live <1ms calc vs stored scores that go stale | Architectural |
+| SQLite | Zero infrastructure, file-based, sufficient for thousands of users | MVP |
+| Gemini Flash | 1M context, multimodal, free tier, fast inference | MVP |
+| KB Condensation | 250K words → ~18K tokens fits context window | Permanent |
+
+### Critical Reminders
+
+1. **Do Not "Simplify" the KB** — The complexity IS the product. Remove film references and it becomes ChatGPT.
+2. **Maintain 80/20 Split** — Never let Context override user's Shot decisions.
+3. **Video is Different** — 5-layer structure (Scene, Character, Action, Camera, Audio). Do not reuse Image logic blindly.
+4. **Keep it Fast** — Quality checks <50ms (current <1ms).
+5. **Script Protection** — Never let AI erase script content (50% length guard).
+6. **AI Rules = Internal** — The AI should NEVER state its rules/workflow to the user.
+7. **Chat is Persistent** — The sidebar must survive tab navigation.
 
 ---
 
@@ -274,7 +303,6 @@ d0cc29c Phase 4 polish: welcome screen, UX cleanup, repo cleanup, bug fixes
 1. **Character AI Assistant parity** — Add model selector + turnaround prompts (mirror ObjectAIAssistant pattern)
 2. **Testing pass** — Run the app end-to-end, verify all 8 fixes work in practice. Route test suite exists at `tests/route-test.js`
 3. **KB accuracy audit** — Compare condensed `02_Model_*.md` files against full research in `models/` dirs
-4. **Update PROJECT_CONTEXT_SUMMARY.md** — Currently references old branch and Phase 4 state
-5. **Repo organization** — Caleb deferred this but root-level docs may need cleanup
+4. **Repo organization** — Caleb deferred this but root-level docs may need cleanup
 6. **Image optimization** — Uploaded images aren't resized/compressed before storage or Gemini API submission
 7. **Video generation workflow** — Models are in KB but no UI exists yet
