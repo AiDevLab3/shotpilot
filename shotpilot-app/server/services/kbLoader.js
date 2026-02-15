@@ -122,8 +122,8 @@ function loadKBForModel(modelName) {
     //    Image models: character consistency + quality control
     //    Video models: motion readiness + character consistency + quality control
     const packKeys = model.type === 'video'
-        ? ['motion_readiness', 'character_consistency', 'quality_control', 'spatial_composition']
-        : ['character_consistency', 'quality_control', 'spatial_composition'];
+        ? ['motion_readiness', 'character_consistency', 'video_quality_control', 'spatial_composition']
+        : ['character_consistency', 'image_quality_control', 'spatial_composition'];
 
     for (const key of packKeys) {
         const packContent = readKBFile(PACK_FILES[key]);
