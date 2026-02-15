@@ -22,6 +22,8 @@ Thumbs.db
 shotpilot-app/data/*.db
 shotpilot-app/*.db
 
+# Uploaded user assets (do not commit uploads)
+shotpilot-app/uploads/
 # Compressed files (we want the source files, not zips)
 *.zip
 *.tar.gz
