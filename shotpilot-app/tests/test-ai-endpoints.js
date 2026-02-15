@@ -149,10 +149,13 @@ async function runTests() {
       ok ? `${r.data.percentage}% — tier: ${r.data.tier}` : snip(r.data));
   } catch (e) { record(1, 'Check Readiness (KB)', 'ERR', false, e.message); }
 
-  // 2. Get Recommendations
+  // 2. Get Recommendations (missingFields must be objects with {field, label})
   try {
     const r = await api(`/api/shots/${shotId}/get-recommendations`, {
-      method: 'POST', body: { missingFields: ['camera_movement', 'notes'] }
+      method: 'POST', body: { missingFields: [
+        { field: 'camera_movement', label: 'Camera Movement' },
+        { field: 'notes', label: 'Notes' }
+      ] }
     });
     const ok = Array.isArray(r.data) && r.data.length > 0 && 'field' in r.data[0];
     record(2, 'Get Recommendations', r.status, r.status === 200 && ok,
@@ -173,20 +176,20 @@ async function runTests() {
       method: 'POST',
       body: { name: 'Detective Morrow', description: 'Weathered female detective, late 40s', personality: 'World-weary but sharp' }
     });
-    const ok = r.data && (r.data.description || r.data.reference_prompt || r.data.consistency_tips);
+    const ok = r.data && (r.data.description || r.data.referencePrompt || r.data.consistencyTips);
     record(4, 'Character Suggestions', r.status, r.status === 200 && !!ok,
-      ok ? snip(r.data.description || r.data.reference_prompt) : snip(r.data));
+      ok ? snip(r.data.description || r.data.referencePrompt) : snip(r.data));
   } catch (e) { record(4, 'Character Suggestions', 'ERR', false, e.message); }
 
   // 5. Object Suggestions
   try {
     const r = await api(`/api/projects/${projectId}/object-suggestions`, {
       method: 'POST',
-      body: { name: 'Evidence Case', description: 'Battered aluminum evidence case', targetModel: 'midjourney-v7' }
+      body: { name: 'Evidence Case', description: 'Battered aluminum evidence case', targetModel: 'midjourney' }
     });
-    const ok = r.data && (r.data.description || r.data.reference_prompt || r.data.turnaround_prompts);
+    const ok = r.data && (r.data.description || r.data.referencePrompt || r.data.turnaroundPrompts);
     record(5, 'Object Suggestions', r.status, r.status === 200 && !!ok,
-      ok ? snip(r.data.description || r.data.reference_prompt) : snip(r.data));
+      ok ? snip(r.data.description || r.data.referencePrompt) : snip(r.data));
   } catch (e) { record(5, 'Object Suggestions', 'ERR', false, e.message); }
 
   // 6. Shot Plan
@@ -200,7 +203,7 @@ async function runTests() {
   // 7. Generate Prompt (costs 1 credit)
   try {
     const r = await api(`/api/shots/${shotId}/generate-prompt`, {
-      method: 'POST', body: { modelName: 'midjourney-v7' }
+      method: 'POST', body: { modelName: 'midjourney' }
     });
     const ok = r.data && (r.data.generated_prompt || r.data.variant);
     if (r.data?.variant?.id) variantId = r.data.variant.id;
@@ -215,9 +218,9 @@ async function runTests() {
       method: 'POST',
       body: { message: 'What would make this shot more cinematic?', history: [] }
     });
-    const ok = r.data && ('reply' in r.data);
+    const ok = r.data && ('response' in r.data);
     record(8, 'Readiness Dialogue', r.status, r.status === 200 && ok,
-      ok ? snip(r.data.reply) : snip(r.data));
+      ok ? snip(r.data.response) : snip(r.data));
   } catch (e) { record(8, 'Readiness Dialogue', 'ERR', false, e.message); }
 
   // 9. Script Analysis
@@ -226,7 +229,7 @@ async function runTests() {
     const r = await api(`/api/projects/${projectId}/analyze-script`, {
       method: 'POST', body: { scriptText }
     });
-    const ok = r.data && (r.data.scenes || r.data.characters || r.data.visual_notes);
+    const ok = r.data && (r.data.scenes || r.data.characters || r.data.summary);
     record(9, 'Script Analysis', r.status, r.status === 200 && !!ok,
       ok ? `scenes: ${(r.data.scenes || []).length}, chars: ${(r.data.characters || []).length}` : snip(r.data));
   } catch (e) { record(9, 'Script Analysis', 'ERR', false, e.message); }
@@ -240,9 +243,9 @@ async function runTests() {
         history: [], mode: 'vision'
       }
     });
-    const ok = r.data && ('reply' in r.data);
+    const ok = r.data && ('response' in r.data);
     record(10, 'Creative Director', r.status, r.status === 200 && ok,
-      ok ? snip(r.data.reply) : snip(r.data));
+      ok ? snip(r.data.response) : snip(r.data));
   } catch (e) { record(10, 'Creative Director', 'ERR', false, e.message); }
 
   // 11. Content Refinement (Character)
@@ -256,9 +259,9 @@ async function runTests() {
         history: []
       }
     });
-    const ok = r.data && ('reply' in r.data || 'updatedContent' in r.data);
+    const ok = r.data && ('response' in r.data || 'contentUpdate' in r.data);
     record(11, 'Content Refinement', r.status, r.status === 200 && ok,
-      ok ? snip(r.data.reply || JSON.stringify(r.data.updatedContent)) : snip(r.data));
+      ok ? snip(r.data.response || JSON.stringify(r.data.contentUpdate)) : snip(r.data));
   } catch (e) { record(11, 'Content Refinement', 'ERR', false, e.message); }
 
   // 12. Conversation Compaction
@@ -280,9 +283,9 @@ async function runTests() {
     const r = await api(`/api/projects/${projectId}/compact-conversation`, {
       method: 'POST', body: { messages }
     });
-    const ok = r.data && ('summary' in r.data || 'compactedMessages' in r.data);
+    const ok = r.data && ('summary' in r.data || 'keyDecisions' in r.data);
     record(12, 'Conversation Compaction', r.status, r.status === 200 && ok,
-      ok ? snip(r.data.summary || JSON.stringify(r.data.compactedMessages)) : snip(r.data));
+      ok ? snip(r.data.summary) : snip(r.data));
   } catch (e) { record(12, 'Conversation Compaction', 'ERR', false, e.message); }
 
   // 13. Holistic Image Audit — skip (no test image available in automated run)
