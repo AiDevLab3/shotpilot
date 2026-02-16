@@ -1,9 +1,9 @@
 # ShotPilot — Context Handoff Summary
 
-**Date:** February 14, 2026
+**Date:** February 15, 2026
 **Creator:** Caleb (self-described "visionary, not developer" — surface-level code understanding, defers technical decisions)
 **Repository:** `cramsey28/cine-ai-knowledge-base`
-**Active Branch:** `claude/add-aesthetic-suggestions-upSzS`
+**Active Branch:** `main`
 **Stack:** React 19 + TypeScript + Vite | Express 5 + SQLite (better-sqlite3) | Gemini 3 Flash Preview
 **Styling:** All inline `React.CSSProperties`, dark theme, `lucide-react` icons, `zustand` state
 
@@ -20,6 +20,14 @@ An AI cinematography copilot — not a generic prompt optimizer. It's a professi
 5. **Iterate** — AI auto-refines prompts based on audit findings (NOT user-driven refinement)
 
 **Critical design philosophy:** The AI generates refined prompts automatically based on KB knowledge and image analysis. The user does NOT manually refine prompts — that's the whole point of the tool.
+
+### Lite vs Full Version Strategy
+
+**ShotPilot Lite** (current build) is a proof-of-concept that validates the most crucial functions: can the AI effectively leverage the 250K-word knowledge base to generate model-specific prompts, audit images against professional cinematography standards, and auto-refine? Lite uses a curated set of 7 models and **does not include in-app image generation** — users generate images externally and upload them for audit/refinement.
+
+**ShotPilot Full** (future) will add direct image generation via API integration (Nano Banana Pro / Gemini image gen is the obvious first candidate since the API key is already in use), additional models (22+ from the full KB), and the complete audit-generate-refine loop without leaving the app.
+
+**The distinction matters:** Lite is about proving the KB expertise works. Full is about closing the workflow loop. Do not build in-app generation features until Lite's core functions are validated and locked in. Video generation is similarly deferred — image workflow must be fully refined first.
 
 ---
 
@@ -100,12 +108,12 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 
 50 total endpoints across 8 route modules. Each module exports a factory function receiving dependencies (db, services, middleware).
 
-### Frontend Pages
-- **Creative Director** — AI chat sidebar (persistent via zustand) + project info display
-- **Characters** — Bible page with AI assistant, reference image upload
-- **Objects** — Bible page with AI assistant (model selector, turnaround prompts)
-- **Scene Manager** — Shot board with variant management, audit, prompt generation
-- **Image Library** — **NEW** project-level image parking lot for alternates/references
+### Frontend Pages (5 active, routed in App.tsx)
+- **Creative Director** (`/projects/:id`) — AI chat sidebar (persistent via zustand) + project info display + script upload/analysis. Absorbed the former standalone ScriptAnalyzerPage and ProjectInfoPage.
+- **Characters** (`/projects/:id/characters`) — Bible page with AI assistant, reference image upload
+- **Objects** (`/projects/:id/objects`) — Bible page with AI assistant (model selector, turnaround prompts)
+- **Scene Manager** (`/projects/:id/scenes`) — Shot board with variant management, audit, prompt generation
+- **Image Library** (`/projects/:id/images`) — Project-level image parking lot for alternates/references
 
 ### Navigation: Header tabs → `Creative Director | Characters | Objects | Scene Manager | Image Library`
 
@@ -178,24 +186,41 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 
 ## 6. Known Issues NOT Yet Addressed
 
-### From Testing / User Notes
-- **Character AI Assistant** does NOT have the model selector or turnaround prompts yet (only Object AI Assistant was updated). Should mirror the same pattern.
-- **Repo organization** — Caleb explicitly deferred this: *"Repo org - lets tackle this later."* The root-level docs (AGENTS.md, CONCEPT_PITCH.md, PRODUCTION_WORKFLOW.md, MASTER_INDEX.md) may be stale. `PROJECT_CONTEXT_SUMMARY.md` was last updated Feb 12 and references the old branch.
-- **Video QC vs Image QC** — QC pack was split into Image and Video files, but video quality analysis is not implemented yet. No video generation workflow exists in the app.
-- **KB accuracy concerns** — Caleb flagged that Claude's "optimization" of research files lost critical information. The condensed `02_Model_*.md` files (~600 words each) may have inaccuracies. The full research in `kb/models/` is more reliable but only loaded for deep queries.
-- **Multi-agent architecture** — Caleb's original vision was multi-agent specialists for different domains. Currently everything runs through a single Gemini agent with different system prompts. This was a deliberate MVP trade-off but may be revisited.
-- **No video generation workflow** — Video models (VEO, Kling) are in the KB and model registry but there's no UI flow for video generation yet.
-- **Tests may be stale** — Test files (`phase2c-api.test.js`, `phase3.test.js`) were written for earlier phases and may not cover recent changes.
-- **Auth is placeholder** — MVP uses hardcoded `test@shotpilot.com` with auto-login. No real authentication.
-- **Credits system is mostly cosmetic** — Credit tracking exists but is loosely enforced.
-- **OneDrive/data loss risk** — User previously lost all data from OneDrive conflicts. Database is gitignored, so project data doesn't persist across clones.
+### Backend Bugs (Priority — being fixed in Feb 15 session)
+- **Duplicate KB loading in Creative Director** — When a model is selected, Core Principles, Character Consistency, and Quality Control packs are sent twice (once in `coreKBFiles` array, again inside `loadKBForModel()`). Wastes ~20-40K tokens per call.
+- **Model key mismatch in qualityCheck.js** — Uses `'nano-banana'` but everywhere else uses `'nano-banana-pro'`. Also `midjourney` and `gpt-image` point to different files than kbLoader.js.
+- **No retry/timeout on Gemini API calls** — `callGemini` in shared.js does a single fetch with no exponential backoff, no timeout, no 429/503 handling.
+- **Script truncated at 5000 chars** — `creativeDirector.js` silently cuts scripts at 5000 chars with no user notification. Long scripts lose later scenes.
+- **Dead code: `AVAILABLE_MODELS_CONSTRAINT`** — Defined and exported in shared.js but never imported or used anywhere.
 
-### Architectural Concerns
-- ~~`geminiService.js` is massive~~ — **RESOLVED**: Split into 7 domain modules under `server/services/ai/`
-- ~~`server/index.js` is massive~~ — **RESOLVED**: Split into 8 route modules under `server/routes/`
-- **No error boundaries around AI calls** — If Gemini returns malformed JSON, the parsing can fail silently or crash.
-- ~~Base64 images in SQLite~~ — **NOT AN ISSUE**: Images are stored as files in `uploads/images/`, only file paths are in the DB. Base64 conversion only happens transiently when sending to Gemini API.
+### KB Content Gaps (Priority — being fixed in Feb 15 session)
+- **Lost during condensation:** Global Style System (GSS) 2-layer architecture, Canon Master Look Template, and 4-Block Prompt Compiler format were cut from Core Realism Principles. These are critical for project-level visual consistency. Source: `kb/packs/Cine-AI_Cinematic_Realism_Pack_v1.md`.
+- **Translation Matrix only covers 4 of 7 models** — VEO 3.1, Kling 2.6, Kling 3.0 get one paragraph instead of proper translation rows. No character consistency mechanism translations.
+- **Character suggestions lack model-specific KB** — `generateCharacterSuggestions` generates generic reference prompts instead of model-optimized ones.
+
+### Feature Gaps (Planned)
+- **Characters/objects disconnected from shots** — No way to associate characters/objects with specific shots. Planned solution: @mention system (e.g., `@DetectiveMarlowe` in shot description auto-injects character details + reference image into prompt context).
+- **Audit system is buried in UI** — 6-dimension audit exists but is hidden behind multiple clicks in variant cards. Needs: prominent status labels (Unaudited/Needs Refinement/Locked In), iteration tracking, 3-strike model pivot recommendation.
+- **KB knowledge is invisible to users** — AI uses KB but users never see what expertise was applied. Need to surface technical insights naturally (not file names, but statements like "Midjourney V7 responds best to cinematographic language...").
+- **No conversation persistence** — Chat history is browser-only (zustand). Page refresh or cache clear loses everything.
+- **Character AI Assistant** does NOT have the model selector or turnaround prompts yet (only Object AI Assistant was updated).
+
+### Deferred (Not Lite Version Scope)
+- **In-app image generation** — Direct API integration planned for Full version. Lite proves the KB/AI expertise works first.
+- **Video generation workflow** — Video models are in KB and registry but no UI exists. Deferred until image workflow is fully refined and locked in.
+- **Multi-agent architecture** — Original vision was 5 specialized agents. Currently single Gemini with different system prompts. Deliberate MVP trade-off.
+
+### Other Known Issues
+- **Tests may be stale** — Test files from earlier phases may not cover recent changes.
+- **Auth is placeholder** — MVP uses hardcoded `test@shotpilot.com` with auto-login.
+- **Credits system is mostly cosmetic** — Credit tracking exists but is loosely enforced.
 - **No image optimization** — Uploaded images aren't resized or compressed before storage.
+
+### Resolved
+- ~~`geminiService.js` is massive~~ — Split into 7 domain modules under `server/services/ai/`
+- ~~`server/index.js` is massive~~ — Split into 8 route modules under `server/routes/`
+- ~~Base64 images in SQLite~~ — Images are stored as files, only paths in DB
+- ~~Orphaned pages (ScriptAnalyzerPage, ProjectInfoPage)~~ — **DELETED Feb 15**: Functionality absorbed into CreativeDirectorPage. Also deleted unused `AestheticSuggestionsPanel` component and `ShotBoardPage.tsx.bak`.
 
 ---
 
@@ -300,9 +325,23 @@ d0cc29c Phase 4 polish: welcome screen, UX cleanup, repo cleanup, bug fixes
 
 ## 10. What to Work on Next (Suggested Priority)
 
-1. **Character AI Assistant parity** — Add model selector + turnaround prompts (mirror ObjectAIAssistant pattern)
-2. **Testing pass** — Run the app end-to-end, verify all 8 fixes work in practice. Route test suite exists at `tests/route-test.js`
-3. **KB accuracy audit** — Compare condensed `02_Model_*.md` files against full research in `models/` dirs
-4. **Repo organization** — Caleb deferred this but root-level docs may need cleanup
-6. **Image optimization** — Uploaded images aren't resized/compressed before storage or Gemini API submission
-7. **Video generation workflow** — Models are in KB but no UI exists yet
+### Phase 1 — Foundation (In Progress, Feb 15)
+1. ~~**Update CONTEXT_HANDOFF.md**~~ — Done. Added lite/full version clarity, cleaned stale refs.
+2. **Fix backend bugs** — Duplicate KB loading, model key mismatch, Gemini retry/timeout, script truncation, dead code cleanup.
+3. **Restore lost KB content** — GSS architecture, Master Look Template, 4-Block Prompt Compiler back into Core Realism Principles.
+4. ~~**Delete orphaned pages**~~ — Done. Removed ScriptAnalyzerPage, ProjectInfoPage, AestheticSuggestionsPanel, ShotBoardPage.bak.
+
+### Phase 2 — Core Features (Next)
+5. **Complete Translation Matrix** — Add proper translation rows for all 7 lite models. Character consistency mechanism translations.
+6. **@mention system** — `@CharacterName` / `@ObjectName` in shot fields auto-injects details + reference images into prompt context.
+7. **Audit elevation** — Status labels (Unaudited/Needs Refinement/Locked In), iteration tracking, 3-strike model pivot, prominent UI placement.
+8. **KB expertise surfacing** — AI responses explain reasoning with technical film expertise, not generic labels.
+
+### Phase 3 — Polish
+9. **Server-side conversation persistence** — Store chat history in DB, survive page refreshes.
+10. **Character AI Assistant parity** — Model selector + turnaround prompts (mirror ObjectAIAssistant).
+
+### Deferred
+- In-app image generation (Full version)
+- Video generation workflow (after image is locked in)
+- Multi-agent orchestration (future architecture)
