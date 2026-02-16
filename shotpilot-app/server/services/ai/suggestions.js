@@ -116,7 +116,7 @@ OUTPUT VALID JSON ARRAY ONLY:
  * Supports model-specific prompts and turnaround shots.
  */
 async function generateCharacterSuggestions(context) {
-    const { character, project, kbContent, modelKBContent, targetModel } = context;
+    const { character, project, kbContent, modelKBContent, targetModel, descriptionOnly } = context;
 
     const projectBlock = buildContextBlock('PROJECT', project);
 
@@ -130,7 +130,24 @@ CRITICAL RULE: Only use model syntax, parameters, and version numbers that appea
 
 ${modelNote}`;
 
-    const userPrompt = `Generate a detailed character bible for an AI filmmaking project.
+    const userPrompt = descriptionOnly
+        ? `Enhance this character's description and personality for an AI filmmaking project. Keep the character's core identity but make details specific, vivid, and optimized for AI image generation.
+
+${kbContent ? `CORE KB PRINCIPLES:\n${kbContent}\n` : ''}
+${projectBlock}
+
+CHARACTER NAME: ${character.name || 'Unnamed Character'}
+${character.description ? `EXISTING DESCRIPTION: ${character.description}` : ''}
+${character.personality ? `EXISTING PERSONALITY: ${character.personality}` : ''}
+
+Expand and enhance the description and personality. Be specific — include exact physical details (eye color, hair texture, skin tone, build, wardrobe). Keep the original intent but make it production-ready.
+
+OUTPUT VALID JSON ONLY:
+{
+  "description": "Detailed physical description covering: face (eye color, nose shape, jawline, distinguishing marks), age & skin (specific age range, skin tone with undertones), hair (style, color, length, texture), build & posture (body type, posture habits), wardrobe (default clothing, accessories). Written as a dense paragraph optimized for AI image generation prompts.",
+  "personality": "2-3 core personality traits with behavioral mannerisms. Written to guide expression and body language in generated images."
+}`
+        : `Generate a detailed character bible for an AI filmmaking project.
 
 ${kbContent ? `CORE KB PRINCIPLES:\n${kbContent}\n` : ''}
 ${modelKBContent ? `MODEL-SPECIFIC KB (${targetModel}):\n${modelKBContent}\n` : ''}
@@ -162,9 +179,9 @@ OUTPUT VALID JSON ONLY:
     const geminiOpts = {
         parts: [{ text: userPrompt }],
         systemInstruction,
-        thinkingLevel: 'medium',
+        thinkingLevel: descriptionOnly ? 'low' : 'medium',
         responseMimeType: 'application/json',
-        maxOutputTokens: 4096,
+        maxOutputTokens: descriptionOnly ? 1024 : 4096,
     };
 
     const parseObject = (text) => {

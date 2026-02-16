@@ -36,8 +36,12 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
     const [selectedModel, setSelectedModel] = useState<string>('');
     const [turnaroundCopied, setTurnaroundCopied] = useState<number | null>(null);
     const [workflowExpanded, setWorkflowExpanded] = useState(false);
+    const [showEnhancePrompt, setShowEnhancePrompt] = useState(false);
+    const [enhanceMode, setEnhanceMode] = useState<'idle' | 'enhanced' | 'skipped'>('idle');
 
     const nameIsEmpty = !characterName || characterName.trim().length === 0;
+    const descriptionsAreBasic = (!currentDescription || currentDescription.trim().length < 100)
+        && (!currentPersonality || currentPersonality.trim().length < 50);
 
     useEffect(() => {
         getAvailableModels()
@@ -48,7 +52,49 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
             .catch(() => {});
     }, []);
 
-    const loadSuggestions = async (modelOverride?: string) => {
+    const handleGenerateClick = () => {
+        // If descriptions are basic and user hasn't already enhanced or skipped, prompt them
+        if (descriptionsAreBasic && enhanceMode === 'idle') {
+            setShowEnhancePrompt(true);
+            return;
+        }
+        loadFullSuggestions();
+    };
+
+    const loadEnhanceOnly = async () => {
+        setShowEnhancePrompt(false);
+        setLoading(true);
+        setError(null);
+        try {
+            const result = await getCharacterSuggestions(projectId, {
+                name: characterName,
+                description: currentDescription,
+                personality: currentPersonality,
+                descriptionOnly: true,
+            });
+            // Auto-apply enhanced descriptions to the form
+            if (result.description) {
+                onAcceptDescription(result.description);
+            }
+            if (result.personality) {
+                onAcceptPersonality(result.personality);
+            }
+            setEnhanceMode('enhanced');
+            setHasLoaded(false); // Stay on trigger view so user can review and then generate prompts
+        } catch (err: any) {
+            setError(err.message || 'Failed to enhance descriptions');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSkipEnhance = () => {
+        setShowEnhancePrompt(false);
+        setEnhanceMode('skipped');
+        loadFullSuggestions();
+    };
+
+    const loadFullSuggestions = async (modelOverride?: string) => {
         setLoading(true);
         setError(null);
         setDescriptionApplied(false);
@@ -172,7 +218,7 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
                     </div>
                 )}
                 <button
-                    onClick={() => loadSuggestions()}
+                    onClick={() => handleGenerateClick()}
                     disabled={nameIsEmpty}
                     style={{
                         ...styles.triggerBtn,
@@ -200,7 +246,7 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
                     <span style={styles.headerTitle}>AI Character Assistant</span>
                 </div>
                 <button
-                    onClick={() => loadSuggestions()}
+                    onClick={() => handleGenerateClick()}
                     disabled={loading || nameIsEmpty}
                     style={{
                         ...styles.regenerateBtn,
@@ -238,7 +284,7 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
             ) : error ? (
                 <div style={styles.errorState}>
                     <p style={styles.errorText}>{error}</p>
-                    <button onClick={() => loadSuggestions()} style={styles.retryBtn}>
+                    <button onClick={() => handleGenerateClick()} style={styles.retryBtn}>
                         Retry
                     </button>
                 </div>

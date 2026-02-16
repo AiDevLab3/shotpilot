@@ -303,7 +303,7 @@ export const getAestheticSuggestions = async (projectId: number): Promise<Aesthe
 };
 
 // Phase 3.2: Character AI assistant
-export const getCharacterSuggestions = async (projectId: number, character: { name?: string; description?: string; personality?: string; targetModel?: string }): Promise<CharacterSuggestions> => {
+export const getCharacterSuggestions = async (projectId: number, character: { name?: string; description?: string; personality?: string; targetModel?: string; descriptionOnly?: boolean }): Promise<CharacterSuggestions> => {
     const res = await apiCall(`/projects/${projectId}/character-suggestions`, {
         method: 'POST',
         body: JSON.stringify(character),

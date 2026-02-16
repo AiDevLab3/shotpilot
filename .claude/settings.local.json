@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(lsof:*)",
+      "Bash(netstat:*)",
+      "Bash(git merge:*)",
+      "Bash(npx concurrently:*)",
+      "Bash(curl:*)",
+      "Bash(git push:*)",
+      "Bash(wc -l:*)",
+      "Bash(npx tsc:*)",
+      "Bash(git reset:*)",
+      "Bash(npx kill-port:*)",
+      "Bash(timeout:*)",
+      "mcp__ide__getDiagnostics"
+    ]
+  }
+}
