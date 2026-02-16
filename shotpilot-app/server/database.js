@@ -240,6 +240,34 @@ export const initDatabase = () => {
         console.error("Phase 6 (Audit Elevation) Migration failed:", e);
     }
 
+    // Phase 7: Conversation Persistence
+    try {
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS conversations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                project_id INTEGER NOT NULL UNIQUE,
+                mode TEXT DEFAULT 'initial',
+                script_content TEXT,
+                target_model TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+            )
+        `);
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS conversation_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                conversation_id INTEGER NOT NULL,
+                role TEXT NOT NULL,
+                content TEXT NOT NULL,
+                metadata TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+            )
+        `);
+    } catch (e) {
+        console.error("Phase 7 (Conversation Persistence) Migration failed:", e);
+    }
+
     // Phase 5: Project Images (Alt Images Library)
     try {
         db.exec(`

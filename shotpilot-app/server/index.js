@@ -21,6 +21,7 @@ import createObjectRoutes from './routes/objects.js';
 import createSceneRoutes from './routes/scenes.js';
 import createShotRoutes from './routes/shots.js';
 import createImageRoutes from './routes/images.js';
+import createConversationRoutes from './routes/conversations.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -128,6 +129,7 @@ app.use(createImageRoutes({
     holisticImageAudit, loadKBForModel, readKBFile,
     deductCredit, logAIFeatureUsage,
 }));
+app.use(createConversationRoutes({ db, requireAuth }));
 
 // Only listen when run directly (not imported for testing)
 if (process.env.NODE_ENV !== 'test') {

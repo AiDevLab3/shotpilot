@@ -405,6 +405,52 @@ export const compactConversation = async (
 };
 
 // ============================================================
+// CONVERSATION PERSISTENCE
+// ============================================================
+
+export const loadConversation = async (projectId: number): Promise<{
+    exists: boolean;
+    messages: any[];
+    mode: string;
+    scriptContent: string;
+    targetModel: string | null;
+}> => {
+    return apiCall(`/projects/${projectId}/conversation`);
+};
+
+export const saveConversationMessage = async (
+    projectId: number,
+    message: { role: string; content: string; [key: string]: any },
+    sessionState: { mode?: string; scriptContent?: string; targetModel?: string | null }
+): Promise<{ id: number; saved: boolean }> => {
+    const { role, content, ...metadata } = message;
+    return apiCall(`/projects/${projectId}/conversation/messages`, {
+        method: 'POST',
+        body: JSON.stringify({
+            role,
+            content,
+            metadata: Object.keys(metadata).length > 0 ? metadata : null,
+            ...sessionState,
+        }),
+    });
+};
+
+export const replaceConversationMessages = async (
+    projectId: number,
+    messages: any[],
+    sessionState: { mode?: string; scriptContent?: string; targetModel?: string | null }
+): Promise<{ replaced: boolean; count: number }> => {
+    return apiCall(`/projects/${projectId}/conversation/messages`, {
+        method: 'PUT',
+        body: JSON.stringify({ messages, ...sessionState }),
+    });
+};
+
+export const clearConversation = async (projectId: number): Promise<{ cleared: boolean }> => {
+    return apiCall(`/projects/${projectId}/conversation`, { method: 'DELETE' });
+};
+
+// ============================================================
 // HOLISTIC IMAGE AUDIT — Real image quality analysis
 // ============================================================
 

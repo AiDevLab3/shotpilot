@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Send, Loader2, FileText, Lightbulb, Check, Upload, Image, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
-import { creativeDirectorChat, getAvailableModels, compactConversation } from '../services/api';
+import { creativeDirectorChat, getAvailableModels, compactConversation, loadConversation, saveConversationMessage, replaceConversationMessages, clearConversation } from '../services/api';
 import { useCreativeDirectorStore } from '../stores/creativeDirectorStore';
 import type { Message } from '../stores/creativeDirectorStore';
 import type { Project } from '../types/schema';
@@ -40,6 +40,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
     const compactingRef = useRef(false);
+    const serverLoadedRef = useRef(false);
 
     useEffect(() => {
         getAvailableModels().then(setAvailableModels).catch(() => {});
@@ -57,14 +58,38 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
         }
     }, [queuedMessage, projectId, isThinking]);
 
-    // Initialize welcome message for new sessions
+    // Load conversation from server on mount (source of truth)
     useEffect(() => {
-        if (project && session.messages.length === 0) {
-            store.setMessages(projectId, [{
-                role: 'assistant',
-                content: `Welcome to your AI Creative Director workspace for **${project.title}**!\n\nI can see your entire project — characters, objects, scenes, and all visual direction. I'm here to help you develop everything from concept to camera-ready.\n\n**The best workflow:**\n1. Lock your script first (the narrative blueprint)\n2. Build out characters & objects\n3. Define your visual direction\n4. Plan scenes & shots\n\nDo you want to:\n- **Paste or upload a script** for me to analyze?\n- **Start from an idea** and build the vision together?\n\nWhat's your starting point?`,
-            }]);
-        }
+        if (!project || serverLoadedRef.current) return;
+        serverLoadedRef.current = true;
+
+        loadConversation(projectId).then(data => {
+            if (data.exists && data.messages.length > 0) {
+                // Server has conversation — use it as source of truth
+                store.setMessages(projectId, data.messages);
+                if (data.mode) store.setMode(projectId, data.mode as any);
+                if (data.scriptContent) store.setScriptContent(projectId, data.scriptContent);
+                if (data.targetModel) store.setTargetModel(projectId, data.targetModel);
+            } else if (session.messages.length === 0) {
+                // No server data and no local data — show welcome message
+                const welcomeMsg: Message = {
+                    role: 'assistant',
+                    content: `Welcome to your AI Creative Director workspace for **${project.title}**!\n\nI can see your entire project — characters, objects, scenes, and all visual direction. I'm here to help you develop everything from concept to camera-ready.\n\n**The best workflow:**\n1. Lock your script first (the narrative blueprint)\n2. Build out characters & objects\n3. Define your visual direction\n4. Plan scenes & shots\n\nDo you want to:\n- **Paste or upload a script** for me to analyze?\n- **Start from an idea** and build the vision together?\n\nWhat's your starting point?`,
+                };
+                store.setMessages(projectId, [welcomeMsg]);
+                // Save welcome message to server
+                saveConversationMessage(projectId, welcomeMsg, { mode: 'initial' }).catch(() => {});
+            }
+        }).catch(err => {
+            console.warn('[ChatSidebar] Server conversation load failed, using local:', err.message);
+            // Fall back to local state — if empty, show welcome
+            if (project && session.messages.length === 0) {
+                store.setMessages(projectId, [{
+                    role: 'assistant',
+                    content: `Welcome to your AI Creative Director workspace for **${project.title}**!\n\nI can see your entire project — characters, objects, scenes, and all visual direction. I'm here to help you develop everything from concept to camera-ready.\n\n**The best workflow:**\n1. Lock your script first (the narrative blueprint)\n2. Build out characters & objects\n3. Define your visual direction\n4. Plan scenes & shots\n\nDo you want to:\n- **Paste or upload a script** for me to analyze?\n- **Start from an idea** and build the vision together?\n\nWhat's your starting point?`,
+                }]);
+            }
+        });
     }, [project?.id]);
 
     const handleSendMessage = async (message: string, imageUrl?: string) => {
@@ -140,7 +165,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 ? result.response
                 : 'I processed your request but had trouble formatting my response. Could you rephrase?';
 
-            store.addMessage(projectId, {
+            const assistantMsg: Message = {
                 role: 'assistant',
                 content: responseText,
                 projectUpdates: result.projectUpdates,
@@ -148,7 +173,17 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 createdCharacters: result.createdCharacters,
                 createdObjects: result.createdObjects,
                 createdScenes: result.createdScenes,
-            });
+            };
+            store.addMessage(projectId, assistantMsg);
+
+            // Persist both messages to server (fire-and-forget)
+            const sessionState = { mode: currentMode, scriptContent: session.scriptContent, targetModel: session.targetModel };
+            saveConversationMessage(projectId, userMsg, sessionState).catch(e =>
+                console.warn('[ChatSidebar] Failed to save user message:', e.message)
+            );
+            saveConversationMessage(projectId, assistantMsg, sessionState).catch(e =>
+                console.warn('[ChatSidebar] Failed to save assistant message:', e.message)
+            );
 
             setTimeout(() => maybeCompact(), 500);
         } catch (error) {
@@ -192,7 +227,15 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 keyDecisions: digest.keyDecisions,
             };
 
-            store.setMessages(projectId, [summaryMsg, ...toKeep]);
+            const compactedMessages = [summaryMsg, ...toKeep];
+            store.setMessages(projectId, compactedMessages);
+
+            // Sync compacted messages to server
+            replaceConversationMessages(projectId, compactedMessages, {
+                mode: session.mode,
+                scriptContent: session.scriptContent,
+                targetModel: session.targetModel,
+            }).catch(e => console.warn('[ChatSidebar] Failed to sync compaction:', e.message));
         } catch (err) {
             console.error('Compaction failed (non-critical):', err);
         } finally {
