@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { filterByMentions } from '../utils/mentionParser.js';
+import { callGemini } from '../services/ai/shared.js';
 
 export default function createAIRoutes({
     db, requireAuth, checkCredits, sanitize,
@@ -155,14 +156,38 @@ export default function createAIRoutes({
                 console.warn('[character-suggestions] Could not load KB:', err.message);
             }
 
-            // Load model-specific KB if target model is selected
-            let modelKBContent = '';
-            if (targetModel) {
+            // Determine which model to use — either user-selected or auto-picked
+            let resolvedModel = targetModel;
+            if (!resolvedModel) {
+                // Auto mode: quick Gemini call to pick the best model, then load its full KB
                 try {
-                    modelKBContent = loadKBForModel(targetModel);
-                    kbFilesUsed.push(`model:${targetModel}`);
+                    const availableModels = getAvailableModels().filter(m => m.type === 'image');
+                    const modelList = availableModels.map(m => `${m.name}: ${m.capabilities}`).join('\n');
+                    const pickerText = await callGemini({
+                        parts: [{ text: `Pick the single best AI image model for this character.\n\nCharacter: ${name} — ${description || 'no description'}\nProject style: ${project.style_aesthetic || 'not set'}\n\nAvailable models:\n${modelList}\n\nRespond with ONLY the model ID (e.g. "midjourney"), nothing else.` }],
+                        systemInstruction: 'You are a model selection expert. Return only the model ID, no explanation.',
+                        thinkingLevel: 'low',
+                        maxOutputTokens: 32,
+                    });
+                    const picked = pickerText.trim().toLowerCase().replace(/[^a-z0-9.-]/g, '');
+                    if (availableModels.some(m => m.name === picked)) {
+                        resolvedModel = picked;
+                        console.log(`[character-suggestions] Auto-picked model: ${resolvedModel}`);
+                    }
                 } catch (err) {
-                    console.warn(`[character-suggestions] Could not load model KB for ${targetModel}:`, err.message);
+                    console.warn('[character-suggestions] Model auto-pick failed, using midjourney default:', err.message);
+                    resolvedModel = 'midjourney';
+                }
+            }
+
+            // Always load full model-specific KB
+            let modelKBContent = '';
+            if (resolvedModel) {
+                try {
+                    modelKBContent = loadKBForModel(resolvedModel);
+                    kbFilesUsed.push(`model:${resolvedModel}`);
+                } catch (err) {
+                    console.warn(`[character-suggestions] Could not load model KB for ${resolvedModel}:`, err.message);
                 }
             }
 
@@ -171,8 +196,13 @@ export default function createAIRoutes({
                 project,
                 kbContent,
                 modelKBContent,
-                targetModel,
+                targetModel: resolvedModel,
             });
+
+            // Attach which model was used (for frontend display)
+            if (!targetModel && resolvedModel) {
+                suggestions.recommendedModel = resolvedModel;
+            }
 
             logAIFeatureUsage(db, req.session.userId, 'character_suggestions', projectId);
             res.json({ ...suggestions, kbFilesUsed });
@@ -317,13 +347,37 @@ export default function createAIRoutes({
                 console.warn('[object-suggestions] Could not load KB:', err.message);
             }
 
-            let modelKBContent = '';
-            if (targetModel) {
+            // Determine which model to use — either user-selected or auto-picked
+            let resolvedModel = targetModel;
+            if (!resolvedModel) {
                 try {
-                    modelKBContent = loadKBForModel(targetModel);
-                    kbFilesUsed.push(`model:${targetModel}`);
+                    const availableModels = getAvailableModels().filter(m => m.type === 'image');
+                    const modelList = availableModels.map(m => `${m.name}: ${m.capabilities}`).join('\n');
+                    const pickerText = await callGemini({
+                        parts: [{ text: `Pick the single best AI image model for this object/prop.\n\nObject: ${name} — ${description || 'no description'}\nProject style: ${project.style_aesthetic || 'not set'}\n\nAvailable models:\n${modelList}\n\nRespond with ONLY the model ID (e.g. "midjourney"), nothing else.` }],
+                        systemInstruction: 'You are a model selection expert. Return only the model ID, no explanation.',
+                        thinkingLevel: 'low',
+                        maxOutputTokens: 32,
+                    });
+                    const picked = pickerText.trim().toLowerCase().replace(/[^a-z0-9.-]/g, '');
+                    if (availableModels.some(m => m.name === picked)) {
+                        resolvedModel = picked;
+                        console.log(`[object-suggestions] Auto-picked model: ${resolvedModel}`);
+                    }
                 } catch (err) {
-                    console.warn(`[object-suggestions] Could not load model KB for ${targetModel}:`, err.message);
+                    console.warn('[object-suggestions] Model auto-pick failed, using midjourney default:', err.message);
+                    resolvedModel = 'midjourney';
+                }
+            }
+
+            // Always load full model-specific KB
+            let modelKBContent = '';
+            if (resolvedModel) {
+                try {
+                    modelKBContent = loadKBForModel(resolvedModel);
+                    kbFilesUsed.push(`model:${resolvedModel}`);
+                } catch (err) {
+                    console.warn(`[object-suggestions] Could not load model KB for ${resolvedModel}:`, err.message);
                 }
             }
 
@@ -332,8 +386,12 @@ export default function createAIRoutes({
                 project,
                 kbContent,
                 modelKBContent,
-                targetModel,
+                targetModel: resolvedModel,
             });
+
+            if (!targetModel && resolvedModel) {
+                suggestions.recommendedModel = resolvedModel;
+            }
 
             logAIFeatureUsage(db, req.session.userId, 'object_suggestions', projectId);
             res.json({ ...suggestions, kbFilesUsed });
