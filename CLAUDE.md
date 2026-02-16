@@ -46,6 +46,7 @@ Caleb frequently needs to roll back changes when something breaks a feature he d
 
 - Always follow best practices for whatever framework/language is in use
 - Keep code organized, well-commented, and maintainable
+- Create a todo list when working on complex tasks to track progress and remain on track 
 - Prefer established patterns and conventions over clever solutions
 - When creating a new project, set up a sensible folder structure and explain the organization
 - Regularly audit for:
