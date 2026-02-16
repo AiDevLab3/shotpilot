@@ -341,7 +341,7 @@ export const analyzeScriptText = async (projectId: number, scriptText: string): 
 };
 
 // Phase 3.6: Object AI assistant
-export const getObjectSuggestions = async (projectId: number, object: { name?: string; description?: string; targetModel?: string }): Promise<ObjectSuggestions> => {
+export const getObjectSuggestions = async (projectId: number, object: { name?: string; description?: string; targetModel?: string; descriptionOnly?: boolean }): Promise<ObjectSuggestions> => {
     const res = await apiCall(`/projects/${projectId}/object-suggestions`, {
         method: 'POST',
         body: JSON.stringify(object),

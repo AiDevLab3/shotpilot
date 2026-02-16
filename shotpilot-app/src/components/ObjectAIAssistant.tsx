@@ -30,8 +30,12 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
     const [selectedModel, setSelectedModel] = useState<string>('');
     const [turnaroundCopied, setTurnaroundCopied] = useState<number | null>(null);
     const [workflowExpanded, setWorkflowExpanded] = useState(false);
+    const [showEnhancePrompt, setShowEnhancePrompt] = useState(false);
+    const [enhanceMode, setEnhanceMode] = useState<'idle' | 'enhanced' | 'skipped'>('idle');
+    const [isEnhancing, setIsEnhancing] = useState(false);
 
     const nameIsEmpty = !objectName || objectName.trim().length === 0;
+    const descriptionIsBasic = !currentDescription || currentDescription.trim().length < 100;
 
     useEffect(() => {
         getAvailableModels()
@@ -42,7 +46,45 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
             .catch(() => {});
     }, []);
 
-    const loadSuggestions = async (modelOverride?: string) => {
+    const handleGenerateClick = () => {
+        if (descriptionIsBasic && enhanceMode === 'idle') {
+            setShowEnhancePrompt(true);
+            return;
+        }
+        loadFullSuggestions();
+    };
+
+    const loadEnhanceOnly = async () => {
+        setShowEnhancePrompt(false);
+        setLoading(true);
+        setIsEnhancing(true);
+        setError(null);
+        try {
+            const result = await getObjectSuggestions(projectId, {
+                name: objectName,
+                description: currentDescription,
+                descriptionOnly: true,
+            });
+            if (result.description) {
+                onAcceptDescription(result.description);
+            }
+            setEnhanceMode('enhanced');
+            setHasLoaded(false);
+        } catch (err: any) {
+            setError(err.message || 'Failed to enhance description');
+        } finally {
+            setLoading(false);
+            setIsEnhancing(false);
+        }
+    };
+
+    const handleSkipEnhance = () => {
+        setShowEnhancePrompt(false);
+        setEnhanceMode('skipped');
+        loadFullSuggestions();
+    };
+
+    const loadFullSuggestions = async (modelOverride?: string) => {
         setLoading(true);
         setError(null);
         setDescriptionApplied(false);
@@ -155,22 +197,74 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                     </div>
                 )}
                 <button
-                    onClick={() => loadSuggestions()}
-                    disabled={nameIsEmpty}
+                    onClick={() => handleGenerateClick()}
+                    disabled={nameIsEmpty || showEnhancePrompt}
                     style={{
                         ...styles.triggerBtn,
-                        opacity: nameIsEmpty ? 0.5 : 1,
-                        cursor: nameIsEmpty ? 'not-allowed' : 'pointer',
+                        opacity: nameIsEmpty || showEnhancePrompt ? 0.5 : 1,
+                        cursor: nameIsEmpty || showEnhancePrompt ? 'not-allowed' : 'pointer',
                     }}
                 >
                     <Sparkles size={14} />
-                    Generate Prompt
+                    {enhanceMode === 'enhanced' ? 'Generate Prompts' : 'Generate Prompt'}
                 </button>
                 <span style={styles.triggerHint}>
                     {nameIsEmpty
                         ? 'Enter a name first'
+                        : enhanceMode === 'enhanced'
+                        ? 'Description enhanced — review it above, then generate prompts'
                         : 'AI will suggest a description, reference prompt, and consistency tips'}
                 </span>
+
+                {/* Enhance prompt dialog */}
+                {showEnhancePrompt && (
+                    <div style={{
+                        marginTop: '8px',
+                        padding: '12px',
+                        backgroundColor: '#1a1a2e',
+                        border: '1px solid #f59e0b',
+                        borderRadius: '6px',
+                        width: '100%',
+                    }}>
+                        <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#fbbf24', fontWeight: 600 }}>
+                            Your description looks basic
+                        </p>
+                        <p style={{ margin: '0 0 12px 0', fontSize: '11px', color: '#d1d5db', lineHeight: '1.5' }}>
+                            A more detailed description produces better prompts. Would you like AI to enhance your description first? You can review and edit the result before generating prompts.
+                        </p>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                            <button
+                                onClick={loadEnhanceOnly}
+                                style={{
+                                    padding: '6px 14px',
+                                    backgroundColor: '#f59e0b',
+                                    color: '#18181b',
+                                    border: 'none',
+                                    borderRadius: '5px',
+                                    fontSize: '12px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                Enhance First
+                            </button>
+                            <button
+                                onClick={handleSkipEnhance}
+                                style={{
+                                    padding: '6px 14px',
+                                    backgroundColor: '#27272a',
+                                    color: '#9ca3af',
+                                    border: '1px solid #3f3f46',
+                                    borderRadius: '5px',
+                                    fontSize: '12px',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                Skip, Use As-Is
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }
@@ -183,7 +277,7 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                     <span style={styles.headerTitle}>AI Object Assistant</span>
                 </div>
                 <button
-                    onClick={() => loadSuggestions()}
+                    onClick={() => loadFullSuggestions()}
                     disabled={loading || nameIsEmpty}
                     style={{
                         ...styles.regenerateBtn,
@@ -216,12 +310,14 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
             {loading ? (
                 <div style={styles.loadingState}>
                     <Loader2 size={18} className="spin" color="#8b5cf6" />
-                    <span style={styles.loadingText}>Generating object details...</span>
+                    <span style={styles.loadingText}>
+                        {isEnhancing ? 'Enhancing description...' : 'Generating object details...'}
+                    </span>
                 </div>
             ) : error ? (
                 <div style={styles.errorState}>
                     <p style={styles.errorText}>{error}</p>
-                    <button onClick={() => loadSuggestions()} style={styles.retryBtn}>
+                    <button onClick={() => handleGenerateClick()} style={styles.retryBtn}>
                         Retry
                     </button>
                 </div>

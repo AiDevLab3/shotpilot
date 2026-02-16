@@ -38,6 +38,7 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
     const [workflowExpanded, setWorkflowExpanded] = useState(false);
     const [showEnhancePrompt, setShowEnhancePrompt] = useState(false);
     const [enhanceMode, setEnhanceMode] = useState<'idle' | 'enhanced' | 'skipped'>('idle');
+    const [isEnhancing, setIsEnhancing] = useState(false);
 
     const nameIsEmpty = !characterName || characterName.trim().length === 0;
     const descriptionsAreBasic = (!currentDescription || currentDescription.trim().length < 100)
@@ -64,6 +65,7 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
     const loadEnhanceOnly = async () => {
         setShowEnhancePrompt(false);
         setLoading(true);
+        setIsEnhancing(true);
         setError(null);
         try {
             const result = await getCharacterSuggestions(projectId, {
@@ -85,6 +87,7 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
             setError(err.message || 'Failed to enhance descriptions');
         } finally {
             setLoading(false);
+            setIsEnhancing(false);
         }
     };
 
@@ -219,21 +222,73 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
                 )}
                 <button
                     onClick={() => handleGenerateClick()}
-                    disabled={nameIsEmpty}
+                    disabled={nameIsEmpty || showEnhancePrompt}
                     style={{
                         ...styles.triggerBtn,
-                        opacity: nameIsEmpty ? 0.5 : 1,
-                        cursor: nameIsEmpty ? 'not-allowed' : 'pointer',
+                        opacity: nameIsEmpty || showEnhancePrompt ? 0.5 : 1,
+                        cursor: nameIsEmpty || showEnhancePrompt ? 'not-allowed' : 'pointer',
                     }}
                 >
                     <Sparkles size={14} />
-                    Generate Prompt
+                    {enhanceMode === 'enhanced' ? 'Generate Prompts' : 'Generate Prompt'}
                 </button>
                 <span style={styles.triggerHint}>
                     {nameIsEmpty
                         ? 'Enter a name first'
+                        : enhanceMode === 'enhanced'
+                        ? 'Descriptions enhanced — review them above, then generate prompts'
                         : 'AI will suggest description, personality, and a reference image prompt'}
                 </span>
+
+                {/* Enhance prompt dialog */}
+                {showEnhancePrompt && (
+                    <div style={{
+                        marginTop: '8px',
+                        padding: '12px',
+                        backgroundColor: '#1a1a2e',
+                        border: '1px solid #f59e0b',
+                        borderRadius: '6px',
+                        width: '100%',
+                    }}>
+                        <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#fbbf24', fontWeight: 600 }}>
+                            Your descriptions look basic
+                        </p>
+                        <p style={{ margin: '0 0 12px 0', fontSize: '11px', color: '#d1d5db', lineHeight: '1.5' }}>
+                            Better descriptions produce better prompts. Would you like AI to enhance your description and personality first? You can review and edit the results before generating prompts.
+                        </p>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                            <button
+                                onClick={loadEnhanceOnly}
+                                style={{
+                                    padding: '6px 14px',
+                                    backgroundColor: '#f59e0b',
+                                    color: '#18181b',
+                                    border: 'none',
+                                    borderRadius: '5px',
+                                    fontSize: '12px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                Enhance First
+                            </button>
+                            <button
+                                onClick={handleSkipEnhance}
+                                style={{
+                                    padding: '6px 14px',
+                                    backgroundColor: '#27272a',
+                                    color: '#9ca3af',
+                                    border: '1px solid #3f3f46',
+                                    borderRadius: '5px',
+                                    fontSize: '12px',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                Skip, Use As-Is
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }
@@ -246,7 +301,7 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
                     <span style={styles.headerTitle}>AI Character Assistant</span>
                 </div>
                 <button
-                    onClick={() => handleGenerateClick()}
+                    onClick={() => loadFullSuggestions()}
                     disabled={loading || nameIsEmpty}
                     style={{
                         ...styles.regenerateBtn,
@@ -279,7 +334,9 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
             {loading ? (
                 <div style={styles.loadingState}>
                     <Loader2 size={18} className="spin" color="#8b5cf6" />
-                    <span style={styles.loadingText}>Generating character bible...</span>
+                    <span style={styles.loadingText}>
+                        {isEnhancing ? 'Enhancing descriptions...' : 'Generating character bible...'}
+                    </span>
                 </div>
             ) : error ? (
                 <div style={styles.errorState}>

@@ -344,7 +344,7 @@ export default function createAIRoutes({
     router.post('/api/projects/:projectId/object-suggestions', requireAuth, async (req, res) => {
         try {
             const { projectId } = req.params;
-            const { name, description, targetModel } = req.body;
+            const { name, description, targetModel, descriptionOnly } = req.body;
 
             const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId);
             if (!project) return res.status(404).json({ error: 'Project not found' });
@@ -357,6 +357,18 @@ export default function createAIRoutes({
                 kbFilesUsed.push('01_Core_Realism_Principles.md');
             } catch (err) {
                 console.warn('[object-suggestions] Could not load KB:', err.message);
+            }
+
+            // Description-only mode: skip model picking and full KB, just enhance text
+            if (descriptionOnly) {
+                const suggestions = await generateObjectSuggestions({
+                    object: { name, description },
+                    project,
+                    kbContent,
+                    descriptionOnly: true,
+                });
+                logAIFeatureUsage(db, req.session.userId, 'object_enhance', projectId);
+                return res.json({ ...suggestions, kbFilesUsed });
             }
 
             // Determine which model to use — either user-selected or auto-picked

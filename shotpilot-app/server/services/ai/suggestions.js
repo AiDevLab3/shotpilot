@@ -223,7 +223,7 @@ OUTPUT VALID JSON ONLY:
  * Phase 3.6: Generate detailed object/prop suggestions.
  */
 async function generateObjectSuggestions(context) {
-    const { object, project, kbContent, modelKBContent, targetModel } = context;
+    const { object, project, kbContent, modelKBContent, targetModel, descriptionOnly } = context;
 
     const projectBlock = buildContextBlock('PROJECT', project);
 
@@ -237,7 +237,22 @@ CRITICAL RULE: Only use model syntax, parameters, and version numbers that appea
 
 ${modelNote}`;
 
-    const userPrompt = `Generate a detailed object/prop description for an AI filmmaking project.
+    const userPrompt = descriptionOnly
+        ? `Enhance this object's description for an AI filmmaking project. Keep the object's core identity but make details specific, vivid, and optimized for AI image generation.
+
+${kbContent ? `CORE KB PRINCIPLES:\n${kbContent}\n` : ''}
+${projectBlock}
+
+OBJECT NAME: ${object.name || 'Unnamed Object'}
+${object.description ? `EXISTING DESCRIPTION: ${object.description}` : ''}
+
+Expand and enhance the description. Be specific — include exact material, color, texture, condition, dimensions, distinctive features, and contextual placement. Keep the original intent but make it production-ready.
+
+OUTPUT VALID JSON ONLY:
+{
+  "description": "Detailed physical description covering: material, color, texture, condition (new/worn/damaged), dimensions/scale relative to human, distinctive features, contextual placement. Written as a dense paragraph optimized for AI image generation prompts."
+}`
+        : `Generate a detailed object/prop description for an AI filmmaking project.
 
 ${kbContent ? `CORE KB PRINCIPLES:\n${kbContent}\n` : ''}
 ${modelKBContent ? `MODEL-SPECIFIC KB (${targetModel}):\n${modelKBContent}\n` : ''}
@@ -267,9 +282,9 @@ OUTPUT VALID JSON ONLY:
     const geminiOpts = {
         parts: [{ text: userPrompt }],
         systemInstruction,
-        thinkingLevel: 'low',
+        thinkingLevel: descriptionOnly ? 'low' : 'low',
         responseMimeType: 'application/json',
-        maxOutputTokens: 4096,
+        maxOutputTokens: descriptionOnly ? 1024 : 4096,
     };
 
     const parseObject = (text) => {
