@@ -113,17 +113,25 @@ OUTPUT VALID JSON ARRAY ONLY:
 /**
  * Phase 3.2: Generate detailed character bible suggestions.
  * Uses Character Consistency Pack to produce prompt-ready descriptions.
+ * Supports model-specific prompts and turnaround shots.
  */
 async function generateCharacterSuggestions(context) {
-    const { character, project, kbContent } = context;
+    const { character, project, kbContent, modelKBContent, targetModel } = context;
 
     const projectBlock = buildContextBlock('PROJECT', project);
 
-    const systemInstruction = `You are an expert character designer for AI-generated cinematography. Using the Character Consistency Pack, generate detailed character bible entries that will produce consistent results across AI image/video models. Every detail should be specific enough to reproduce exactly — no vague descriptions.`;
+    const modelNote = targetModel
+        ? `You are generating prompts for ${targetModel}. Use the model-specific KB below for EXACT syntax, parameters, and formatting.`
+        : `No target model selected. Generate prompts using general cinematic photography language. Note in your response which model would be best suited for this character.`;
+
+    const systemInstruction = `You are an expert character designer for AI-generated cinematography. Using the Character Consistency Pack, generate detailed character bible entries that will produce consistent results across AI image/video models. Every detail should be specific enough to reproduce exactly — no vague descriptions.
+
+${modelNote}`;
 
     const userPrompt = `Generate a detailed character bible for an AI filmmaking project.
 
-${kbContent ? `Use these KB principles:\n${kbContent}\n` : ''}
+${kbContent ? `CORE KB PRINCIPLES:\n${kbContent}\n` : ''}
+${modelKBContent ? `MODEL-SPECIFIC KB (${targetModel}):\n${modelKBContent}\n` : ''}
 ${projectBlock}
 
 CHARACTER NAME: ${character.name || 'Unnamed Character'}
@@ -132,38 +140,56 @@ ${character.personality ? `EXISTING PERSONALITY: ${character.personality}` : ''}
 
 Generate comprehensive, prompt-ready character details following the Character Bible Checklist.
 
+Also generate turnaround prompts — a set of 3 angle-specific prompts to establish the character from multiple viewpoints for consistency across shots. Each turnaround prompt should specify a different angle (front portrait, 3/4 profile, full body).
+
 OUTPUT VALID JSON ONLY:
 {
   "description": "Detailed physical description covering: face (eye color, nose shape, jawline, distinguishing marks), age & skin (specific age range, skin tone with undertones), hair (style, color, length, texture), build & posture (body type, posture habits), wardrobe (default clothing, accessories). Written as a dense paragraph optimized for AI image generation prompts.",
   "personality": "2-3 core personality traits with behavioral mannerisms. Written to guide expression and body language in generated images.",
-  "referencePrompt": "A suggested prompt to generate a master reference image for this character using Midjourney or Nano Banana Pro. Include specific physical details, lighting, and framing.",
-  "consistencyTips": ["Tip 1 for maintaining this character across shots", "Tip 2", "Tip 3"]
+  "referencePrompt": "A model-specific prompt to generate a master reference image for this character. Must use exact model syntax (e.g. Midjourney parameters, Higgsfield camera rig language, etc). Include specific physical details, lighting, and framing.",
+  "turnaroundPrompts": [
+    "Front portrait prompt — model-specific syntax",
+    "3/4 profile view prompt — model-specific syntax",
+    "Full body view prompt — model-specific syntax"
+  ],
+  "consistencyTips": ["Tip 1 for maintaining this character across shots", "Tip 2", "Tip 3"],
+  "recommendedModel": "Model name recommendation (only if no target model selected, otherwise null)"
 }`;
 
-    try {
-        const text = await callGemini({
-            parts: [{ text: userPrompt }],
-            systemInstruction,
-            thinkingLevel: 'medium',
-            responseMimeType: 'application/json',
-            maxOutputTokens: 2048,
-        });
+    const geminiOpts = {
+        parts: [{ text: userPrompt }],
+        systemInstruction,
+        thinkingLevel: 'medium',
+        responseMimeType: 'application/json',
+        maxOutputTokens: 4096,
+    };
 
-        let parsed;
-        try {
-            parsed = JSON.parse(text);
-        } catch (e) {
-            const jsonMatch = text.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-                parsed = JSON.parse(jsonMatch[0]);
-            } else {
-                throw new Error('Could not parse character suggestions JSON');
+    const parseObject = (text) => {
+        try { return JSON.parse(text); } catch (e) {
+            const posMatch = e.message.match(/position (\d+)/);
+            if (posMatch) {
+                try { return JSON.parse(text.substring(0, parseInt(posMatch[1]))); } catch {}
             }
         }
-        return parsed;
-    } catch (error) {
-        console.error('[gemini] Character suggestions error:', error);
-        throw error;
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            try { return JSON.parse(jsonMatch[0]); } catch {}
+        }
+        throw new Error('Could not parse character suggestions JSON');
+    };
+
+    try {
+        const text = await callGemini(geminiOpts);
+        return parseObject(text);
+    } catch (firstError) {
+        try {
+            console.warn('[gemini] Character suggestions: first attempt failed, retrying...', firstError.message);
+            const text = await callGemini(geminiOpts);
+            return parseObject(text);
+        } catch (retryError) {
+            console.error('[gemini] Character suggestions error (after retry):', retryError);
+            throw retryError;
+        }
     }
 }
 

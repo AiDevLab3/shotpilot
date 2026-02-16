@@ -153,7 +153,9 @@ export interface CharacterSuggestions {
     description: string;
     personality: string;
     referencePrompt: string;
+    turnaroundPrompts?: string[];
     consistencyTips: string[];
+    recommendedModel?: string | null;
 }
 
 export interface ShotPlanShot {

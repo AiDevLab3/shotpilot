@@ -139,28 +139,43 @@ export default function createAIRoutes({
     router.post('/api/projects/:projectId/character-suggestions', requireAuth, async (req, res) => {
         try {
             const { projectId } = req.params;
-            const { name, description, personality } = req.body;
+            const { name, description, personality, targetModel } = req.body;
 
             const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId);
             if (!project) return res.status(404).json({ error: 'Project not found' });
 
             let kbContent = '';
+            const kbFilesUsed = [];
             try {
                 const charKB = readKBFile('03_Pack_Character_Consistency.md');
                 const coreKB = readKBFile('01_Core_Realism_Principles.md');
                 kbContent = [charKB, coreKB].filter(Boolean).join('\n\n');
+                kbFilesUsed.push('03_Pack_Character_Consistency.md', '01_Core_Realism_Principles.md');
             } catch (err) {
                 console.warn('[character-suggestions] Could not load KB:', err.message);
+            }
+
+            // Load model-specific KB if target model is selected
+            let modelKBContent = '';
+            if (targetModel) {
+                try {
+                    modelKBContent = loadKBForModel(targetModel);
+                    kbFilesUsed.push(`model:${targetModel}`);
+                } catch (err) {
+                    console.warn(`[character-suggestions] Could not load model KB for ${targetModel}:`, err.message);
+                }
             }
 
             const suggestions = await generateCharacterSuggestions({
                 character: { name, description, personality },
                 project,
                 kbContent,
+                modelKBContent,
+                targetModel,
             });
 
             logAIFeatureUsage(db, req.session.userId, 'character_suggestions', projectId);
-            res.json({ ...suggestions, kbFilesUsed: ['03_Pack_Character_Consistency.md', '01_Core_Realism_Principles.md'] });
+            res.json({ ...suggestions, kbFilesUsed });
         } catch (error) {
             console.error('Character suggestions error:', error);
             res.status(500).json({ error: error.message });
