@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { filterByMentions } from '../utils/mentionParser.js';
 
 export default function createAIRoutes({
     db, requireAuth, checkCredits, sanitize,
@@ -591,8 +592,14 @@ export default function createAIRoutes({
                     return res.status(403).json({ error: 'Access denied' });
                 }
 
-                const characters = db.prepare('SELECT * FROM characters WHERE project_id = ?').all(scene.project_id);
-                const objects = db.prepare('SELECT * FROM objects WHERE project_id = ?').all(scene.project_id);
+                const allCharacters = db.prepare('SELECT * FROM characters WHERE project_id = ?').all(scene.project_id);
+                const allObjects = db.prepare('SELECT * FROM objects WHERE project_id = ?').all(scene.project_id);
+
+                // Filter to only @mentioned characters/objects (or all if no mentions)
+                const { characters, objects, mentionedNames } = filterByMentions(shot, allCharacters, allObjects);
+                if (mentionedNames.length > 0) {
+                    console.log(`[generate-prompt] @mentions found: ${mentionedNames.join(', ')} → ${characters.length} chars, ${objects.length} objs`);
+                }
 
                 const readiness = calculateCompleteness(project, scene, shot);
                 const kbContent = loadKBForModel(modelName);
@@ -706,8 +713,11 @@ export default function createAIRoutes({
             const shot = db.prepare('SELECT * FROM shots WHERE id = ?').get(variant.shot_id);
             const scene = shot ? db.prepare('SELECT * FROM scenes WHERE id = ?').get(shot.scene_id) : null;
             const project = scene ? db.prepare('SELECT * FROM projects WHERE id = ?').get(scene.project_id) : null;
-            const characters = project ? db.prepare('SELECT * FROM characters WHERE project_id = ?').all(project.id) : [];
-            const objects = project ? db.prepare('SELECT * FROM objects WHERE project_id = ?').all(project.id) : [];
+            const allChars = project ? db.prepare('SELECT * FROM characters WHERE project_id = ?').all(project.id) : [];
+            const allObjs = project ? db.prepare('SELECT * FROM objects WHERE project_id = ?').all(project.id) : [];
+
+            // Filter to @mentioned characters/objects for targeted refinement
+            const { characters, objects } = filterByMentions(shot, allChars, allObjs);
 
             let modelKBContent = '';
             try {

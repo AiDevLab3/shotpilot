@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import type { Project, Scene, Shot, ImageVariant } from '../types/schema';
-import { getScenes, getShots, createShot, updateShot, deleteShot, updateScene, createScene, deleteScene, updateProject, fileToBase64, createImageVariant, getImageVariants, deleteImageVariant, getUserCredits } from '../services/api';
+import type { Project, Scene, Shot, ImageVariant, Character, ObjectItem } from '../types/schema';
+import { getScenes, getShots, createShot, updateShot, deleteShot, updateScene, createScene, deleteScene, updateProject, fileToBase64, createImageVariant, getImageVariants, deleteImageVariant, getUserCredits, getCharacters, getObjects } from '../services/api';
 import { useProjectContext } from '../components/ProjectLayout';
 import { Plus, Image as ImageIcon, Check, Video, Edit2, Trash2, ChevronDown, ChevronRight, FileText, Clock, Maximize2, Minimize2, Sparkles, Settings, Film } from 'lucide-react';
 
@@ -11,6 +11,7 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { ReadinessBadge } from '../components/ReadinessBadge';
 import { ShotPlanningPanel } from '../components/ShotPlanningPanel';
 import { ReadinessDialogue } from '../components/ReadinessDialogue';
+import { MentionTextarea, MentionEntity } from '../components/MentionTextarea';
 
 // Specialized Dropdown Option Component
 const DropdownOption = ({
@@ -60,6 +61,7 @@ const ShotBoardPage: React.FC = () => {
     const [scenes, setScenes] = useState<Scene[]>([]);
     const [shotsByScene, setShotsByScene] = useState<Record<number, Shot[]>>({});
     const [shotImages, setShotImages] = useState<Record<number, ImageVariant[]>>({});
+    const [mentionEntities, setMentionEntities] = useState<MentionEntity[]>([]);
     const [loading, setLoading] = useState(true);
     const [expandedScenes, setExpandedScenes] = useState<number[]>([]);
     const [statusFilter, setStatusFilter] = useState<'all' | 'planning' | 'in-progress' | 'complete'>('all');
@@ -170,6 +172,21 @@ const ShotBoardPage: React.FC = () => {
             setShotsByScene(allShotsMap);
             setShotImages(allImagesMap);
 
+            // Load characters + objects for @mention autocomplete
+            try {
+                const [chars, objs] = await Promise.all([
+                    getCharacters(projectId),
+                    getObjects(projectId),
+                ]);
+                const entities: MentionEntity[] = [
+                    ...chars.map((c: Character) => ({ id: c.id, name: c.name, type: 'character' as const, description: c.description })),
+                    ...objs.map((o: ObjectItem) => ({ id: o.id, name: o.name, type: 'object' as const, description: o.description })),
+                ];
+                setMentionEntities(entities);
+            } catch (e) {
+                console.error('Failed to load characters/objects for mentions', e);
+            }
+
             // Auto-expand first scene
             if (fetchedScenes.length > 0) {
                 setExpandedScenes([fetchedScenes[0].id]);
@@ -266,6 +283,32 @@ const ShotBoardPage: React.FC = () => {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    // Render @mentions as highlighted chips in display text
+    const renderWithMentions = (text: string): React.ReactNode => {
+        if (!text) return text;
+        const parts = text.split(/(@"[^"]+"|@[\w'-]+)/g);
+        return parts.map((part, i) => {
+            if (part.startsWith('@')) {
+                const name = part.startsWith('@"') ? part.slice(2, -1) : part.slice(1);
+                const entity = mentionEntities.find(e => e.name.toLowerCase() === name.toLowerCase());
+                const isChar = entity?.type === 'character';
+                return (
+                    <span key={i} style={{
+                        background: isChar ? 'rgba(59,130,246,0.15)' : 'rgba(234,179,8,0.15)',
+                        color: isChar ? '#60a5fa' : '#fbbf24',
+                        padding: '1px 4px',
+                        borderRadius: '3px',
+                        fontWeight: 500,
+                        fontSize: '11px',
+                    }}>
+                        {part}
+                    </span>
+                );
+            }
+            return part;
+        });
     };
 
     const handleSave = async () => {
@@ -788,7 +831,7 @@ const ShotBoardPage: React.FC = () => {
                                                                                 <span style={styles.shotType}>{shot.shot_type}</span>
                                                                                 <span style={{ fontSize: '10px', color: '#9ca3af' }}>{shot.camera_movement}</span>
                                                                             </div>
-                                                                            <div style={{ fontSize: '12px', color: '#e5e7eb', lineHeight: '1.4' }}>{shot.description || 'No description'}</div>
+                                                                            <div style={{ fontSize: '12px', color: '#e5e7eb', lineHeight: '1.4' }}>{renderWithMentions(shot.description || 'No description')}</div>
                                                                         </div>
                                                                         <VariantList shotId={shot.id} />
                                                                     </div>
@@ -943,12 +986,12 @@ const ShotBoardPage: React.FC = () => {
                                 <input name="camera_lens" placeholder="e.g. ARRI Signature Prime, Cooke S4/i" value={formData.camera_lens || ''} onChange={handleChange} style={styles.input} />
                             </div>
                             <div style={styles.formGroup}>
-                                <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>DESCRIPTION</label>
-                                <textarea name="description" placeholder="Action and details..." value={formData.description || ''} onChange={handleChange} style={{ ...styles.input, height: '80px', fontFamily: 'inherit' }} />
+                                <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>DESCRIPTION <span style={{ color: '#6b7280', fontWeight: 400, fontSize: '11px' }}>Type @ to mention characters/objects</span></label>
+                                <MentionTextarea name="description" placeholder="Action and details... (use @Name to reference characters/objects)" value={formData.description || ''} onChange={handleChange} style={{ ...styles.input, height: '80px', fontFamily: 'inherit' }} entities={mentionEntities} />
                             </div>
                             <div style={styles.formGroup}>
                                 <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>BLOCKING</label>
-                                <textarea name="blocking" placeholder="Actor/subject positioning and movement..." value={formData.blocking || ''} onChange={handleChange} style={{ ...styles.input, height: '60px', fontFamily: 'inherit' }} />
+                                <MentionTextarea name="blocking" placeholder="Actor/subject positioning and movement... (use @Name)" value={formData.blocking || ''} onChange={handleChange} style={{ ...styles.input, height: '60px', fontFamily: 'inherit' }} entities={mentionEntities} />
                             </div>
                             <div style={styles.formGroup}>
                                 <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>VFX NOTES</label>
@@ -960,7 +1003,7 @@ const ShotBoardPage: React.FC = () => {
                             </div>
                             <div style={styles.formGroup}>
                                 <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>GENERAL NOTES</label>
-                                <textarea name="notes" placeholder="Additional instructions..." value={formData.notes || ''} onChange={handleChange} style={{ ...styles.input, height: '40px', fontFamily: 'inherit' }} />
+                                <MentionTextarea name="notes" placeholder="Additional instructions... (use @Name)" value={formData.notes || ''} onChange={handleChange} style={{ ...styles.input, height: '40px', fontFamily: 'inherit' }} entities={mentionEntities} />
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
                                 <button onClick={handleCloseModal} style={{ background: 'transparent', color: '#9ca3af', border: 'none', cursor: 'pointer' }}>Cancel</button>
