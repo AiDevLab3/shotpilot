@@ -226,6 +226,20 @@ export const initDatabase = () => {
         console.error("Phase 4 (Image Audit) Migration failed:", e);
     }
 
+    // Phase 6: Audit System Elevation — iteration tracking + status lifecycle
+    try {
+        const variantsInfo3 = db.pragma('table_info(image_variants)');
+        const variantCols3 = new Set(variantsInfo3.map(col => col.name));
+
+        if (!variantCols3.has('iteration_number')) {
+            console.log('Migrating: Adding iteration tracking columns to image_variants...');
+            db.exec('ALTER TABLE image_variants ADD COLUMN iteration_number INTEGER DEFAULT 1');
+            db.exec('ALTER TABLE image_variants ADD COLUMN parent_variant_id INTEGER');
+        }
+    } catch (e) {
+        console.error("Phase 6 (Audit Elevation) Migration failed:", e);
+    }
+
     // Phase 5: Project Images (Alt Images Library)
     try {
         db.exec(`

@@ -88,7 +88,7 @@ export interface ImageVariant {
     generated_prompt?: string;
     user_edited_prompt?: string;
     quality_score?: number;
-    status: 'pending' | 'draft' | 'generated' | 'completed' | 'failed';
+    status: 'unaudited' | 'needs-refinement' | 'locked-in' | 'draft' | 'generated';
     analysis_notes?: string;
     created_at: string;
     readiness_tier?: string;
@@ -102,6 +102,9 @@ export interface ImageVariant {
     audit_score?: number;
     audit_recommendation?: 'LOCK IT IN' | 'REFINE' | 'REGENERATE';
     audit_data?: string; // JSON string of 6-dimension scores
+    // Iteration tracking
+    iteration_number?: number;
+    parent_variant_id?: number;
 }
 
 export interface ImageAuditResult {

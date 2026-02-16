@@ -613,7 +613,7 @@ export default function createAIRoutes({
 
                 const insertResult = db.prepare(`
                     INSERT INTO image_variants (shot_id, model_used, generated_prompt, status, analysis_notes)
-                    VALUES (?, ?, ?, 'draft', ?)
+                    VALUES (?, ?, ?, 'unaudited', ?)
                 `).run(shotId, modelName, result.prompt, result.assumptions);
 
                 const remainingCredits = deductCredit(db, userId, modelName, shotId);

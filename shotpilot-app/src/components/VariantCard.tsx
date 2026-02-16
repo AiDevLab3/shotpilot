@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ReadinessBadge } from './ReadinessBadge';
 import { ImageAuditReport } from './ImageAuditReport';
-import { uploadVariantImage, auditVariantImage, getVariantAudit, refineVariantPrompt } from '../services/api';
+import { uploadVariantImage, auditVariantImage, getVariantAudit, refineVariantPrompt, lockVariant, unlockVariant } from '../services/api';
 import { Copy, Check, Trash2, ChevronDown, ChevronUp, Upload, Shield, Loader2, Wand2, ImageIcon, Type } from 'lucide-react';
 import type { ImageAuditResult } from '../types/schema';
 
@@ -15,9 +15,11 @@ interface Variant {
     quality_tier?: string;
     quality_percentage?: number;
     image_url?: string;
+    status?: string;
     audit_score?: number;
     audit_recommendation?: string;
     audit_data?: string;
+    iteration_number?: number;
     created_at: string;
 }
 
@@ -76,6 +78,8 @@ export const VariantCard: React.FC<VariantCardProps> = ({ variant, onDelete }) =
     const [refinedPrompt, setRefinedPrompt] = useState(variant.user_edited_prompt || '');
     const [referenceStrategy, setReferenceStrategy] = useState<{ action: string; title: string; reason: string } | null>(null);
     const [showOriginal, setShowOriginal] = useState(false);
+    const [variantStatus, setVariantStatus] = useState(variant.status || 'unaudited');
+    const [modelPivotSuggestion, setModelPivotSuggestion] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const modelName = variant.model_name || variant.model_used || 'Unknown';
@@ -152,8 +156,10 @@ export const VariantCard: React.FC<VariantCardProps> = ({ variant, onDelete }) =
         try {
             const result = await uploadVariantImage(variant.id, file);
             setImageUrl(result.image_url);
-            // Auto-clear any old audit since image changed
+            // Auto-clear stale audit since image changed (DB also clears)
             setAuditResult(null);
+            setVariantStatus('unaudited');
+            setModelPivotSuggestion(null);
         } catch (err: any) {
             setError(err.message || 'Upload failed');
         } finally {
@@ -174,6 +180,16 @@ export const VariantCard: React.FC<VariantCardProps> = ({ variant, onDelete }) =
             const result = await auditVariantImage(variant.id);
             setAuditResult(result);
             setShowAudit(true);
+            // Update status based on audit recommendation
+            if (result.recommendation === 'LOCK IT IN') {
+                setVariantStatus('locked-in');
+            } else {
+                setVariantStatus('needs-refinement');
+            }
+            // Check for 3-strike model pivot suggestion
+            if (result.model_pivot_suggestion) {
+                setModelPivotSuggestion(result.model_pivot_suggestion.message);
+            }
         } catch (err: any) {
             setError(err.message || 'Audit failed');
         } finally {
@@ -188,7 +204,21 @@ export const VariantCard: React.FC<VariantCardProps> = ({ variant, onDelete }) =
                 <div style={styles.headerLeft}>
                     <span style={{ fontSize: '14px' }}>{getModelIcon(modelName)}</span>
                     <span style={styles.modelName}>{modelName}</span>
-                    <ReadinessBadge tier={tier} />
+                    {/* Status badge */}
+                    <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '3px',
+                        padding: '2px 8px', borderRadius: '9999px', fontSize: '10px', fontWeight: 600,
+                        textTransform: 'uppercase', letterSpacing: '0.5px',
+                        ...(variantStatus === 'locked-in' ? {
+                            color: '#10b981', backgroundColor: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)',
+                        } : variantStatus === 'needs-refinement' ? {
+                            color: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)',
+                        } : {
+                            color: '#6b7280', backgroundColor: 'rgba(107,114,128,0.12)', border: '1px solid rgba(107,114,128,0.3)',
+                        }),
+                    }}>
+                        {variantStatus === 'locked-in' ? 'Locked In' : variantStatus === 'needs-refinement' ? 'Needs Refinement' : 'Unaudited'}
+                    </span>
                     {auditResult && (
                         <span
                             style={{
@@ -234,6 +264,17 @@ export const VariantCard: React.FC<VariantCardProps> = ({ variant, onDelete }) =
             {showAudit && auditResult && (
                 <div style={{ marginBottom: '8px' }}>
                     <ImageAuditReport audit={auditResult} />
+                </div>
+            )}
+
+            {/* 3-strike model pivot suggestion */}
+            {modelPivotSuggestion && (
+                <div style={{
+                    padding: '8px 12px', marginBottom: '8px', borderRadius: '6px',
+                    background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)',
+                    fontSize: '12px', color: '#f59e0b', lineHeight: '1.4',
+                }}>
+                    {modelPivotSuggestion}
                 </div>
             )}
 
@@ -408,6 +449,32 @@ export const VariantCard: React.FC<VariantCardProps> = ({ variant, onDelete }) =
                         title="AI generates a corrected prompt based on audit feedback"
                     >
                         {refining ? <><Loader2 size={12} className="spin" /> Refining...</> : <><Wand2 size={12} /> {hasRefinedPrompt ? 'Re-Refine' : 'Refine'} Prompt</>}
+                    </button>
+                )}
+
+                {/* Lock / Unlock */}
+                {imageUrl && auditResult && (
+                    <button
+                        onClick={async () => {
+                            try {
+                                if (variantStatus === 'locked-in') {
+                                    await unlockVariant(variant.id);
+                                    setVariantStatus('needs-refinement');
+                                } else {
+                                    await lockVariant(variant.id);
+                                    setVariantStatus('locked-in');
+                                }
+                            } catch (err: any) {
+                                setError(err.message || 'Failed to update status');
+                            }
+                        }}
+                        style={{
+                            ...styles.actionBtn,
+                            color: variantStatus === 'locked-in' ? '#10b981' : '#60a5fa',
+                        }}
+                        title={variantStatus === 'locked-in' ? 'Unlock to continue iterating' : 'Lock in as approved'}
+                    >
+                        {variantStatus === 'locked-in' ? <><Check size={12} /> Unlock</> : <><Check size={12} /> Lock In</>}
                     </button>
                 )}
 

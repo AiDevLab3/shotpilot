@@ -450,6 +450,16 @@ export const refineVariantPrompt = async (variantId: number): Promise<{
     });
 };
 
+// Lock a variant as approved/final
+export const lockVariant = async (variantId: number): Promise<any> => {
+    return apiCall(`/variants/${variantId}/lock`, { method: 'POST' });
+};
+
+// Unlock a variant to continue iterating
+export const unlockVariant = async (variantId: number): Promise<any> => {
+    return apiCall(`/variants/${variantId}/unlock`, { method: 'POST' });
+};
+
 // Audit a standalone image (for character/object references)
 export const auditStandaloneImage = async (file: File, projectId?: number, contextType?: string): Promise<ImageAuditResult> => {
     const formData = new FormData();

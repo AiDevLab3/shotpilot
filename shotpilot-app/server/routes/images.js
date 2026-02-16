@@ -32,7 +32,12 @@ export default function createImageRoutes({
             if (!req.file) return res.status(400).json({ error: 'No image file provided' });
 
             const relativePath = `/uploads/images/${req.file.filename}`;
-            db.prepare('UPDATE image_variants SET image_url = ? WHERE id = ?').run(relativePath, variantId);
+            // Clear stale audit data when image is replaced, reset status to unaudited
+            db.prepare(`
+                UPDATE image_variants
+                SET image_url = ?, audit_score = NULL, audit_recommendation = NULL, audit_data = NULL, status = 'unaudited'
+                WHERE id = ?
+            `).run(relativePath, variantId);
 
             res.json({ image_url: relativePath, variant_id: variantId });
         } catch (error) {
@@ -104,21 +109,47 @@ export default function createImageRoutes({
                 kbContent,
             });
 
+            // Map audit recommendation to variant status
+            const statusMap = {
+                'LOCK IT IN': 'locked-in',
+                'REFINE': 'needs-refinement',
+                'REGENERATE': 'needs-refinement',
+            };
+            const newStatus = statusMap[auditResult.recommendation] || 'needs-refinement';
+
             db.prepare(`
                 UPDATE image_variants
-                SET audit_score = ?, audit_recommendation = ?, audit_data = ?
+                SET audit_score = ?, audit_recommendation = ?, audit_data = ?, status = ?
                 WHERE id = ?
             `).run(
                 auditResult.overall_score,
                 auditResult.recommendation,
                 JSON.stringify(auditResult),
+                newStatus,
                 variantId
             );
 
             deductCredit(db, req.session.userId, 'image_audit', variant.shot_id);
             logAIFeatureUsage(db, req.session.userId, 'holistic_image_audit', variant.shot_id);
 
-            res.json(auditResult);
+            // 3-strike model pivot: check how many low-scoring audits this model has on this shot
+            let modelPivotSuggestion = null;
+            if (auditResult.recommendation !== 'LOCK IT IN') {
+                const lowScoreCount = db.prepare(`
+                    SELECT COUNT(*) as count FROM image_variants
+                    WHERE shot_id = ? AND model_used = ? AND audit_score IS NOT NULL AND audit_score < 70
+                `).get(variant.shot_id, variant.model_used);
+
+                if (lowScoreCount && lowScoreCount.count >= 3) {
+                    modelPivotSuggestion = {
+                        message: `${variant.model_used} has scored below 70 on ${lowScoreCount.count} attempts for this shot. Consider trying a different model.`,
+                        currentModel: variant.model_used,
+                        attempts: lowScoreCount.count,
+                    };
+                }
+            }
+
+            res.json({ ...auditResult, model_pivot_suggestion: modelPivotSuggestion });
         } catch (error) {
             console.error('Holistic image audit error:', error);
             res.status(500).json({ error: error.message });
@@ -138,6 +169,39 @@ export default function createImageRoutes({
 
             const auditResult = JSON.parse(variant.audit_data);
             res.json({ audited: true, ...auditResult });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Lock in a variant (user approves it as final)
+    router.post('/api/variants/:variantId/lock', requireAuth, (req, res) => {
+        try {
+            const { variantId } = req.params;
+            const variant = db.prepare('SELECT * FROM image_variants WHERE id = ?').get(variantId);
+            if (!variant) return res.status(404).json({ error: 'Variant not found' });
+
+            db.prepare('UPDATE image_variants SET status = ? WHERE id = ?').run('locked-in', variantId);
+
+            const updated = db.prepare('SELECT * FROM image_variants WHERE id = ?').get(variantId);
+            res.json(updated);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Unlock a variant (user wants to continue iterating)
+    router.post('/api/variants/:variantId/unlock', requireAuth, (req, res) => {
+        try {
+            const { variantId } = req.params;
+            const variant = db.prepare('SELECT * FROM image_variants WHERE id = ?').get(variantId);
+            if (!variant) return res.status(404).json({ error: 'Variant not found' });
+
+            const newStatus = variant.audit_data ? 'needs-refinement' : 'unaudited';
+            db.prepare('UPDATE image_variants SET status = ? WHERE id = ?').run(newStatus, variantId);
+
+            const updated = db.prepare('SELECT * FROM image_variants WHERE id = ?').get(variantId);
+            res.json(updated);
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
