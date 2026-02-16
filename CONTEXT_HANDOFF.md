@@ -75,8 +75,10 @@ shotpilot-app/kb/
 - `objects` — name, description, reference_image_url
 - `scenes` — location, time_of_day, weather, mood, lighting, camera approach
 - `shots` — shot_type, camera_angle, camera_movement, focal_length, lens, description, blocking
-- `image_variants` — image_url, model_used, prompts (original/generated/edited), audit_score, audit_data
-- `project_images` — **NEW** alt images library (image_url, title, notes, tags)
+- `image_variants` — image_url, model_used, prompts (original/generated/edited), audit_score, audit_data, status (unaudited/needs-refinement/locked-in), iteration_number, parent_variant_id
+- `conversations` — project_id (UNIQUE), mode, script_content, target_model
+- `conversation_messages` — conversation_id, role, content, metadata (JSON)
+- `project_images` — alt images library (image_url, title, notes, tags)
 
 ### AI Services (split into `server/services/ai/` modules, barrel-exported via `geminiService.js`)
 
@@ -104,9 +106,10 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 | `routes/objects.js` | Object CRUD |
 | `routes/scenes.js` | Scene CRUD |
 | `routes/shots.js` | Shot CRUD with insert-after ordering |
-| `routes/images.js` | Upload, variants CRUD, holistic image audit |
+| `routes/images.js` | Upload, variants CRUD, holistic image audit, lock/unlock |
+| `routes/conversations.js` | Conversation persistence CRUD (load, save, replace, clear) |
 
-50 total endpoints across 8 route modules. Each module exports a factory function receiving dependencies (db, services, middleware).
+53 total endpoints across 9 route modules. Each module exports a factory function receiving dependencies (db, services, middleware).
 
 ### Frontend Pages (5 active, routed in App.tsx)
 - **Creative Director** (`/projects/:id`) — AI chat sidebar (persistent via zustand) + project info display + script upload/analysis. Absorbed the former standalone ScriptAnalyzerPage and ProjectInfoPage.
@@ -139,7 +142,24 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 
 ## 5. What Was Done in Recent Sessions
 
-### Session: Feb 14 (Current) — Architecture Refactoring
+### Session: Feb 15 — 9-Task Improvement Sprint (ALL COMPLETED)
+
+#### Phase 1 — Foundation
+1. **CONTEXT_HANDOFF.md updated** — Added lite/full version clarity, cleaned stale refs
+2. **Backend bugs fixed** — Duplicate KB loading eliminated (saves ~20-40K tokens/call), model key mismatch in qualityCheck.js fixed, Gemini retry/timeout added (3 retries with exponential backoff + 60s timeout), script truncation raised from 5K→50K chars with user notification, dead code `AVAILABLE_MODELS_CONSTRAINT` removed
+3. **Lost KB content restored** — GSS 2-layer architecture, Canon Master Look Template, and 4-Block Prompt Compiler format restored to `01_Core_Realism_Principles.md` from full research source
+4. **Orphaned pages deleted** — ScriptAnalyzerPage.tsx, ProjectInfoPage.tsx, AestheticSuggestionsPanel.tsx, ShotBoardPage.tsx.bak
+
+#### Phase 2 — Core Features
+5. **Translation Matrix completed** — All 7 models across all concept domains. Added video model rows for Atmospheric Effects, new Section 5 (Character/Identity Consistency Translation with per-model mechanisms: --oref, Elements 3.0, Ingredients to Video), Video Motion Translation section, expanded Key Translation Patterns table from 4→7 columns
+6. **@mention system built** — `@Name` and `@"Multi Word Name"` syntax in shot descriptions/blocking/notes. `server/utils/mentionParser.js` extracts mentions and filters characters/objects sent to Gemini. `MentionTextarea.tsx` provides autocomplete dropdown with CHAR/OBJ badges, keyboard nav. Backward-compatible: no @mentions = all entities sent (legacy behavior)
+7. **Audit system elevated** — Status lifecycle: `unaudited → needs-refinement → locked-in`. Audit maps recommendation to status automatically. Iteration tracking (`iteration_number`, `parent_variant_id`). 3-strike model pivot: after 3 variants score <70 on same model/shot, suggests switching models. Lock/unlock endpoints + UI buttons. Status badges on variant cards (color-coded). Upload clears stale audit data in DB
+8. **KB expertise surfaced** — All AI services now present knowledge as personal cinematographic expertise instead of generic advice. Added BAD/GOOD example patterns to system prompts for: prompt generation (ASSUMPTIONS STYLE), image audit (DP on-set feedback), creative director (EXPERTISE VOICE), readiness analysis (cinematography-grounded reasoning), shot planning (model-aware technical suggestions)
+
+#### Phase 3 — Polish
+9. **Server-side conversation persistence** — Conversations + messages stored in SQLite (`conversations` + `conversation_messages` tables). Full CRUD routes at `/api/projects/:id/conversation`. ChatSidebar loads from server on mount (source of truth), falls back to local state. Fire-and-forget saves after each message exchange. Compaction syncs via PUT. ON DELETE CASCADE handles cleanup when projects deleted
+
+### Session: Feb 14 — Architecture Refactoring
 
 #### Monolith Split
 - **`server/index.js`** (1,665 → 140 lines) — All routes extracted into 8 domain modules under `server/routes/`
@@ -186,24 +206,9 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 
 ## 6. Known Issues NOT Yet Addressed
 
-### Backend Bugs (Priority — being fixed in Feb 15 session)
-- **Duplicate KB loading in Creative Director** — When a model is selected, Core Principles, Character Consistency, and Quality Control packs are sent twice (once in `coreKBFiles` array, again inside `loadKBForModel()`). Wastes ~20-40K tokens per call.
-- **Model key mismatch in qualityCheck.js** — Uses `'nano-banana'` but everywhere else uses `'nano-banana-pro'`. Also `midjourney` and `gpt-image` point to different files than kbLoader.js.
-- **No retry/timeout on Gemini API calls** — `callGemini` in shared.js does a single fetch with no exponential backoff, no timeout, no 429/503 handling.
-- **Script truncated at 5000 chars** — `creativeDirector.js` silently cuts scripts at 5000 chars with no user notification. Long scripts lose later scenes.
-- **Dead code: `AVAILABLE_MODELS_CONSTRAINT`** — Defined and exported in shared.js but never imported or used anywhere.
-
-### KB Content Gaps (Priority — being fixed in Feb 15 session)
-- **Lost during condensation:** Global Style System (GSS) 2-layer architecture, Canon Master Look Template, and 4-Block Prompt Compiler format were cut from Core Realism Principles. These are critical for project-level visual consistency. Source: `kb/packs/Cine-AI_Cinematic_Realism_Pack_v1.md`.
-- **Translation Matrix only covers 4 of 7 models** — VEO 3.1, Kling 2.6, Kling 3.0 get one paragraph instead of proper translation rows. No character consistency mechanism translations.
-- **Character suggestions lack model-specific KB** — `generateCharacterSuggestions` generates generic reference prompts instead of model-optimized ones.
-
 ### Feature Gaps (Planned)
-- **Characters/objects disconnected from shots** — No way to associate characters/objects with specific shots. Planned solution: @mention system (e.g., `@DetectiveMarlowe` in shot description auto-injects character details + reference image into prompt context).
-- **Audit system is buried in UI** — 6-dimension audit exists but is hidden behind multiple clicks in variant cards. Needs: prominent status labels (Unaudited/Needs Refinement/Locked In), iteration tracking, 3-strike model pivot recommendation.
-- **KB knowledge is invisible to users** — AI uses KB but users never see what expertise was applied. Need to surface technical insights naturally (not file names, but statements like "Midjourney V7 responds best to cinematographic language...").
-- **No conversation persistence** — Chat history is browser-only (zustand). Page refresh or cache clear loses everything.
 - **Character AI Assistant** does NOT have the model selector or turnaround prompts yet (only Object AI Assistant was updated).
+- **Character suggestions lack model-specific KB** — `generateCharacterSuggestions` generates generic reference prompts instead of model-optimized ones.
 
 ### Deferred (Not Lite Version Scope)
 - **In-app image generation** — Direct API integration planned for Full version. Lite proves the KB/AI expertise works first.
@@ -221,6 +226,16 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 - ~~`server/index.js` is massive~~ — Split into 8 route modules under `server/routes/`
 - ~~Base64 images in SQLite~~ — Images are stored as files, only paths in DB
 - ~~Orphaned pages (ScriptAnalyzerPage, ProjectInfoPage)~~ — **DELETED Feb 15**: Functionality absorbed into CreativeDirectorPage. Also deleted unused `AestheticSuggestionsPanel` component and `ShotBoardPage.tsx.bak`.
+- ~~Duplicate KB loading~~ — **FIXED Feb 15**: Eliminated double-loading of Core Principles, Character Consistency, and QC packs
+- ~~Model key mismatch~~ — **FIXED Feb 15**: qualityCheck.js now uses correct model keys
+- ~~No retry/timeout on Gemini~~ — **FIXED Feb 15**: 3 retries with exponential backoff + 60s timeout
+- ~~Script truncated at 5K chars~~ — **FIXED Feb 15**: Raised to 50K with user notification
+- ~~Lost KB content (GSS, Master Look, Prompt Compiler)~~ — **RESTORED Feb 15**: Back in Core Realism Principles
+- ~~Translation Matrix incomplete~~ — **COMPLETED Feb 15**: All 7 models across all concept domains + character consistency + video motion
+- ~~Characters/objects disconnected from shots~~ — **FIXED Feb 15**: @mention system with autocomplete
+- ~~Audit system buried in UI~~ — **FIXED Feb 15**: Status lifecycle, iteration tracking, 3-strike pivot, lock/unlock
+- ~~KB knowledge invisible to users~~ — **FIXED Feb 15**: AI presents expertise naturally in all responses
+- ~~No conversation persistence~~ — **FIXED Feb 15**: Server-side SQLite storage, survives page refresh
 
 ---
 
@@ -243,7 +258,10 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 | `src/components/GeneratePromptModal.tsx` | Shot prompt generation modal |
 | `src/components/ImageAuditReport.tsx` | 6-dimension audit display + realism diagnosis |
 | `src/components/VariantList.tsx` | Image variant cards with audit/refine/upload |
-| `src/pages/ShotBoardPage.tsx` | Scene manager with shot cards |
+| `src/components/MentionTextarea.tsx` | @mention autocomplete textarea for shot fields |
+| `server/utils/mentionParser.js` | @mention parsing + entity filtering for AI context |
+| `server/routes/conversations.js` | Conversation persistence CRUD routes |
+| `src/pages/ShotBoardPage.tsx` | Scene manager with shot cards + @mention support |
 | `src/pages/ImageLibraryPage.tsx` | Alt images library |
 | `src/stores/creativeDirectorStore.ts` | Zustand store for chat persistence |
 | `src/types/schema.ts` | All TypeScript interfaces |
@@ -298,6 +316,12 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 ## 9. Git Commit History (Reverse Chronological)
 
 ```
+5919cda Add server-side conversation persistence
+901054e Surface KB knowledge as expert cinematography advice in all AI responses
+f27f47a Elevate audit system: status lifecycle, iteration tracking, 3-strike pivot
+d6aface Add @mention system for characters/objects in shot descriptions
+fe367dc Complete Translation Matrix: all 7 models across all concept domains
+(+ Phase 1 commits: backend bug fixes, KB restoration, orphaned page deletion)
 a497e90 Fix backward-compat route aliases and add route test suite
 3656c6a Refactor: split monolithic server into route and AI service modules
 81e880a Add context handoff summary for session continuity
@@ -325,23 +349,16 @@ d0cc29c Phase 4 polish: welcome screen, UX cleanup, repo cleanup, bug fixes
 
 ## 10. What to Work on Next (Suggested Priority)
 
-### Phase 1 — Foundation (In Progress, Feb 15)
-1. ~~**Update CONTEXT_HANDOFF.md**~~ — Done. Added lite/full version clarity, cleaned stale refs.
-2. **Fix backend bugs** — Duplicate KB loading, model key mismatch, Gemini retry/timeout, script truncation, dead code cleanup.
-3. **Restore lost KB content** — GSS architecture, Master Look Template, 4-Block Prompt Compiler back into Core Realism Principles.
-4. ~~**Delete orphaned pages**~~ — Done. Removed ScriptAnalyzerPage, ProjectInfoPage, AestheticSuggestionsPanel, ShotBoardPage.bak.
+### All 9 Planned Tasks — COMPLETED (Feb 15)
+All Phase 1/2/3 tasks from the improvement sprint are done. See Section 5 for details.
 
-### Phase 2 — Core Features (Next)
-5. **Complete Translation Matrix** — Add proper translation rows for all 7 lite models. Character consistency mechanism translations.
-6. **@mention system** — `@CharacterName` / `@ObjectName` in shot fields auto-injects details + reference images into prompt context.
-7. **Audit elevation** — Status labels (Unaudited/Needs Refinement/Locked In), iteration tracking, 3-strike model pivot, prominent UI placement.
-8. **KB expertise surfacing** — AI responses explain reasoning with technical film expertise, not generic labels.
+### Remaining Feature Gaps
+1. **Character AI Assistant parity** — Add model selector + turnaround prompts (mirror ObjectAIAssistant)
+2. **Character suggestions model-specific KB** — generateCharacterSuggestions needs model-aware prompts
+3. **Test suite update** — Route tests may be stale after Feb 15 changes (new routes, modified endpoints)
+4. **End-to-end workflow testing** — Full flow: create project → chat → build shots → @mention → generate prompt → upload image → audit → lock in
 
-### Phase 3 — Polish
-9. **Server-side conversation persistence** — Store chat history in DB, survive page refreshes.
-10. **Character AI Assistant parity** — Model selector + turnaround prompts (mirror ObjectAIAssistant).
-
-### Deferred
+### Deferred (Not Lite Version Scope)
 - In-app image generation (Full version)
 - Video generation workflow (after image is locked in)
 - Multi-agent orchestration (future architecture)
