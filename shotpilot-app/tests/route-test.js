@@ -1,21 +1,35 @@
 /**
  * Comprehensive route test — hits every API endpoint and reports results.
  * Run with: node tests/route-test.js
+ *
+ * Uses a cookie jar for session persistence across requests.
  */
 
 const BASE = 'http://localhost:3199';
 const results = { pass: 0, fail: 0, errors: [] };
+let sessionCookie = '';
 
 async function test(method, path, body, expectedStatus, label) {
     const url = `${BASE}${path}`;
     const opts = {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            ...(sessionCookie ? { 'Cookie': sessionCookie } : {}),
+        },
     };
     if (body) opts.body = JSON.stringify(body);
 
     try {
         const res = await fetch(url, opts);
+
+        // Capture session cookie from Set-Cookie header
+        const setCookie = res.headers.get('set-cookie');
+        if (setCookie) {
+            const match = setCookie.match(/connect\.sid=[^;]+/);
+            if (match) sessionCookie = match[0];
+        }
+
         const text = await res.text();
         let json;
         try { json = JSON.parse(text); } catch { json = text; }
@@ -172,12 +186,54 @@ async function run() {
         if (variantId) {
             await test('PUT', `/api/variants/${variantId}`, {
                 user_edited_prompt: 'updated prompt',
-                status: 'draft',
+                status: 'unaudited',
             }, 200, 'update variant');
 
             // Test GET audit (no audit yet)
             await test('GET', `/api/variants/${variantId}/audit`, null, 200, 'get audit (none yet)');
+
+            // Test lock/unlock endpoints
+            await test('POST', `/api/variants/${variantId}/lock`, null, 200, 'lock variant');
+            await test('POST', `/api/variants/${variantId}/unlock`, null, 200, 'unlock variant');
         }
+    }
+
+    console.log('\n=== CONVERSATION ROUTES ===');
+    if (projectId) {
+        // Load conversation (none exists yet)
+        const { json: convLoad } = await test('GET', `/api/projects/${projectId}/conversation`, null, 200, 'load conversation (empty)');
+
+        // Save a message (creates conversation)
+        await test('POST', `/api/projects/${projectId}/conversation/messages`, {
+            role: 'assistant',
+            content: 'Welcome to your project!',
+            mode: 'initial',
+        }, 200, 'save conversation message');
+
+        // Save a user message
+        await test('POST', `/api/projects/${projectId}/conversation/messages`, {
+            role: 'user',
+            content: 'I have a script to share',
+            mode: 'script-first',
+        }, 200, 'save user message');
+
+        // Load conversation (should have messages now)
+        const { json: convLoaded } = await test('GET', `/api/projects/${projectId}/conversation`, null, 200, 'load conversation (with messages)');
+
+        // Replace all messages (compaction sync)
+        await test('PUT', `/api/projects/${projectId}/conversation/messages`, {
+            messages: [
+                { role: 'summary', content: 'Compacted: discussed script and vision' },
+                { role: 'user', content: 'Latest message' },
+            ],
+            mode: 'script-first',
+        }, 200, 'replace conversation messages');
+
+        // Clear conversation
+        await test('DELETE', `/api/projects/${projectId}/conversation`, null, 200, 'clear conversation');
+
+        // Verify cleared
+        const { json: convCleared } = await test('GET', `/api/projects/${projectId}/conversation`, null, 200, 'load conversation (after clear)');
     }
 
     console.log('\n=== AI ROUTES (non-credit) ===');
@@ -192,8 +248,9 @@ async function run() {
     if (projectId) {
         await test('POST', `/api/projects/${projectId}/aesthetic-suggestions`, {}, null, 'aesthetic suggestions');
         await test('POST', `/api/projects/${projectId}/character-suggestions`, {
-            name: 'Test Hero', description: 'Tall', personality: 'Brave'
-        }, null, 'character suggestions');
+            name: 'Test Hero', description: 'Tall', personality: 'Brave',
+            targetModel: 'midjourney',
+        }, null, 'character suggestions (with model)');
         await test('POST', `/api/projects/${projectId}/object-suggestions`, {
             name: 'Test Prop', description: 'Vintage camera'
         }, null, 'object suggestions');
