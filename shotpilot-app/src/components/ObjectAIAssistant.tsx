@@ -155,7 +155,7 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                     </div>
                 )}
                 <button
-                    onClick={loadSuggestions}
+                    onClick={() => loadSuggestions()}
                     disabled={nameIsEmpty}
                     style={{
                         ...styles.triggerBtn,
@@ -183,7 +183,7 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                     <span style={styles.headerTitle}>AI Object Assistant</span>
                 </div>
                 <button
-                    onClick={loadSuggestions}
+                    onClick={() => loadSuggestions()}
                     disabled={loading || nameIsEmpty}
                     style={{
                         ...styles.regenerateBtn,
@@ -221,7 +221,7 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
             ) : error ? (
                 <div style={styles.errorState}>
                     <p style={styles.errorText}>{error}</p>
-                    <button onClick={loadSuggestions} style={styles.retryBtn}>
+                    <button onClick={() => loadSuggestions()} style={styles.retryBtn}>
                         Retry
                     </button>
                 </div>
