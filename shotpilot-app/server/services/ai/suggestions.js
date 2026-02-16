@@ -122,9 +122,11 @@ async function generateCharacterSuggestions(context) {
 
     const modelNote = targetModel
         ? `You are generating prompts for ${targetModel}. Use the model-specific KB below for EXACT syntax, parameters, and formatting.`
-        : `No target model selected. Generate prompts using general cinematic photography language. Note in your response which model would be best suited for this character.`;
+        : `No target model selected. Based on the KB content provided, recommend the best model and generate prompts using THAT model's syntax from the KB. CRITICAL: For Midjourney, ALWAYS use --v 7 (V7). V6 and V6.1 are deprecated. Use --oref (not --cref) for character references in V7.`;
 
     const systemInstruction = `You are an expert character designer for AI-generated cinematography. Using the Character Consistency Pack, generate detailed character bible entries that will produce consistent results across AI image/video models. Every detail should be specific enough to reproduce exactly — no vague descriptions.
+
+CRITICAL RULE: Only use model syntax, parameters, and version numbers that appear in the KB content provided below. Do NOT use older or deprecated syntax from your training data. For Midjourney: ALWAYS --v 7, NEVER --v 6 or --v 6.1. ALWAYS --oref, NEVER --cref.
 
 ${modelNote}`;
 
@@ -210,9 +212,11 @@ async function generateObjectSuggestions(context) {
 
     const modelNote = targetModel
         ? `You are generating prompts for ${targetModel}. Use the model-specific KB below for EXACT syntax, parameters, and formatting.`
-        : `No target model selected. Generate prompts using general cinematic photography language. Note in your response which model would be best suited for this object.`;
+        : `No target model selected. Based on the KB content provided, recommend the best model and generate prompts using THAT model's syntax from the KB. CRITICAL: For Midjourney, ALWAYS use --v 7 (V7). V6 and V6.1 are deprecated. Use --oref (not --cref) for object references in V7.`;
 
     const systemInstruction = `You are an expert prop master and production designer for AI-generated cinematography. Generate detailed object/prop descriptions that will produce consistent results across AI image/video models. Focus on material, color, condition, scale, and contextual placement.
+
+CRITICAL RULE: Only use model syntax, parameters, and version numbers that appear in the KB content provided below. Do NOT use older or deprecated syntax from your training data. For Midjourney: ALWAYS --v 7, NEVER --v 6 or --v 6.1. ALWAYS --oref, NEVER --cref.
 
 ${modelNote}`;
 
