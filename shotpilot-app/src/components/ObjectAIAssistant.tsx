@@ -230,26 +230,22 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                     {/* Recommended Model — show at top when present */}
                     {!selectedModel && suggestions.recommendedModel && (
                         <div style={{ backgroundColor: '#1a2a2a', padding: '12px', borderLeft: '3px solid #06b6d4' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: suggestions.recommendedModelReason ? '6px' : '0' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span style={{ fontSize: '11px', color: '#9ca3af' }}>Best model for this object:</span>
+                                    <span style={{ fontSize: '11px', color: '#9ca3af' }}>Prompts formatted for:</span>
                                     <span style={{ fontSize: '13px', color: '#22d3ee', fontWeight: 700 }}>
                                         {availableModels.find(m => m.name === suggestions.recommendedModel)?.displayName || suggestions.recommendedModel}
                                     </span>
                                 </div>
                                 <button
-                                    onClick={() => {
-                                        const model = suggestions.recommendedModel!;
-                                        setSelectedModel(model);
-                                        loadSuggestions(model);
-                                    }}
+                                    onClick={() => setSelectedModel(suggestions.recommendedModel!)}
                                     style={{ padding: '4px 12px', backgroundColor: '#164e63', border: '1px solid #0e7490', borderRadius: '4px', color: '#22d3ee', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}
                                 >
-                                    Select & Regenerate
+                                    Lock this model
                                 </button>
                             </div>
                             {suggestions.recommendedModelReason && (
-                                <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8', lineHeight: '1.4' }}>
+                                <p style={{ margin: '6px 0 0 0', fontSize: '11px', color: '#94a3b8', lineHeight: '1.4' }}>
                                     {suggestions.recommendedModelReason}
                                 </p>
                             )}
