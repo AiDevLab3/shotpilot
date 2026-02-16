@@ -153,7 +153,8 @@ OUTPUT VALID JSON ONLY:
     "Full body view prompt — model-specific syntax"
   ],
   "consistencyTips": ["Tip 1 for maintaining this character across shots", "Tip 2", "Tip 3"],
-  "recommendedModel": "Model name recommendation (only if no target model selected, otherwise null)"
+  "recommendedModel": "JUST the model name, e.g. 'midjourney' or 'higgsfield'. Must match one of the supported model IDs exactly. Null if a target model was selected.",
+  "recommendedModelReason": "One plain-English sentence explaining WHY this model is best for this character. No technical jargon — write it for someone who has never used AI image tools. Null if a target model was selected."
 }`;
 
     const geminiOpts = {
@@ -238,7 +239,8 @@ OUTPUT VALID JSON ONLY:
     "Detail close-up or top-down view prompt — model-specific syntax"
   ],
   "consistencyTips": ["Tip 1 for maintaining this object across shots", "Tip 2"],
-  "recommendedModel": "Model name recommendation (only if no target model selected, otherwise null)"
+  "recommendedModel": "JUST the model name, e.g. 'midjourney' or 'higgsfield'. Must match one of the supported model IDs exactly. Null if a target model was selected.",
+  "recommendedModelReason": "One plain-English sentence explaining WHY this model is best for this object. No technical jargon — write it for someone who has never used AI image tools. Null if a target model was selected."
 }`;
 
     const geminiOpts = {

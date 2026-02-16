@@ -156,6 +156,7 @@ export interface CharacterSuggestions {
     turnaroundPrompts?: string[];
     consistencyTips: string[];
     recommendedModel?: string | null;
+    recommendedModelReason?: string | null;
 }
 
 export interface ShotPlanShot {
@@ -214,4 +215,5 @@ export interface ObjectSuggestions {
     turnaroundPrompts?: string[];
     consistencyTips: string[];
     recommendedModel?: string | null;
+    recommendedModelReason?: string | null;
 }

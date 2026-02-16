@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Loader2, Check, Copy, ChevronDown, Send, MessageCircle, RotateCw } from 'lucide-react';
+import { Sparkles, Loader2, Check, Copy, ChevronDown, Send, MessageCircle, RotateCw, HelpCircle } from 'lucide-react';
 import type { ObjectSuggestions, AIModel } from '../types/schema';
 import { getObjectSuggestions, getAvailableModels, refineContent } from '../services/api';
 
@@ -29,6 +29,7 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
     const [availableModels, setAvailableModels] = useState<AIModel[]>([]);
     const [selectedModel, setSelectedModel] = useState<string>('');
     const [turnaroundCopied, setTurnaroundCopied] = useState<number | null>(null);
+    const [workflowExpanded, setWorkflowExpanded] = useState(false);
 
     const nameIsEmpty = !objectName || objectName.trim().length === 0;
 
@@ -41,16 +42,17 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
             .catch(() => {});
     }, []);
 
-    const loadSuggestions = async () => {
+    const loadSuggestions = async (modelOverride?: string) => {
         setLoading(true);
         setError(null);
         setDescriptionApplied(false);
         setPromptCopied(false);
+        const model = modelOverride !== undefined ? modelOverride : selectedModel;
         try {
             const result = await getObjectSuggestions(projectId, {
                 name: objectName,
                 description: currentDescription,
-                targetModel: selectedModel || undefined,
+                targetModel: model || undefined,
             });
             setSuggestions(result);
             setHasLoaded(true);
@@ -225,6 +227,57 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                 </div>
             ) : suggestions ? (
                 <div style={styles.resultsContainer}>
+                    {/* Recommended Model — show at top when present */}
+                    {!selectedModel && suggestions.recommendedModel && (
+                        <div style={{ backgroundColor: '#1a2a2a', padding: '12px', borderLeft: '3px solid #06b6d4' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: suggestions.recommendedModelReason ? '6px' : '0' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ fontSize: '11px', color: '#9ca3af' }}>Best model for this object:</span>
+                                    <span style={{ fontSize: '13px', color: '#22d3ee', fontWeight: 700 }}>
+                                        {availableModels.find(m => m.name === suggestions.recommendedModel)?.displayName || suggestions.recommendedModel}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        const model = suggestions.recommendedModel!;
+                                        setSelectedModel(model);
+                                        loadSuggestions(model);
+                                    }}
+                                    style={{ padding: '4px 12px', backgroundColor: '#164e63', border: '1px solid #0e7490', borderRadius: '4px', color: '#22d3ee', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}
+                                >
+                                    Select & Regenerate
+                                </button>
+                            </div>
+                            {suggestions.recommendedModelReason && (
+                                <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8', lineHeight: '1.4' }}>
+                                    {suggestions.recommendedModelReason}
+                                </p>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Workflow Guide — collapsible */}
+                    <div style={{ backgroundColor: '#1f1f23', borderLeft: '3px solid #3b82f6' }}>
+                        <button
+                            onClick={() => setWorkflowExpanded(prev => !prev)}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '10px 12px', backgroundColor: 'transparent', border: 'none', cursor: 'pointer', color: '#9ca3af' }}
+                        >
+                            <span style={{ fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px', color: '#93c5fd' }}>
+                                <HelpCircle size={13} /> How to use these results
+                            </span>
+                            <ChevronDown size={14} style={{ transform: workflowExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+                        </button>
+                        {workflowExpanded && (
+                            <ol style={{ margin: '0', padding: '0 12px 12px 28px', fontSize: '12px', color: '#d1d5db', lineHeight: '1.8' }}>
+                                <li><strong>Apply</strong> the Description below to fill in your object details</li>
+                                <li><strong>Copy</strong> the Reference Image Prompt and paste it into your AI image tool to create a master reference photo</li>
+                                <li><strong>Upload</strong> that generated image to the "Reference Image" section below this assistant</li>
+                                <li><strong>Copy</strong> the 3 Turnaround Shot prompts to create front, side, and detail views for consistency</li>
+                                <li>When creating shots in Scene Manager, your uploaded reference image will automatically be included for consistency</li>
+                            </ol>
+                        )}
+                    </div>
+
                     {/* Description Suggestion */}
                     <div style={{
                         ...styles.suggestionCard,
@@ -257,7 +310,10 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                     {/* Reference Prompt */}
                     <div style={styles.promptCard}>
                         <div style={styles.cardHeader}>
-                            <span style={styles.fieldLabel}>Reference Prompt</span>
+                            <div>
+                                <span style={styles.fieldLabel}>Reference Image Prompt</span>
+                                <span style={{ fontSize: '10px', color: '#a78bfa', marginLeft: '6px', fontWeight: 400 }}>Step 1</span>
+                            </div>
                             <button
                                 onClick={handleCopyPrompt}
                                 style={styles.copyBtn}
@@ -271,39 +327,26 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                         </div>
                         <p style={styles.promptText}>{suggestions.referencePrompt}</p>
                         <span style={styles.promptHint}>
-                            Use this prompt to generate a reference image for consistent object depiction
+                            Copy this prompt into {selectedModel ? (availableModels.find(m => m.name === selectedModel)?.displayName || selectedModel) : 'your AI image tool'} to generate a master reference image, then upload the result below
                         </span>
                     </div>
-
-                    {/* Consistency Tips */}
-                    {suggestions.consistencyTips && suggestions.consistencyTips.length > 0 && (
-                        <div style={styles.tipsCard}>
-                            <span style={styles.fieldLabel}>Consistency Tips</span>
-                            <ul style={styles.tipsList}>
-                                {suggestions.consistencyTips.map((tip, index) => (
-                                    <li key={index} style={styles.tipItem}>
-                                        {tip}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
 
                     {/* Turnaround Prompts */}
                     {suggestions.turnaroundPrompts && suggestions.turnaroundPrompts.length > 0 && (
                         <div style={{ backgroundColor: '#1f1f23', padding: '12px', borderLeft: '3px solid #f59e0b' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
                                 <RotateCw size={13} color="#f59e0b" />
                                 <span style={styles.fieldLabel}>Turnaround Shots</span>
+                                <span style={{ fontSize: '10px', color: '#fbbf24', fontWeight: 400 }}>Step 2</span>
                             </div>
                             <span style={{ fontSize: '10px', color: '#6b7280', fontStyle: 'italic', display: 'block', marginBottom: '8px' }}>
-                                Generate these prompts for multi-angle reference sheets — front, side, and back views
+                                After creating your reference image, use these prompts to generate multi-angle views for object consistency across shots
                             </span>
                             {suggestions.turnaroundPrompts.map((prompt, index) => (
                                 <div key={index} style={{ marginBottom: index < suggestions.turnaroundPrompts!.length - 1 ? '6px' : '0' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                                         <span style={{ fontSize: '11px', color: '#fbbf24', fontWeight: 600 }}>
-                                            {index === 0 ? 'Front View' : index === 1 ? 'Side View' : index === 2 ? '¾ / Back View' : `Angle ${index + 1}`}
+                                            {index === 0 ? 'Front 3/4 View' : index === 1 ? 'Side Profile' : index === 2 ? 'Detail Close-up' : `Angle ${index + 1}`}
                                         </span>
                                         <button
                                             onClick={() => handleCopyTurnaround(prompt, index)}
@@ -322,17 +365,17 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                         </div>
                     )}
 
-                    {/* Recommended Model */}
-                    {!selectedModel && suggestions.recommendedModel && (
-                        <div style={{ backgroundColor: '#1f1f23', padding: '10px 12px', borderLeft: '3px solid #06b6d4', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ fontSize: '11px', color: '#9ca3af' }}>Recommended model:</span>
-                            <span style={{ fontSize: '12px', color: '#22d3ee', fontWeight: 600 }}>{suggestions.recommendedModel}</span>
-                            <button
-                                onClick={() => setSelectedModel(suggestions.recommendedModel!)}
-                                style={{ padding: '2px 8px', backgroundColor: '#164e63', border: '1px solid #0e7490', borderRadius: '4px', color: '#22d3ee', fontSize: '10px', cursor: 'pointer' }}
-                            >
-                                Select
-                            </button>
+                    {/* Consistency Tips */}
+                    {suggestions.consistencyTips && suggestions.consistencyTips.length > 0 && (
+                        <div style={styles.tipsCard}>
+                            <span style={styles.fieldLabel}>Consistency Tips</span>
+                            <ul style={styles.tipsList}>
+                                {suggestions.consistencyTips.map((tip, index) => (
+                                    <li key={index} style={styles.tipItem}>
+                                        {tip}
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
                     )}
 
