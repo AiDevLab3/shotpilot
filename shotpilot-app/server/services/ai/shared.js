@@ -13,26 +13,6 @@ const THINKING_BUDGETS = {
     low: 1024,
 };
 
-// ShotPilot Lite: only these 6 models are available (4 image + 2 video)
-const AVAILABLE_MODELS_CONSTRAINT = `
-CRITICAL CONSTRAINT — AVAILABLE MODELS:
-ShotPilot Lite has exactly 6 models. You MUST match the correct type.
-
-IMAGE models (for still image generation):
-  1. Higgsfield Cinema Studio V1.5
-  2. Midjourney
-  3. Nano Banana Pro
-  4. GPT Image 1.5
-
-VIDEO models (for video/motion generation):
-  5. VEO 3.1
-  6. Kling 2.6
-
-RULES:
-- If the shot needs a STILL IMAGE, ONLY recommend from the 4 IMAGE models above.
-- If the shot needs VIDEO/MOTION, ONLY recommend from the 2 VIDEO models above.
-- DO NOT recommend Runway, Pika, Sora, DALL-E, Stable Diffusion, or any model not listed above.
-- Default to IMAGE models unless the shot explicitly requires video or motion.`;
 
 /**
  * Build a non-null context string from an object — only includes populated fields.
@@ -121,7 +101,8 @@ function buildImageParts(characters, objects) {
 }
 
 /**
- * Core Gemini API call with thinking support.
+ * Core Gemini API call with thinking support and retry logic.
+ * Retries up to 3 times with exponential backoff on transient errors (429, 503, network).
  */
 async function callGemini({ parts, systemInstruction, thinkingLevel = 'high', responseMimeType, temperature, maxOutputTokens = 4096 }) {
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -154,40 +135,78 @@ async function callGemini({ parts, systemInstruction, thinkingLevel = 'high', re
         body.systemInstruction = { parts: [{ text: systemInstruction }] };
     }
 
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-    });
+    const MAX_RETRIES = 3;
+    const RETRY_DELAYS = [1000, 3000, 8000]; // exponential backoff: 1s, 3s, 8s
+    const TIMEOUT_MS = 120000; // 2 minute timeout per attempt
 
-    if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`Gemini API error: ${response.status} - ${errText}`);
+    let lastError;
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+            const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+                signal: controller.signal,
+            });
+
+            clearTimeout(timeoutId);
+
+            // Retry on rate limit or server errors
+            if (response.status === 429 || response.status === 503) {
+                const errText = await response.text();
+                lastError = new Error(`Gemini API error: ${response.status} - ${errText}`);
+                console.warn(`[callGemini] Attempt ${attempt + 1}/${MAX_RETRIES} got ${response.status}, retrying in ${RETRY_DELAYS[attempt]}ms...`);
+                await new Promise(r => setTimeout(r, RETRY_DELAYS[attempt]));
+                continue;
+            }
+
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`Gemini API error: ${response.status} - ${errText}`);
+            }
+
+            const data = await response.json();
+
+            // Extract text from candidates — skip thought parts, get the actual text
+            const candidate = data.candidates?.[0];
+            if (!candidate?.content?.parts) {
+                throw new Error('No response from Gemini');
+            }
+
+            // Find the text part (not thought)
+            const textParts = candidate.content.parts.filter(p => p.text !== undefined && !p.thought);
+            let text = textParts.map(p => p.text).join('');
+
+            // Strip markdown code fences that Gemini sometimes wraps around JSON responses
+            text = text.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+
+            return text;
+        } catch (err) {
+            lastError = err;
+
+            // Retry on network errors and timeouts, but not on other errors
+            const isRetryable = err.name === 'AbortError' || err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT' || err.type === 'system';
+            if (isRetryable && attempt < MAX_RETRIES - 1) {
+                console.warn(`[callGemini] Attempt ${attempt + 1}/${MAX_RETRIES} failed (${err.message}), retrying in ${RETRY_DELAYS[attempt]}ms...`);
+                await new Promise(r => setTimeout(r, RETRY_DELAYS[attempt]));
+                continue;
+            }
+
+            throw err;
+        }
     }
 
-    const data = await response.json();
-
-    // Extract text from candidates — skip thought parts, get the actual text
-    const candidate = data.candidates?.[0];
-    if (!candidate?.content?.parts) {
-        throw new Error('No response from Gemini');
-    }
-
-    // Find the text part (not thought)
-    const textParts = candidate.content.parts.filter(p => p.text !== undefined && !p.thought);
-    let text = textParts.map(p => p.text).join('');
-
-    // Strip markdown code fences that Gemini sometimes wraps around JSON responses
-    text = text.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
-
-    return text;
+    throw lastError;
 }
 
 export {
     GEMINI_MODEL,
     GEMINI_API_URL,
     THINKING_BUDGETS,
-    AVAILABLE_MODELS_CONSTRAINT,
     buildContextBlock,
     buildImageParts,
     callGemini,

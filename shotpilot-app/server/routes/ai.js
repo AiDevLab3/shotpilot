@@ -388,21 +388,25 @@ export default function createAIRoutes({
                 }
             }
 
-            const coreKBFiles = [
-                '01_Core_Realism_Principles.md',
-                '03_Pack_Spatial_Composition.md',
-                '03_Pack_Image_Quality_Control.md',
-                '03_Pack_Video_Quality_Control.md',
-                '03_Pack_Character_Consistency.md',
-                '03_Pack_Motion_Readiness.md',
-            ];
-
+            // When a model is selected, loadKBForModel() already includes Core Principles,
+            // Character Consistency, Quality Control, Spatial Composition, and Translation Matrix.
+            // Only load packs separately when NO model is selected (to avoid duplicate content).
             let kbContent = '';
-            try {
-                kbContent = coreKBFiles.map(f => readKBFile(f)).filter(Boolean).join('\n\n');
-                kbFilesUsed.push(...coreKBFiles);
-            } catch (err) {
-                console.warn('[creative-director] Could not load KB:', err.message);
+            if (!modelKBContent) {
+                const coreKBFiles = [
+                    '01_Core_Realism_Principles.md',
+                    '03_Pack_Spatial_Composition.md',
+                    '03_Pack_Image_Quality_Control.md',
+                    '03_Pack_Video_Quality_Control.md',
+                    '03_Pack_Character_Consistency.md',
+                    '03_Pack_Motion_Readiness.md',
+                ];
+                try {
+                    kbContent = coreKBFiles.map(f => readKBFile(f)).filter(Boolean).join('\n\n');
+                    kbFilesUsed.push(...coreKBFiles);
+                } catch (err) {
+                    console.warn('[creative-director] Could not load KB:', err.message);
+                }
             }
 
             const result = await creativeDirectorCollaborate({

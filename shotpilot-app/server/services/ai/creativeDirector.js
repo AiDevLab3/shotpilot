@@ -164,7 +164,7 @@ IMAGE ANALYSIS (CRITICAL):
 
     const userPrompt = `${modelKBContent ? `MODEL-SPECIFIC KNOWLEDGE BASE (${targetModel}):\n${modelKBContent}\n\n` : ''}${kbContent ? `CORE KNOWLEDGE BASE:\n${kbContent}\n\n` : ''}${fullContext}
 
-${scriptContent ? `CURRENT SCRIPT:\n${scriptContent.substring(0, 5000)}\n` : 'NO SCRIPT YET.\n'}
+${scriptContent ? `CURRENT SCRIPT${scriptContent.length > 15000 ? ` (TRUNCATED — showing first 15,000 of ${scriptContent.length} characters, later scenes may be cut off)` : ''}:\n${scriptContent.substring(0, 15000)}\n` : 'NO SCRIPT YET.\n'}
 MODE: ${mode || 'initial'}
 
 ${historyParts ? `RECENT CONVERSATION:\n${historyParts}\n` : ''}

@@ -136,14 +136,16 @@ async function checkReadinessWithKB(context) {
     }
 
     // Add model-specific file if preferred model is known
+    // Uses the same stub paths as LITE_MODELS in kbLoader.js for consistency
     if (shot?.preferred_model) {
         const modelStubs = {
             'higgsfield': '02_Model_Higgsfield_Cinema_Studio.md',
-            'midjourney': '02_Model_Midjourney.md',
-            'nano-banana': '02_Model_Nano_Banana_Pro.md',
-            'gpt-image': '02_Model_GPT_Image.md',
+            'midjourney': 'models/midjourney/Prompting_Mastery.md',
+            'nano-banana-pro': 'models/nano_banana_pro/Prompting_Mastery.md',
+            'gpt-image': 'models/gpt_image_1_5/Prompting_Mastery.md',
             'veo-3.1': '02_Model_VEO_31.md',
             'kling-2.6': '02_Model_Kling_26.md',
+            'kling-3.0': 'models/kling-3.0.md',
         };
         const stub = modelStubs[shot.preferred_model];
         if (stub) {
