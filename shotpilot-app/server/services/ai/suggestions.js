@@ -165,17 +165,23 @@ OUTPUT VALID JSON ONLY:
     };
 
     const parseObject = (text) => {
-        try { return JSON.parse(text); } catch (e) {
+        let parsed;
+        try { parsed = JSON.parse(text); } catch (e) {
             const posMatch = e.message.match(/position (\d+)/);
             if (posMatch) {
-                try { return JSON.parse(text.substring(0, parseInt(posMatch[1]))); } catch {}
+                try { parsed = JSON.parse(text.substring(0, parseInt(posMatch[1]))); } catch {}
             }
+            if (!parsed) {
+                const jsonMatch = text.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    try { parsed = JSON.parse(jsonMatch[0]); } catch {}
+                }
+            }
+            if (!parsed) throw new Error('Could not parse character suggestions JSON');
         }
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            try { return JSON.parse(jsonMatch[0]); } catch {}
-        }
-        throw new Error('Could not parse character suggestions JSON');
+        // Gemini sometimes wraps the object in an array
+        if (Array.isArray(parsed)) parsed = parsed[0];
+        return parsed;
     };
 
     try {
@@ -244,18 +250,23 @@ OUTPUT VALID JSON ONLY:
     };
 
     const parseObject = (text) => {
-        try { return JSON.parse(text); } catch (e) {
-            // Handle trailing content after valid JSON (e.g. "...} extra text")
+        let parsed;
+        try { parsed = JSON.parse(text); } catch (e) {
             const posMatch = e.message.match(/position (\d+)/);
             if (posMatch) {
-                try { return JSON.parse(text.substring(0, parseInt(posMatch[1]))); } catch {}
+                try { parsed = JSON.parse(text.substring(0, parseInt(posMatch[1]))); } catch {}
             }
+            if (!parsed) {
+                const jsonMatch = text.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    try { parsed = JSON.parse(jsonMatch[0]); } catch {}
+                }
+            }
+            if (!parsed) throw new Error('Could not parse object suggestions JSON');
         }
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            try { return JSON.parse(jsonMatch[0]); } catch {}
-        }
-        throw new Error('Could not parse object suggestions JSON');
+        // Gemini sometimes wraps the object in an array
+        if (Array.isArray(parsed)) parsed = parsed[0];
+        return parsed;
     };
 
     try {
