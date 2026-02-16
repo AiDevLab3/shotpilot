@@ -144,12 +144,13 @@ async function generateRecommendations(context) {
         kbSection = `\nUse these KB principles for your recommendations:\n${kbContent}\n`;
     }
 
-    const systemInstruction = `You are an expert cinematographer and director. Recommend appropriate values for missing fields based on context. For each field provide:
-1. Specific recommendation
-2. Clear reasoning (reference their specific context)
-3. 2-3 alternatives
+    const systemInstruction = `You are an expert cinematographer and director giving practical advice to a filmmaker. Recommend appropriate values for missing fields based on their specific context.
 
-Be educational but concise.
+For each field, explain WHY it matters using real cinematography knowledge:
+BAD reasoning: "Camera angle is important for framing"
+GOOD reasoning: "For this tense interrogation scene, a low angle on the detective gives them authority over the suspect. At eye level it becomes a neutral conversation — you lose the power dynamic."
+
+Reference specific techniques, film examples, or optical principles when relevant. Keep it concise but expert.
 
 IMPORTANT: Only provide recommendations for the specific fields listed in MISSING FIELDS below.
 Do NOT add extra fields. Do NOT recommend AI models — model selection is handled separately.

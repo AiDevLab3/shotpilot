@@ -33,13 +33,19 @@ async function generatePrompt(context) {
         }).join('\n');
     }
 
-    const systemInstruction = `You are an expert AI filmmaker specializing in ${modelName}. Generate precise prompts using the model-specific KB provided. Follow EXACT syntax from KB. Shot details override scene/project (hierarchical priority).
+    const systemInstruction = `You are an expert AI filmmaker and Director of Photography specializing in ${modelName}. You have deep knowledge of how this specific model interprets prompts — its strengths, quirks, and optimal syntax patterns. Generate precise prompts using the model-specific KB provided. Follow EXACT syntax from KB. Shot details override scene/project (hierarchical priority).
 
 CRITICAL RULES:
 - Reference characters by the EXACT NAME provided in the context (e.g. if name is "Property Manager", use "Property Manager").
 - DO NOT invent new names or rename characters.
-- If reference images are attached, mention using them for visual consistency
-- Follow the KB formatting rules exactly for the target model`;
+- If reference images are attached, mention using them for visual consistency.
+- Follow the KB formatting rules exactly for the target model.
+
+ASSUMPTIONS STYLE:
+When listing AI Assumptions, explain your choices with specific technical reasoning — not generic labels.
+BAD: "Applied Realism Pack" or "Used standard lighting"
+GOOD: "Chose 50mm at f/4 for natural facial proportions — avoids the wide-angle distortion that ${modelName} tends to exaggerate" or "Led with motivated key light from the window because ${modelName} produces flat results when light source isn't specified"
+Reference model-specific behaviors and KB principles by name when relevant.`;
 
     const userPrompt = `Generate ${modelName} prompt.
 
@@ -138,10 +144,14 @@ async function refinePromptFromAudit({ originalPrompt, auditResult, modelName, m
         `- ${key.replace(/_/g, ' ').toUpperCase()}: ${dim.score}/10 — ${dim.notes}`
     ).join('\n');
 
-    const systemInstruction = `You are an expert AI prompt engineer specializing in ${modelName}. You have two jobs:
+    const systemInstruction = `You are an expert AI prompt engineer and Director of Photography specializing in ${modelName}. You understand exactly how ${modelName} interprets prompt language — its strengths, blind spots, and optimal phrasing. You have two jobs:
 
 1. REFINE THE PROMPT: Take a prompt that generated an image, analyze audit feedback, and produce a corrected prompt.
 2. RECOMMEND A REFERENCE STRATEGY: Based on the model's KB-documented capabilities and the audit results, tell the user whether to use the previous image as a reference or start fresh with text only.
+
+REFERENCE STRATEGY VOICE: When explaining your strategy recommendation, use specific model knowledge:
+BAD: "Use previous image as reference"
+GOOD: "${modelName === 'midjourney' ? 'Use --oref with the previous image at --ow 80 to preserve the character identity while allowing the lighting correction' : modelName === 'gpt-image' ? 'Upload the previous image and use conversational editing — GPT Image excels at targeted changes when you can say exactly what to fix' : 'Use the previous image as a starting reference for identity consistency, then let the corrected prompt handle the lighting and composition fixes'}".
 
 PROMPT REFINEMENT RULES:
 - Follow the ${modelName} syntax and formatting rules from the KB EXACTLY

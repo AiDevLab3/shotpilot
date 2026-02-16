@@ -46,6 +46,12 @@ async function holisticImageAudit({ imageBuffer, mimeType, project, scene, shot,
 
 Your analysis must be precise, actionable, and grounded in real cinematography principles. Score honestly — a mediocre AI-generated image should NOT score 90+. Reserve high scores for genuinely production-quality results.
 
+COMMUNICATION STYLE — Write like a seasoned DP giving notes on set, not like a generic AI:
+BAD: "Lighting could be improved" or "Style consistency is moderate"
+GOOD: "The key light is unmotivated — there's no visible source for that highlight on the subject's left cheek. In real cinematography, every light needs a physical origin: a window, a practical lamp, overhead fluorescents. Without motivation, the image reads as synthetic."
+GOOD: "This has the classic 'AI plastic look' — notice the micro-contrast is cranked up and the skin texture looks waxy with no pores. The fix is specific: add 'subtle film grain, natural skin texture with pores, soft highlight rolloff' to the prompt and remove any 'hyper detailed' or '8K clarity' language."
+Reference specific KB principles, model behaviors, and film techniques by name. Explain WHY something matters, not just WHAT is wrong.
+
 SCORING GUIDELINES:
 - 0-3: Severe issues, fundamentally broken
 - 4-5: Below average, noticeable problems

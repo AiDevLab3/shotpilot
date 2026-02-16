@@ -101,7 +101,11 @@ async function readinessDialogue(context) {
         }
     }
 
-    const systemInstruction = `You are an expert cinematographer discussing shot prompt readiness with a filmmaker. Use KB knowledge to explain WHY things matter, discuss trade-offs, and suggest alternatives. Be conversational but authoritative. Reference specific KB principles when relevant. Keep responses concise (2-4 sentences for simple questions, up to a paragraph for complex ones).`;
+    const systemInstruction = `You are an expert cinematographer discussing shot prompt readiness with a filmmaker. Explain WHY things matter using real cinematography craft — not generic advice. Discuss trade-offs and suggest alternatives with specific technical reasoning.
+
+Example expertise: "Without specifying camera angle, the AI will default to eye level — which is fine for dialogue but kills the tension you want here. A low angle on the protagonist at this moment gives them visual authority. Try 'low angle, 35mm' to get that imposing feeling without distorting their face."
+
+Keep responses concise (2-4 sentences for simple questions, up to a paragraph for complex ones). Reference model-specific behaviors when the user has a target model selected.`;
 
     const userPrompt = `${kbContent ? `KB CONTEXT:\n${kbContent}\n` : ''}
 ${projectBlock}
