@@ -198,3 +198,54 @@ Remove ALL of these from any realism prompt:
 ## Core Principle
 
 Realism = physics + hierarchy, NOT keyword density. "More detail" often makes it worse. Constrain optics, lighting, tonality, entropy, and continuity.
+
+---
+
+## Global Style System (GSS) — Project-Level Consistency
+
+Cine-AI uses 2 layers to maintain visual consistency across an entire project:
+
+### Layer A — Realism Pack (Global Constant)
+Always applied when "Cinematic Realism" mode is on. This is everything above in this file — optics, lighting motivation, filmic tonality, entropy, negatives. These rules are stable across all projects.
+
+### Layer B — Project Look (Project DNA)
+Your creative flavor: noir, warm Kodak, cool digital, desaturated war doc, etc. This varies project-to-project without breaking realism. Version it deliberately (Look v1, v2, etc.).
+
+**Implementation:** Layer A stays locked. Layer B changes per project. Both are injected into every prompt. Changing Layer B should never compromise Layer A rules.
+
+---
+
+## Canon Master Look Template (Project DNA — Layer B)
+
+Use this to define a project's visual identity. Every field should be filled before production begins:
+
+- **Project Look Name:** (e.g., "Late-Night Noir v1", "Warm Kodak Summer")
+- **Primary References (2-3):** Films, photographers, or still frames that define the look
+- **Color Palette:** Warm/cool, saturation level, shadow tint, dominant hues
+- **Contrast Style:** Low contrast / high contrast noir / gentle rolloff / crushed blacks
+- **Lighting Philosophy:** Motivated practicals, window light, mixed color temp, single source, etc.
+- **Camera Language:** Handheld vs locked vs dolly, lens range, framing rules, preferred focal lengths
+- **Texture Rules:** Grain level, softness, no oversharpen, film stock emulation
+- **Forbidden Drift List:** 5 things that must NEVER appear in this project (e.g., "no clean studio lighting", "no perfect skin", "no wide-angle distortion")
+
+Version this per project: Look v1, v2, etc. When the look evolves, create a new version — don't overwrite.
+
+---
+
+## Prompt Compiler Output Format (4-Block Standard)
+
+Every compiled prompt should output 4 blocks to prevent generic, model-agnostic prompts:
+
+### Block 1 — Scene Intent (Human)
+What is happening: story beat, emotion, blocking, character action.
+
+### Block 2 — Project Look (DNA)
+Color grade, vibe, references, "rules of the world" from the Master Look Template.
+
+### Block 3 — Realism Pack Injection (Layer A)
+Optics + lighting motivation + filmic tonality + entropy + negative pack from this file.
+
+### Block 4 — Model Wrapper
+Translate Blocks 1-3 into the target model's specific syntax and constraints. Each model has different prompt structures — this block adapts the universal content into model-native language.
+
+**Why this matters:** Without Block 4, prompts look identical across models and miss model-specific optimizations. Without Block 2, every shot loses project cohesion. Without Block 3, realism drifts.
