@@ -208,62 +208,137 @@ OUTPUT VALID JSON ONLY:
 }
 
 /**
- * ENTITY IMAGE ANALYSIS — Lightweight image-vs-prompt comparison.
- * Analyzes an uploaded character/object reference image against the prompt
- * that was used to generate it, checking for mismatches, AI artifacts,
- * and suggesting prompt fixes.
+ * ENTITY IMAGE ANALYSIS — Full-quality analysis using the SAME evaluation
+ * framework as holisticImageAudit for continuity.
  *
- * Returns match_score (0-100), verdict, specific issues, what works,
- * prompt adjustments, and a complete revised prompt ready to use.
+ * Evaluates entity reference images (characters, objects) across the same
+ * 6 cinematic dimensions + 4 realism diagnosis patterns used for shot variants,
+ * PLUS prompt-matching and revised prompt generation specific to entity refs.
+ *
+ * This ensures that a character/object reference image that scores well here
+ * will integrate seamlessly when used in shot generation — same quality bar,
+ * same visual language, same realism standards.
  */
 async function analyzeEntityImage({ imageBuffer, mimeType, originalPrompt, entityType, entityName, entityDescription, project, kbContent }) {
-    const systemInstruction = `You are an expert AI image quality evaluator for character and object reference images in film production. You analyze whether an AI-generated image matches the prompt that was used to generate it.
+    const projectBlock = project ? buildContextBlock('PROJECT', project) : '';
+    const entityLabel = entityType === 'character' ? 'Character' : 'Object';
 
-Your analysis should be concise and actionable. Focus on:
-1. Does the image match the intended description and prompt?
-2. Are there any AI artifacts or quality issues (plastic skin, wrong anatomy, style drift)?
-3. What specific prompt changes would improve the result?
+    const systemInstruction = `You are an expert Holistic Image Auditor for AI-generated cinematography, specifically evaluating ${entityLabel.toLowerCase()} reference images. You analyze images with the eye of a seasoned Director of Photography, evaluating them across 6 critical dimensions for professional production quality.
 
-Be direct and specific — speak like a VFX supervisor reviewing dailies, not a generic AI.
-Don't say "consider improving X" — say exactly what to add, remove, or change in the prompt.
+CRITICAL CONTEXT: This is a ${entityLabel.toLowerCase()} reference image that will be used as a visual anchor for shots in the production. The quality, style, and realism standards you evaluate here MUST be the same standards applied to final shot images. If this reference passes your audit but has hidden quality issues (AI plastic look, wrong lighting style, etc.), those issues will propagate into every shot featuring this ${entityLabel.toLowerCase()}.
 
-SCORING:
-- 90-100: Strong match, minor tweaks at most
-- 70-89: Good base, needs targeted adjustments
-- 50-69: Noticeable mismatches, prompt needs rework
-- 0-49: Significant mismatch, likely needs regeneration with different approach`;
+Your analysis must be precise, actionable, and grounded in real cinematography principles. Score honestly — a mediocre AI-generated image should NOT score 90+. Reserve high scores for genuinely production-quality results.
+
+COMMUNICATION STYLE — Write like a seasoned DP giving notes on set, not like a generic AI:
+BAD: "Lighting could be improved" or "Style consistency is moderate"
+GOOD: "The key light is unmotivated — there's no visible source for that highlight on the subject's left cheek. In real cinematography, every light needs a physical origin: a window, a practical lamp, overhead fluorescents. Without motivation, the image reads as synthetic."
+GOOD: "This has the classic 'AI plastic look' — notice the micro-contrast is cranked up and the skin texture looks waxy with no pores. The fix is specific: add 'subtle film grain, natural skin texture with pores, soft highlight rolloff' to the prompt and remove any 'hyper detailed' or '8K clarity' language."
+Reference specific KB principles, model behaviors, and film techniques by name. Explain WHY something matters, not just WHAT is wrong.
+
+SCORING GUIDELINES:
+- 0-3: Severe issues, fundamentally broken
+- 4-5: Below average, noticeable problems
+- 6-7: Acceptable with clear room for improvement
+- 8-9: Strong, minor refinements only
+- 10: Exceptional, professional production quality
+
+OVERALL SCORE = weighted sum of dimensions (same weights as shot variant audit):
+- Physics (weight 2): 20% of total
+- Style Consistency (weight 2): 20% of total
+- Lighting & Atmosphere (weight 1.5): 15% of total
+- Clarity (weight 1): 10% of total
+- Objects & Composition (weight 1.5): 15% of total
+- ${entityType === 'character' ? 'Character Identity (weight 2): 20% of total' : 'Object Accuracy (weight 2): 20% of total'}
+
+VERDICT THRESHOLDS (maps to the same quality bar as shot variant audit):
+- STRONG MATCH: 85-100 (production-quality reference, ready to use in shots)
+- NEEDS TWEAKS: 60-84 (good base, targeted prompt adjustments needed)
+- SIGNIFICANT MISMATCH: 0-59 (fundamental issues, needs regeneration)
+
+REALISM DIAGNOSIS — Check for these 4 common AI image failure patterns:
+
+1. "AI Plastic Look" — Overly crisp micro-contrast, HDR glow/haloing, plastic/waxy skin, perfectly clean gradients (no natural noise), sterile symmetry, unrealistic bokeh, surfaces too glossy/clean/new, unmotivated flat lighting. CAUSE: Kill-switch terms in prompt ("hyper detailed," "8K," "perfect skin"), no entropy, unmotivated lighting. FIX: Remove killer terms, add filmic tonality + grain, specify motivated lighting + falloff, add subtle entropy.
+
+2. "Flat / Lifeless" — No directional light, no contrast ratio, no atmosphere depth cues, image feels two-dimensional and unengaging. CAUSE: No directional light specified, no fill/contrast control, no atmosphere. FIX: Specify key light direction + quality, add negative space and subject separation, add subtle haze/dust if appropriate.
+
+3. "CGI / Game Engine Look" — Glossy highlights with perfect edges, too much micro-contrast, render-like background sharpness, volumetrics that look like smoke simulation. CAUSE: Excessive global sharpness, render-like lighting, no lens imperfections. FIX: Soften tonality, add rolloff, reduce global sharpness, add subtle lens imperfections, enforce photographic anchor language ("captured through a physical lens").
+
+4. "Lighting Drift" — Light direction and source inconsistent within image or doesn't match scene intent, shadows fall in wrong direction, multiple conflicting light sources without motivation. CAUSE: Light direction and source not locked. FIX: Define scene-level lighting lock (source + direction + quality + contrast ratio), treat lighting as canon.
+
+For each pattern detected, classify severity as "severe" (dominates the image), "moderate" (noticeable but not dominant), or "none" (not present). Only include patterns that are actually present (not "none").`;
 
     const contextLines = [];
-    if (project) {
-        contextLines.push(`Project: ${project.name}`);
-        if (project.genre) contextLines.push(`Genre: ${project.genre}`);
-        if (project.visual_style) contextLines.push(`Visual Style: ${project.visual_style}`);
-        if (project.color_palette) contextLines.push(`Color Palette: ${project.color_palette}`);
-    }
-    const entityLabel = entityType === 'character' ? 'Character' : 'Object';
     if (entityName) contextLines.push(`${entityLabel} Name: ${entityName}`);
     if (entityDescription) contextLines.push(`${entityLabel} Description: ${entityDescription}`);
 
-    const userPrompt = `${kbContent ? `KNOWLEDGE BASE (reference for quality evaluation):\n${kbContent}\n\n` : ''}${contextLines.length > 0 ? `CONTEXT:\n${contextLines.join('\n')}\n\n` : ''}ORIGINAL PROMPT USED TO GENERATE THIS IMAGE:
+    const userPrompt = `${kbContent ? `KNOWLEDGE BASE (use for evaluation criteria):\n${kbContent}\n\n` : ''}${projectBlock}
+${contextLines.length > 0 ? `\n${entityLabel.toUpperCase()} DETAILS:\n${contextLines.join('\n')}\n` : ''}
+ORIGINAL PROMPT USED TO GENERATE THIS IMAGE:
 ${originalPrompt}
 
-Analyze the uploaded image against the original prompt and ${entityType} description.
+Analyze the uploaded ${entityLabel.toLowerCase()} reference image across ALL 6 dimensions. Compare against the project DNA and ${entityLabel.toLowerCase()} description. Also evaluate how well the image matches the original prompt.
+
+For each dimension, provide:
+1. A score (0-10)
+2. Specific observations (what works, what doesn't)
+
+Then provide:
+- Overall weighted score (0-100)
+- Verdict (STRONG MATCH / NEEDS TWEAKS / SIGNIFICANT MISMATCH)
+- List of specific issues found
+- What specifically works well
+- Suggested prompt adjustments to fix identified issues
+- A complete revised prompt with all fixes applied
 
 OUTPUT VALID JSON ONLY:
 {
-  "match_score": <0-100>,
+  "overall_score": <0-100>,
   "verdict": "STRONG MATCH" | "NEEDS TWEAKS" | "SIGNIFICANT MISMATCH",
+  "dimensions": {
+    "physics": {
+      "score": <0-10>,
+      "notes": "Lighting direction consistency, shadow accuracy, perspective, physical plausibility, reflections"
+    },
+    "style_consistency": {
+      "score": <0-10>,
+      "notes": "How well the image matches the project's aesthetic, tone, mood, color palette. Check for AI artifacts like HDR sheen, plastic textures"
+    },
+    "lighting_atmosphere": {
+      "score": <0-10>,
+      "notes": "Motivated light sources, atmospheric depth, contrast ratio, color temperature, key/fill balance"
+    },
+    "clarity": {
+      "score": <0-10>,
+      "notes": "Sharpness, depth of field, focus accuracy, absence of unwanted blur/noise, optical quality"
+    },
+    "composition": {
+      "score": <0-10>,
+      "notes": "Subject placement, framing, scale relationships, negative space, overall visual balance"
+    },
+    "${entityType === 'character' ? 'character_identity' : 'object_accuracy'}": {
+      "score": <0-10>,
+      "notes": "${entityType === 'character' ? 'Facial accuracy, clothing/wardrobe consistency, body proportions, expression, absence of uncanny valley artifacts' : 'Object accuracy vs description, material/texture fidelity, scale correctness, detail accuracy, absence of AI distortion'}"
+    }
+  },
+  "realism_diagnosis": [
+    {
+      "pattern": "AI Plastic Look" | "Flat / Lifeless" | "CGI / Game Engine Look" | "Lighting Drift",
+      "severity": "severe" | "moderate",
+      "details": "What specifically triggers this diagnosis",
+      "fix": "Specific prompt-level fix"
+    }
+  ],
   "issues": [
     {
-      "category": "description_mismatch" | "style_issue" | "ai_artifact" | "composition" | "quality",
+      "category": "description_mismatch" | "style_issue" | "ai_artifact" | "composition" | "quality" | "realism",
       "detail": "What specifically is wrong",
       "severity": "minor" | "moderate" | "major"
     }
   ],
   "what_works": ["Specific element that matches well"],
   "prompt_adjustments": ["Specific change: add/remove/modify X in the prompt"],
-  "revised_prompt": "Complete revised prompt with all fixes applied, ready to copy and paste into the image generator",
-  "summary": "1-2 sentence assessment"
+  "revised_prompt": "Complete revised prompt with all fixes applied, ready to copy and paste",
+  "summary": "2-3 sentence assessment"
 }`;
 
     const parts = [
@@ -273,15 +348,15 @@ OUTPUT VALID JSON ONLY:
                 data: imageBuffer.toString('base64'),
             }
         },
-        { text: '↑ Analyze this AI-generated image against the original prompt.\n\n' + userPrompt }
+        { text: `↑ Analyze this ${entityLabel.toLowerCase()} reference image using the Holistic Image Audit framework.\n\n` + userPrompt }
     ];
 
     try {
         const text = await callGemini({
             parts,
             systemInstruction,
-            thinkingLevel: 'medium',
-            maxOutputTokens: 3072,
+            thinkingLevel: 'high',
+            maxOutputTokens: 4096,
         });
 
         let parsed;
@@ -296,11 +371,30 @@ OUTPUT VALID JSON ONLY:
             }
         }
 
+        // Normalize the 6th dimension key (character_identity or object_accuracy)
+        const sixthDimKey = entityType === 'character' ? 'character_identity' : 'object_accuracy';
+        const rawSixthDim = parsed.dimensions?.[sixthDimKey] || parsed.dimensions?.character_identity || parsed.dimensions?.object_accuracy;
+
+        const dimensions = {
+            physics: { score: Math.min(10, Math.max(0, parsed.dimensions?.physics?.score || 0)), notes: parsed.dimensions?.physics?.notes || '' },
+            style_consistency: { score: Math.min(10, Math.max(0, parsed.dimensions?.style_consistency?.score || 0)), notes: parsed.dimensions?.style_consistency?.notes || '' },
+            lighting_atmosphere: { score: Math.min(10, Math.max(0, parsed.dimensions?.lighting_atmosphere?.score || 0)), notes: parsed.dimensions?.lighting_atmosphere?.notes || '' },
+            clarity: { score: Math.min(10, Math.max(0, parsed.dimensions?.clarity?.score || 0)), notes: parsed.dimensions?.clarity?.notes || '' },
+            composition: { score: Math.min(10, Math.max(0, parsed.dimensions?.composition?.score || 0)), notes: parsed.dimensions?.composition?.notes || '' },
+            [sixthDimKey]: { score: Math.min(10, Math.max(0, rawSixthDim?.score || 0)), notes: rawSixthDim?.notes || '' },
+        };
+
+        const overallScore = Math.min(100, Math.max(0, parsed.overall_score || 0));
+
         return {
-            match_score: Math.min(100, Math.max(0, parsed.match_score || 0)),
+            overall_score: overallScore,
             verdict: ['STRONG MATCH', 'NEEDS TWEAKS', 'SIGNIFICANT MISMATCH'].includes(parsed.verdict)
                 ? parsed.verdict
-                : (parsed.match_score >= 90 ? 'STRONG MATCH' : parsed.match_score >= 70 ? 'NEEDS TWEAKS' : 'SIGNIFICANT MISMATCH'),
+                : (overallScore >= 85 ? 'STRONG MATCH' : overallScore >= 60 ? 'NEEDS TWEAKS' : 'SIGNIFICANT MISMATCH'),
+            dimensions,
+            realism_diagnosis: Array.isArray(parsed.realism_diagnosis)
+                ? parsed.realism_diagnosis.filter(d => d && d.pattern && d.severity && d.severity !== 'none')
+                : [],
             issues: Array.isArray(parsed.issues) ? parsed.issues : [],
             what_works: Array.isArray(parsed.what_works) ? parsed.what_works : [],
             prompt_adjustments: Array.isArray(parsed.prompt_adjustments) ? parsed.prompt_adjustments : [],

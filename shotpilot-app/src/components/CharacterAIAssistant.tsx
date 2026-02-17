@@ -344,8 +344,20 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
             );
         }
 
+        const overallScore = analysis.overall_score ?? analysis.match_score ?? 0;
         const verdictColor = analysis.verdict === 'STRONG MATCH' ? '#10b981' : analysis.verdict === 'NEEDS TWEAKS' ? '#f59e0b' : '#ef4444';
         const VerdictIcon = analysis.verdict === 'STRONG MATCH' ? CheckCircle2 : AlertTriangle;
+
+        const dimensionLabels: Record<string, string> = {
+            physics: 'Physics',
+            style_consistency: 'Style',
+            lighting_atmosphere: 'Lighting',
+            clarity: 'Clarity',
+            composition: 'Composition',
+            character_identity: 'Identity',
+            object_accuracy: 'Accuracy',
+        };
+        const scoreColor = (s: number) => s >= 8 ? '#10b981' : s >= 6 ? '#f59e0b' : '#ef4444';
 
         return (
             <div style={{ marginTop: '6px', backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: '6px', overflow: 'hidden' }}>
@@ -356,7 +368,7 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <VerdictIcon size={12} color={verdictColor} />
                         <span style={{ fontSize: '11px', fontWeight: 600, color: verdictColor }}>{analysis.verdict}</span>
-                        <span style={{ fontSize: '10px', color: '#6b7280' }}>Score: {analysis.match_score}/100</span>
+                        <span style={{ fontSize: '10px', color: '#6b7280' }}>Score: {overallScore}/100</span>
                     </div>
                     <ChevronDown size={12} style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
                 </button>
@@ -364,6 +376,40 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
                     <div style={{ padding: '8px', borderTop: '1px solid #27272a' }}>
                         {analysis.summary && (
                             <p style={{ margin: '0 0 8px 0', fontSize: '11px', color: '#d1d5db', lineHeight: '1.5' }}>{analysis.summary}</p>
+                        )}
+                        {/* Dimension scores */}
+                        {analysis.dimensions && (
+                            <div style={{ marginBottom: '8px' }}>
+                                <span style={{ fontSize: '10px', fontWeight: 600, color: '#60a5fa', textTransform: 'uppercase' }}>Quality dimensions</span>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px', marginTop: '4px' }}>
+                                    {Object.entries(analysis.dimensions).map(([key, dim]: [string, any]) => (
+                                        <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <span style={{ fontSize: '9px', color: '#9ca3af', width: '58px', flexShrink: 0 }}>{dimensionLabels[key] || key}</span>
+                                            <div style={{ flex: 1, height: '4px', backgroundColor: '#27272a', borderRadius: '2px', overflow: 'hidden' }}>
+                                                <div style={{ width: `${(dim.score / 10) * 100}%`, height: '100%', backgroundColor: scoreColor(dim.score), borderRadius: '2px', transition: 'width 0.3s' }} />
+                                            </div>
+                                            <span style={{ fontSize: '9px', color: scoreColor(dim.score), fontWeight: 600, width: '18px', textAlign: 'right' }}>{dim.score}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {/* Realism diagnosis */}
+                        {analysis.realism_diagnosis && analysis.realism_diagnosis.length > 0 && (
+                            <div style={{ marginBottom: '8px' }}>
+                                <span style={{ fontSize: '10px', fontWeight: 600, color: '#f87171', textTransform: 'uppercase' }}>Realism diagnosis</span>
+                                {analysis.realism_diagnosis.map((diag: any, i: number) => (
+                                    <div key={i} style={{ marginTop: '4px', padding: '5px 7px', backgroundColor: diag.severity === 'severe' ? '#2a1a1a' : '#1e1e22', border: `1px solid ${diag.severity === 'severe' ? '#7f1d1d' : '#44403c'}`, borderRadius: '4px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '2px' }}>
+                                            <AlertTriangle size={10} color={diag.severity === 'severe' ? '#ef4444' : '#f59e0b'} />
+                                            <span style={{ fontSize: '10px', fontWeight: 600, color: diag.severity === 'severe' ? '#fca5a5' : '#fde68a' }}>{diag.pattern}</span>
+                                            <span style={{ fontSize: '9px', color: '#6b7280' }}>({diag.severity})</span>
+                                        </div>
+                                        <p style={{ margin: '0 0 2px 0', fontSize: '9px', color: '#d1d5db', lineHeight: '1.4' }}>{diag.details}</p>
+                                        {diag.fix && <p style={{ margin: 0, fontSize: '9px', color: '#a78bfa', lineHeight: '1.4' }}>Fix: {diag.fix}</p>}
+                                    </div>
+                                ))}
+                            </div>
                         )}
                         {analysis.what_works && analysis.what_works.length > 0 && (
                             <div style={{ marginBottom: '8px' }}>
