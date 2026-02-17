@@ -89,6 +89,17 @@ export default function createGenerationRoutes({ db, sanitize, analyzeEntityImag
             ).run(entity_type, entity_id, image_type, image_url, label || null, prompt || null);
             res.json({ id: info.lastInsertRowid });
         }
+
+        // Auto-sync: when uploading a 'reference' image, also set it on the entity record
+        // so it shows on the character/object card in the grid
+        if (image_type === 'reference') {
+            const table = entity_type === 'character' ? 'characters' : entity_type === 'object' ? 'objects' : null;
+            if (table) {
+                try {
+                    db.prepare(`UPDATE ${table} SET reference_image_url = ? WHERE id = ?`).run(image_url, entity_id);
+                } catch (e) { /* non-critical */ }
+            }
+        }
     });
 
     // ── Analyze an uploaded entity image against its prompt ────────
@@ -191,7 +202,18 @@ export default function createGenerationRoutes({ db, sanitize, analyzeEntityImag
 
     // Delete a specific entity image
     router.delete('/api/entity-images/:id', (req, res) => {
+        // Look up the image before deleting so we can clear the entity's reference_image_url if needed
+        const img = db.prepare('SELECT entity_type, entity_id, image_type FROM entity_reference_images WHERE id = ?').get(req.params.id);
         db.prepare('DELETE FROM entity_reference_images WHERE id = ?').run(req.params.id);
+        // If this was the reference image, clear it from the entity record
+        if (img && img.image_type === 'reference') {
+            const table = img.entity_type === 'character' ? 'characters' : img.entity_type === 'object' ? 'objects' : null;
+            if (table) {
+                try {
+                    db.prepare(`UPDATE ${table} SET reference_image_url = NULL WHERE id = ?`).run(img.entity_id);
+                } catch (e) { /* non-critical */ }
+            }
+        }
         res.json({ success: true });
     });
 

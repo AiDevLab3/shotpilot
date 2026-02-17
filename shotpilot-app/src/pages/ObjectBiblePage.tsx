@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Sparkles, Loader2 } from 'lucide-react';
 import type { ObjectItem } from '../types/schema';
-import { getObjects, createObject, updateObject, deleteObject, fileToBase64, getObjectSuggestions } from '../services/api';
+import { getObjects, createObject, updateObject, deleteObject, getObjectSuggestions } from '../services/api';
 import { ObjectAIAssistant } from '../components/ObjectAIAssistant';
 import { useProjectContext } from '../components/ProjectLayout';
 
@@ -59,27 +59,6 @@ export const ObjectBiblePage: React.FC = () => {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            try {
-                if (file.size > 20 * 1024 * 1024) {
-                    alert("File is too large! Please choose an image under 20MB.");
-                    return;
-                }
-                const base64 = await fileToBase64(file);
-                setFormData(prev => ({ ...prev, reference_image_url: base64 }));
-            } catch (error) {
-                console.error("Failed to upload image", error);
-                alert("Failed to upload image.");
-            }
-        }
-    };
-
-    const handleRemoveImage = () => {
-        setFormData(prev => ({ ...prev, reference_image_url: '' }));
     };
 
     const handleSave = async () => {
@@ -303,47 +282,6 @@ export const ObjectBiblePage: React.FC = () => {
             cursor: 'pointer',
             fontSize: '12px'
         },
-        uploadLabel: {
-            display: 'block',
-            width: '100%',
-            padding: '32px',
-            border: '2px dashed #3f3f46',
-            borderRadius: '8px',
-            textAlign: 'center' as const,
-            cursor: 'pointer',
-            color: '#9ca3af',
-            marginBottom: '8px'
-        },
-        previewContainer: {
-            position: 'relative' as const,
-            width: '150px',
-            height: '200px',
-            margin: '0 auto',
-            border: '1px solid #3f3f46',
-            borderRadius: '8px',
-            overflow: 'hidden'
-        },
-        previewImage: {
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover' as const
-        },
-        removeBtn: {
-            position: 'absolute' as const,
-            top: '4px',
-            right: '4px',
-            width: '24px',
-            height: '24px',
-            borderRadius: '50%',
-            backgroundColor: 'rgba(0,0,0,0.7)',
-            color: 'white',
-            border: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            fontSize: '14px'
-        }
     };
 
     if (loading) return <div style={{ padding: '32px', color: 'white' }}>Loading objects...</div>;
@@ -450,26 +388,6 @@ export const ObjectBiblePage: React.FC = () => {
                                 />
                             </div>
                         )}
-
-                        <div style={styles.formGroup}>
-                            <label style={styles.label}>Reference Image</label>
-                            {formData.reference_image_url ? (
-                                <div style={styles.previewContainer}>
-                                    <img src={formData.reference_image_url} alt="Preview" style={styles.previewImage} />
-                                    <button onClick={handleRemoveImage} style={styles.removeBtn}>✕</button>
-                                </div>
-                            ) : (
-                                <label style={styles.uploadLabel}>
-                                    <div>📷 Upload Image (Max 20MB)</div>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handleFileUpload}
-                                        style={{ display: 'none' }}
-                                    />
-                                </label>
-                            )}
-                        </div>
 
                         <div style={styles.modalActions}>
                             <button
