@@ -31,16 +31,18 @@ function buildContextBlock(label, obj) {
 
 /**
  * Build multimodal parts for reference images (characters + objects).
- * Returns array of parts to append to the Gemini request.
+ * Returns { parts, imageMap } where imageMap is a numbered list of which
+ * image corresponds to which entity (for use in the generated prompt).
  */
 function buildImageParts(characters, objects) {
     const parts = [];
+    const imageMap = []; // { imageNum, type, name, description }
+    let imageNum = 1;
 
     if (characters && characters.length > 0) {
         for (const char of characters) {
             if (char.reference_image_url) {
                 try {
-                    // reference_image_url is a relative path like /uploads/images/xxx
                     const imgPath = char.reference_image_url.startsWith('/')
                         ? path.join(process.cwd(), char.reference_image_url)
                         : char.reference_image_url;
@@ -57,8 +59,15 @@ function buildImageParts(characters, objects) {
                             }
                         });
                         parts.push({
-                            text: `↑ Character reference: ${char.name}${char.description ? ' - ' + char.description : ''}`
+                            text: `↑ Image ${imageNum} — Character reference: ${char.name}${char.description ? ' - ' + char.description : ''}`
                         });
+                        imageMap.push({
+                            imageNum,
+                            type: 'character',
+                            name: char.name,
+                            description: char.description || '',
+                        });
+                        imageNum++;
                     }
                 } catch (err) {
                     console.warn(`[gemini] Could not load character image for ${char.name}:`, err.message);
@@ -87,8 +96,15 @@ function buildImageParts(characters, objects) {
                             }
                         });
                         parts.push({
-                            text: `↑ Object reference: ${obj.name}${obj.description ? ' - ' + obj.description : ''}`
+                            text: `↑ Image ${imageNum} — Object reference: ${obj.name}${obj.description ? ' - ' + obj.description : ''}`
                         });
+                        imageMap.push({
+                            imageNum,
+                            type: 'object',
+                            name: obj.name,
+                            description: obj.description || '',
+                        });
+                        imageNum++;
                     }
                 } catch (err) {
                     console.warn(`[gemini] Could not load object image for ${obj.name}:`, err.message);
@@ -97,7 +113,7 @@ function buildImageParts(characters, objects) {
         }
     }
 
-    return parts;
+    return { parts, imageMap };
 }
 
 /**

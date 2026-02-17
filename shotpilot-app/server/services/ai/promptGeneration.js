@@ -11,14 +11,18 @@ async function generatePrompt(context) {
     const sceneBlock = buildContextBlock('SCENE', scene);
     const shotBlock = buildContextBlock('SHOT', shot);
 
-    // Build character context (by name, not generic descriptions)
+    // Build multimodal parts and numbered image map
+    const { parts: imageParts, imageMap } = buildImageParts(characters, objects);
+
+    // Build character context with image numbers
     let characterBlock = '';
     if (characters && characters.length > 0) {
         characterBlock = '\nCHARACTERS IN PROJECT:\n' + characters.map(c => {
             let line = `  - ${c.name}`;
             if (c.description) line += `: ${c.description}`;
             if (c.personality) line += ` (personality: ${c.personality})`;
-            if (c.reference_image_url) line += ' [reference image attached below]';
+            const img = imageMap.find(m => m.type === 'character' && m.name === c.name);
+            if (img) line += ` [= Image ${img.imageNum}]`;
             return line;
         }).join('\n');
     }
@@ -28,9 +32,19 @@ async function generatePrompt(context) {
         objectBlock = '\nOBJECTS IN PROJECT:\n' + objects.map(o => {
             let line = `  - ${o.name}`;
             if (o.description) line += `: ${o.description}`;
-            if (o.reference_image_url) line += ' [reference image attached below]';
+            const img = imageMap.find(m => m.type === 'object' && m.name === o.name);
+            if (img) line += ` [= Image ${img.imageNum}]`;
             return line;
         }).join('\n');
+    }
+
+    // Build reference image instructions for the prompt
+    let imageRefInstructions = '';
+    if (imageMap.length > 0) {
+        imageRefInstructions = '\nREFERENCE IMAGES AVAILABLE:\n' +
+            imageMap.map(m => `  Image ${m.imageNum}: ${m.name} (${m.type})`).join('\n') +
+            '\n\nIMPORTANT: In the generated prompt, reference these images by number (e.g. "Use Image 1 for [character name]\'s facial features — keep identity exact"). ' +
+            'Follow the KB\'s documented syntax for reference images. The user will upload these images alongside the prompt.';
     }
 
     const systemInstruction = `You are an expert AI filmmaker and Director of Photography specializing in ${modelName}. You have deep knowledge of how this specific model interprets prompts — its strengths, quirks, and optimal syntax patterns. Generate precise prompts using the model-specific KB provided. Follow EXACT syntax from KB. Shot details override scene/project (hierarchical priority).
@@ -38,7 +52,8 @@ async function generatePrompt(context) {
 CRITICAL RULES:
 - Reference characters by the EXACT NAME provided in the context (e.g. if name is "Property Manager", use "Property Manager").
 - DO NOT invent new names or rename characters.
-- If reference images are attached, mention using them for visual consistency.
+- When reference images are provided, include explicit numbered image references in the prompt (e.g. "Image 1", "Image 2") following the model's KB syntax for reference inputs.
+- For each character/object with a reference image, include an identity-locking instruction (e.g. "Keep facial features exactly the same as Image 1").
 - Follow the KB formatting rules exactly for the target model.
 
 ASSUMPTIONS STYLE:
@@ -61,21 +76,20 @@ ${sceneBlock}
 ${shotBlock}
 ${characterBlock}
 ${objectBlock}
+${imageRefInstructions}
 
 KB - ${modelName.toUpperCase()}:
 ${kbContent}
 
 OUTPUT FORMAT:
 [CLEAN PROMPT - NO PREAMBLE]
+${imageMap.length > 0 ? '\n[Reference Image Map]\n' + imageMap.map(m => `Image ${m.imageNum}: ${m.name}`).join('\n') : ''}
 
 // AI Assumptions:
 // - [list inferences made]`;
 
     // Build multimodal parts: text + reference images
     const parts = [{ text: userPrompt }];
-
-    // FIX 4: Attach reference images for characters and objects
-    const imageParts = buildImageParts(characters, objects);
     parts.push(...imageParts);
 
     try {
