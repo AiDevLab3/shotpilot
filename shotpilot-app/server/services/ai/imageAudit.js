@@ -161,6 +161,7 @@ OUTPUT VALID JSON ONLY:
             parts,
             systemInstruction,
             thinkingLevel: 'high',
+            temperature: 0, // deterministic scoring — same image should get same scores
             // Note: responseMimeType omitted — Gemini thinking mode with inline
             // image data does not reliably support forced JSON response mode.
             maxOutputTokens: 4096,
@@ -356,6 +357,7 @@ OUTPUT VALID JSON ONLY:
             parts,
             systemInstruction,
             thinkingLevel: 'high',
+            temperature: 0, // deterministic scoring — same image should get same scores
             maxOutputTokens: 4096,
         });
 
