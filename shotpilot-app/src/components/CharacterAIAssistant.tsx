@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, Loader2, Check, Copy, ChevronDown, Send, MessageCircle, RotateCw, HelpCircle, Upload, X, Clock, Image as ImageIcon, Search, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import type { CharacterSuggestions, AIModel } from '../types/schema';
-import { getCharacterSuggestions, getAvailableModels, refineContent, getLatestGeneration, saveGeneration, getGenerations, getEntityImages, saveEntityImage, deleteEntityImage, fileToBase64, analyzeEntityImage } from '../services/api';
+import { getCharacterSuggestions, getAvailableModels, refineContent, getLatestGeneration, saveGeneration, getGenerations, getEntityImages, saveEntityImage, deleteEntityImage, fileToBase64, analyzeEntityImage, generateTurnaroundPrompt } from '../services/api';
 
 interface CharacterAIAssistantProps {
     projectId: number;
@@ -32,6 +32,11 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
     const [selectedModel, setSelectedModel] = useState<string>('');
     const [turnaroundCopied, setTurnaroundCopied] = useState<boolean>(false);
     const [workflowExpanded, setWorkflowExpanded] = useState(false);
+
+    // Separate turnaround state — independent from main suggestions
+    const [turnaroundData, setTurnaroundData] = useState<{ turnaroundPrompt: string; turnaroundUsesRef: boolean } | null>(null);
+    const [turnaroundLoading, setTurnaroundLoading] = useState(false);
+    const [turnaroundError, setTurnaroundError] = useState<string | null>(null);
 
     // Generation history + entity images
     const [generationHistory, setGenerationHistory] = useState<any[]>([]);
@@ -236,6 +241,20 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
         setTimeout(() => setTurnaroundCopied(false), 2000);
     };
 
+    const handleGenerateTurnaround = async () => {
+        if (!characterId || turnaroundLoading) return;
+        setTurnaroundLoading(true);
+        setTurnaroundError(null);
+        try {
+            const result = await generateTurnaroundPrompt('character', characterId, selectedModel || undefined);
+            setTurnaroundData(result);
+        } catch (err: any) {
+            setTurnaroundError(err.message || 'Failed to generate turnaround prompt');
+        } finally {
+            setTurnaroundLoading(false);
+        }
+    };
+
     const handleRefine = async (msg?: string) => {
         const text = msg || chatInput.trim();
         if (!text || refining || !suggestions) return;
@@ -247,8 +266,6 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
             const result = await refineContent(projectId, 'character', suggestions, text, newHistory);
             if (result.contentUpdate) {
                 setSuggestions(prev => prev ? { ...prev, ...result.contentUpdate } : prev);
-                setDescriptionApplied(false);
-                setPersonalityApplied(false);
             }
             setChatHistory([...newHistory, { role: 'assistant', content: result.response }]);
         } catch (err: any) {
@@ -633,90 +650,124 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
                         )}
                     </div>
 
-                    {/* Turnaround Sheet */}
-                    {(() => {
-                        const turnaroundPrompt = suggestions.turnaroundPrompt || (suggestions.turnaroundPrompts && suggestions.turnaroundPrompts.length > 0 ? suggestions.turnaroundPrompts.join('\n\n') : null);
-                        if (!turnaroundPrompt) return null;
-                        const slotKey = 'turnaround';
-                        return (
-                            <div style={{ backgroundColor: '#1f1f23', padding: '12px', borderLeft: '3px solid #f59e0b' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                                    <RotateCw size={13} color="#f59e0b" />
-                                    <span style={styles.fieldLabel}>Character Turnaround Sheet</span>
-                                    <span style={{ fontSize: '10px', color: '#fbbf24', fontWeight: 400 }}>Step 2</span>
-                                </div>
-                                <span style={{ fontSize: '10px', color: '#6b7280', fontStyle: 'italic', display: 'block', marginBottom: '8px' }}>
-                                    Generate a single image showing your character from 4 angles (front, 3/4, side, back) for consistency across shots
-                                </span>
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '4px' }}>
-                                    <button
-                                        onClick={() => handleCopyTurnaround(turnaroundPrompt)}
-                                        style={styles.copyBtn}
-                                    >
-                                        {turnaroundCopied ? (
-                                            <><Check size={12} color="#10b981" /> Copied</>
-                                        ) : (
-                                            <><Copy size={12} /> Copy</>
-                                        )}
-                                    </button>
-                                </div>
-                                <p style={{ ...styles.promptText, margin: '0', fontSize: '11px' }}>{turnaroundPrompt}</p>
-                                <span style={styles.promptHint}>
-                                    {suggestions.turnaroundUsesRef !== false
-                                        ? `Copy this prompt and attach your reference image from Step 1 into ${selectedModel ? (availableModels.find(m => m.name === selectedModel)?.displayName || selectedModel) : 'your AI image tool'}, then upload the result below`
-                                        : `Copy this prompt into ${selectedModel ? (availableModels.find(m => m.name === selectedModel)?.displayName || selectedModel) : 'your AI image tool'} (no reference image needed — full description included), then upload the result below`
-                                    }
-                                </span>
-                                {characterId && (
-                                    <div style={{ ...styles.uploadSlot, marginTop: '6px' }}>
-                                        {entityImages[slotKey] ? (
-                                            <div>
-                                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                                                    <div style={styles.uploadPreview}>
-                                                        <img src={entityImages[slotKey].image_url} alt="Turnaround Sheet" style={styles.uploadImg} />
-                                                        <button onClick={() => handleRemoveImage(slotKey)} style={styles.uploadRemoveBtn}><X size={10} /></button>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => handleAnalyzeImage(slotKey)}
-                                                        disabled={analyzingSlot === slotKey}
-                                                        style={{
-                                                            ...styles.analyzeBtn,
-                                                            opacity: analyzingSlot === slotKey ? 0.5 : 1,
-                                                            cursor: analyzingSlot === slotKey ? 'not-allowed' : 'pointer',
-                                                        }}
-                                                    >
-                                                        {analyzingSlot === slotKey ? (
-                                                            <><Loader2 size={11} className="spin" /> Analyzing...</>
-                                                        ) : analysisResults[slotKey] && !analysisResults[slotKey].error ? (
-                                                            <><Search size={11} /> Re-analyze</>
-                                                        ) : (
-                                                            <><Search size={11} /> Analyze</>
-                                                        )}
-                                                    </button>
-                                                </div>
-                                                {renderAnalysisResults(slotKey)}
-                                            </div>
-                                        ) : (
-                                            <label style={styles.uploadSlotLabel}>
-                                                {uploadingSlot === slotKey ? (
-                                                    <Loader2 size={14} className="spin" color="#f59e0b" />
-                                                ) : (
-                                                    <><Upload size={12} /> Upload turnaround sheet</>
-                                                )}
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    ref={el => { fileInputRefs.current[slotKey] = el; }}
-                                                    onChange={() => handleImageUpload(slotKey, 'Turnaround Sheet', turnaroundPrompt)}
-                                                    style={{ display: 'none' }}
-                                                />
-                                            </label>
-                                        )}
-                                    </div>
-                                )}
+                    {/* Turnaround Sheet — separate generation, only after reference image uploaded */}
+                    {characterId && (
+                        <div style={{ backgroundColor: '#1f1f23', padding: '12px', borderLeft: '3px solid #f59e0b' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                <RotateCw size={13} color="#f59e0b" />
+                                <span style={styles.fieldLabel}>Character Turnaround Sheet</span>
+                                <span style={{ fontSize: '10px', color: '#fbbf24', fontWeight: 400 }}>Step 2</span>
                             </div>
-                        );
-                    })()}
+                            <span style={{ fontSize: '10px', color: '#6b7280', fontStyle: 'italic', display: 'block', marginBottom: '8px' }}>
+                                Generate a single image showing your character from 4 angles (front, 3/4, side, back) for consistency across shots
+                            </span>
+
+                            {!entityImages['reference'] ? (
+                                <div style={{ padding: '10px', backgroundColor: '#18181b', borderRadius: '6px', border: '1px dashed #3f3f46', textAlign: 'center' }}>
+                                    <span style={{ fontSize: '11px', color: '#6b7280' }}>
+                                        Upload a reference image in Step 1 first — the turnaround prompt will be built from it
+                                    </span>
+                                </div>
+                            ) : !turnaroundData && !turnaroundLoading ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                                    <button
+                                        onClick={handleGenerateTurnaround}
+                                        style={{ ...styles.triggerBtn, backgroundColor: '#d97706', fontSize: '12px', padding: '6px 14px' }}
+                                    >
+                                        <RotateCw size={13} />
+                                        Generate Turnaround Prompt
+                                    </button>
+                                    {turnaroundError && (
+                                        <span style={{ fontSize: '10px', color: '#ef4444' }}>{turnaroundError}</span>
+                                    )}
+                                </div>
+                            ) : turnaroundLoading ? (
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px' }}>
+                                    <Loader2 size={16} className="spin" color="#f59e0b" />
+                                    <span style={{ fontSize: '12px', color: '#9ca3af' }}>Generating turnaround prompt from your reference image...</span>
+                                </div>
+                            ) : turnaroundData ? (
+                                <>
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '4px', gap: '6px' }}>
+                                        <button
+                                            onClick={handleGenerateTurnaround}
+                                            style={{ ...styles.copyBtn, color: '#fbbf24', borderColor: '#713f12' }}
+                                        >
+                                            <RotateCw size={11} /> Regenerate
+                                        </button>
+                                        <button
+                                            onClick={() => handleCopyTurnaround(turnaroundData.turnaroundPrompt)}
+                                            style={styles.copyBtn}
+                                        >
+                                            {turnaroundCopied ? (
+                                                <><Check size={12} color="#10b981" /> Copied</>
+                                            ) : (
+                                                <><Copy size={12} /> Copy</>
+                                            )}
+                                        </button>
+                                    </div>
+                                    <p style={{ ...styles.promptText, margin: '0', fontSize: '11px' }}>{turnaroundData.turnaroundPrompt}</p>
+                                    <span style={styles.promptHint}>
+                                        {turnaroundData.turnaroundUsesRef
+                                            ? `Copy this prompt and attach your reference image from Step 1 into ${selectedModel ? (availableModels.find(m => m.name === selectedModel)?.displayName || selectedModel) : 'your AI image tool'}, then upload the result below`
+                                            : `Copy this prompt into ${selectedModel ? (availableModels.find(m => m.name === selectedModel)?.displayName || selectedModel) : 'your AI image tool'} (no reference image needed — full description included), then upload the result below`
+                                        }
+                                    </span>
+                                    {/* Turnaround image upload slot */}
+                                    {(() => {
+                                        const slotKey = 'turnaround';
+                                        return (
+                                            <div style={{ ...styles.uploadSlot, marginTop: '6px' }}>
+                                                {entityImages[slotKey] ? (
+                                                    <div>
+                                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                                                            <div style={styles.uploadPreview}>
+                                                                <img src={entityImages[slotKey].image_url} alt="Turnaround Sheet" style={styles.uploadImg} />
+                                                                <button onClick={() => handleRemoveImage(slotKey)} style={styles.uploadRemoveBtn}><X size={10} /></button>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => handleAnalyzeImage(slotKey)}
+                                                                disabled={analyzingSlot === slotKey}
+                                                                style={{
+                                                                    ...styles.analyzeBtn,
+                                                                    opacity: analyzingSlot === slotKey ? 0.5 : 1,
+                                                                    cursor: analyzingSlot === slotKey ? 'not-allowed' : 'pointer',
+                                                                }}
+                                                            >
+                                                                {analyzingSlot === slotKey ? (
+                                                                    <><Loader2 size={11} className="spin" /> Analyzing...</>
+                                                                ) : analysisResults[slotKey] && !analysisResults[slotKey].error ? (
+                                                                    <><Search size={11} /> Re-analyze</>
+                                                                ) : (
+                                                                    <><Search size={11} /> Analyze</>
+                                                                )}
+                                                            </button>
+                                                        </div>
+                                                        {renderAnalysisResults(slotKey)}
+                                                    </div>
+                                                ) : (
+                                                    <label style={styles.uploadSlotLabel}>
+                                                        {uploadingSlot === slotKey ? (
+                                                            <Loader2 size={14} className="spin" color="#f59e0b" />
+                                                        ) : (
+                                                            <><Upload size={12} /> Upload turnaround sheet</>
+                                                        )}
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            ref={el => { fileInputRefs.current[slotKey] = el; }}
+                                                            onChange={() => handleImageUpload(slotKey, 'Turnaround Sheet', turnaroundData.turnaroundPrompt)}
+                                                            style={{ display: 'none' }}
+                                                        />
+                                                    </label>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
+                                </>
+                            ) : null}
+                        </div>
+                    )}
 
                     {/* Consistency Tips */}
                     {suggestions.consistencyTips && suggestions.consistencyTips.length > 0 && (

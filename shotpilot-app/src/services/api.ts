@@ -591,5 +591,17 @@ export const getEntityImageAnalysis = async (imageId: number): Promise<any> => {
     return apiCall(`/entity-images/${imageId}/analysis`);
 };
 
+// Generate turnaround prompt (separate from main suggestions — uses stored reference prompt)
+export const generateTurnaroundPrompt = async (
+    entityType: string,
+    entityId: number,
+    targetModel?: string,
+): Promise<{ turnaroundPrompt: string; turnaroundUsesRef: boolean }> => {
+    return apiCall(`/turnaround-prompt/${entityType}/${entityId}`, {
+        method: 'POST',
+        body: JSON.stringify({ targetModel }),
+    });
+};
+
 // Deprecated or Unused in Server Mode
 export const saveDB = async () => { };

@@ -17,7 +17,7 @@
 export { buildContextBlock } from './ai/shared.js';
 export { analyzeReadiness, generateRecommendations } from './ai/readiness.js';
 export { generatePrompt, refinePromptFromAudit } from './ai/promptGeneration.js';
-export { generateAestheticSuggestions, generateCharacterSuggestions, generateObjectSuggestions } from './ai/suggestions.js';
+export { generateAestheticSuggestions, generateCharacterSuggestions, generateObjectSuggestions, generateTurnaroundPrompt } from './ai/suggestions.js';
 export { generateShotPlan, readinessDialogue } from './ai/shotPlanning.js';
 export { analyzeScript } from './ai/scriptAnalysis.js';
 export { refineContent, creativeDirectorCollaborate, summarizeConversation } from './ai/creativeDirector.js';

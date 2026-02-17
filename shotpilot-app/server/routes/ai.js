@@ -11,7 +11,7 @@ export default function createAIRoutes({
     // AI services
     generateRecommendations, generatePrompt, generateAestheticSuggestions,
     generateCharacterSuggestions, generateShotPlan, readinessDialogue,
-    analyzeScript, generateObjectSuggestions, refineContent,
+    analyzeScript, generateObjectSuggestions, generateTurnaroundPrompt, refineContent,
     creativeDirectorCollaborate, summarizeConversation, refinePromptFromAudit,
     // Credit services
     deductCredit, logAIFeatureUsage, getAIUsageStats,
@@ -421,6 +421,91 @@ export default function createAIRoutes({
             res.json({ ...suggestions, kbFilesUsed });
         } catch (error) {
             console.error('Object suggestions error:', error);
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Turnaround prompt generation — separate from main suggestions, uses the
+    // actual reference prompt that created the uploaded reference image
+    router.post('/api/turnaround-prompt/:entityType/:entityId', requireAuth, async (req, res) => {
+        try {
+            const { entityType, entityId } = req.params;
+            const { targetModel } = req.body;
+
+            // Look up the reference image's stored prompt
+            const refImg = db.prepare(
+                'SELECT prompt, image_url FROM entity_reference_images WHERE entity_type = ? AND entity_id = ? AND image_type = ?'
+            ).get(entityType, entityId, 'reference');
+            if (!refImg || !refImg.prompt) {
+                return res.status(400).json({ error: 'No reference image with a stored prompt found. Generate and upload a reference image first.' });
+            }
+
+            // Look up entity details
+            let entityName = '', entityDescription = '', projectId = null;
+            if (entityType === 'character') {
+                const char = db.prepare('SELECT * FROM characters WHERE id = ?').get(entityId);
+                if (char) { entityName = char.name; entityDescription = char.description || ''; projectId = char.project_id; }
+            } else if (entityType === 'object') {
+                const obj = db.prepare('SELECT * FROM objects WHERE id = ?').get(entityId);
+                if (obj) { entityName = obj.name; entityDescription = obj.description || ''; projectId = obj.project_id; }
+            }
+
+            const project = projectId ? db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId) : null;
+
+            // Load KB
+            let kbContent = '';
+            try {
+                const coreKB = readKBFile('01_Core_Realism_Principles.md');
+                if (entityType === 'character') {
+                    const charKB = readKBFile('03_Pack_Character_Consistency.md');
+                    kbContent = [charKB, coreKB].filter(Boolean).join('\n\n');
+                } else {
+                    kbContent = coreKB || '';
+                }
+            } catch (err) {
+                console.warn('[turnaround-prompt] Could not load KB:', err.message);
+            }
+
+            // Resolve model + load model KB
+            let resolvedModel = targetModel;
+            if (!resolvedModel) {
+                try {
+                    const availableModels = getAvailableModels().filter(m => m.type === 'image');
+                    const modelList = availableModels.map(m => `${m.name}: ${m.capabilities}`).join('\n');
+                    const pickerText = await callGemini({
+                        parts: [{ text: `Pick the single best AI image model for a ${entityType} turnaround sheet.\n\n${entityType}: ${entityName} — ${entityDescription || 'no description'}\nProject style: ${project?.style_aesthetic || 'not set'}\n\nAvailable models:\n${modelList}\n\nRespond with ONLY the model ID (e.g. "midjourney"), nothing else.` }],
+                        systemInstruction: 'You are a model selection expert. Return only the model ID, no explanation.',
+                        thinkingLevel: 'low',
+                        maxOutputTokens: 32,
+                    });
+                    const picked = pickerText.trim().toLowerCase().replace(/[^a-z0-9.-]/g, '');
+                    if (availableModels.some(m => m.name === picked)) resolvedModel = picked;
+                } catch (err) {
+                    console.warn('[turnaround-prompt] Model auto-pick failed, using midjourney:', err.message);
+                    resolvedModel = 'midjourney';
+                }
+            }
+
+            let modelKBContent = '';
+            if (resolvedModel) {
+                try { modelKBContent = loadKBForModel(resolvedModel); } catch {}
+            }
+
+            const result = await generateTurnaroundPrompt({
+                entityType,
+                entityName,
+                entityDescription,
+                originalRefPrompt: refImg.prompt,
+                project,
+                kbContent,
+                modelKBContent,
+                targetModel: resolvedModel,
+            });
+
+            logAIFeatureUsage(db, req.session.userId, 'turnaround_prompt', projectId);
+            res.json(result);
+        } catch (error) {
+            console.error('Turnaround prompt error:', error);
             res.status(500).json({ error: error.message });
         }
     });
