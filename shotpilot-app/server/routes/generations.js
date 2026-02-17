@@ -170,7 +170,8 @@ export default function createGenerationRoutes({ db, sanitize, analyzeEntityImag
             // Load KB for quality evaluation + model-specific syntax
             let kbContent = '';
             let modelKBContent = '';
-            let resolvedModelName = targetModel || '';
+            // Default to Midjourney when Auto (empty) — it's the app's universal fallback
+            let resolvedModelName = targetModel || 'midjourney';
             try {
                 const qualityKB = readKBFile('03_Pack_Image_Quality_Control.md');
                 const coreKB = readKBFile('01_Core_Realism_Principles.md');
@@ -179,12 +180,10 @@ export default function createGenerationRoutes({ db, sanitize, analyzeEntityImag
                 console.warn('[entity-analyze] Could not load KB:', err.message);
             }
             // Load model-specific KB for revised prompt syntax
-            if (targetModel) {
-                try {
-                    modelKBContent = loadKBForModel(targetModel);
-                } catch (err) {
-                    console.warn(`[entity-analyze] Could not load model KB for ${targetModel}:`, err.message);
-                }
+            try {
+                modelKBContent = loadKBForModel(resolvedModelName);
+            } catch (err) {
+                console.warn(`[entity-analyze] Could not load model KB for ${resolvedModelName}:`, err.message);
             }
 
             // For turnaround sheets, load the reference image for comparison
