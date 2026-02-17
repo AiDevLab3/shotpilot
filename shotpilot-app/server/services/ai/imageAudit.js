@@ -282,12 +282,16 @@ For each pattern detected, classify severity as "severe" (dominates the image), 
     if (entityName) contextLines.push(`${entityLabel} Name: ${entityName}`);
     if (entityDescription) contextLines.push(`${entityLabel} Description: ${entityDescription}`);
 
+    const hasPrompt = originalPrompt && originalPrompt.trim().length > 0;
+    const promptSection = hasPrompt
+        ? `ORIGINAL PROMPT USED TO GENERATE THIS IMAGE:\n${originalPrompt}`
+        : `NO ORIGINAL PROMPT PROVIDED — The user uploaded this image without including the prompt they used to generate it. You cannot evaluate prompt-to-image fidelity, but you CAN and SHOULD still:\n- Evaluate all 6 quality dimensions based on the image itself\n- Reverse-engineer a complete prompt from what you observe in the image (put this in revised_prompt)\n- The revised_prompt is especially important here — it gives the user a starting point for iteration`;
+
     const userPrompt = `${kbContent ? `KNOWLEDGE BASE (use for evaluation criteria):\n${kbContent}\n\n` : ''}${projectBlock}
 ${contextLines.length > 0 ? `\n${entityLabel.toUpperCase()} DETAILS:\n${contextLines.join('\n')}\n` : ''}
-ORIGINAL PROMPT USED TO GENERATE THIS IMAGE:
-${originalPrompt}
+${promptSection}
 
-Analyze the uploaded ${entityLabel.toLowerCase()} reference image across ALL 6 dimensions. Compare against the project DNA and ${entityLabel.toLowerCase()} description. Also evaluate how well the image matches the original prompt.
+Analyze the uploaded ${entityLabel.toLowerCase()} reference image across ALL 6 dimensions. Compare against the project DNA and ${entityLabel.toLowerCase()} description.${hasPrompt ? ' Also evaluate how well the image matches the original prompt.' : ''}
 
 For each dimension, provide:
 1. A score (0-10)

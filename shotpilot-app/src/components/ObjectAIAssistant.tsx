@@ -525,6 +525,11 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                                         <><Search size={11} /> Analyze Quality</>
                                     )}
                                 </button>
+                                {!hasRefImage.prompt && !analysisResults['reference'] && (
+                                    <span style={{ fontSize: '9px', color: '#6b7280', lineHeight: '1.3' }}>
+                                        Add your prompt first for best results, or analyze without it — AI will reverse-engineer one
+                                    </span>
+                                )}
                                 <button
                                     onClick={() => { setRefPromptDraft(hasRefImage.prompt || ''); setEditingRefPrompt(prev => !prev); }}
                                     style={{ ...styles.copyBtn, fontSize: '10px', padding: '3px 8px', color: hasRefImage.prompt ? '#10b981' : '#f59e0b' }}
