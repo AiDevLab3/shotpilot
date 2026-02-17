@@ -64,6 +64,18 @@ export default function createGenerationRoutes({ db, sanitize, analyzeEntityImag
         const rows = db.prepare(
             'SELECT * FROM entity_reference_images WHERE entity_type = ? AND entity_id = ? ORDER BY created_at ASC'
         ).all(entityType, entityId);
+
+        // Auto-sync: keep the entity record's reference_image_url in sync with
+        // the reference image stored here (handles pre-existing uploads)
+        const table = entityType === 'character' ? 'characters' : entityType === 'object' ? 'objects' : null;
+        if (table) {
+            const refImage = rows.find(r => r.image_type === 'reference');
+            const refUrl = refImage ? refImage.image_url : null;
+            try {
+                db.prepare(`UPDATE ${table} SET reference_image_url = ? WHERE id = ?`).run(refUrl, entityId);
+            } catch (e) { /* non-critical */ }
+        }
+
         res.json(rows);
     });
 
