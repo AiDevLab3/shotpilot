@@ -118,6 +118,7 @@ export default function createGenerationRoutes({ db, sanitize, analyzeEntityImag
     router.post('/api/entity-images/:id/analyze', async (req, res) => {
         try {
             const { id } = req.params;
+            const { targetModel } = req.body || {};
             const entityImg = db.prepare('SELECT * FROM entity_reference_images WHERE id = ?').get(id);
             if (!entityImg) return res.status(404).json({ error: 'Entity image not found' });
             if (!entityImg.image_url) return res.status(400).json({ error: 'No image uploaded' });
@@ -166,14 +167,24 @@ export default function createGenerationRoutes({ db, sanitize, analyzeEntityImag
                 }
             }
 
-            // Load KB for quality evaluation
+            // Load KB for quality evaluation + model-specific syntax
             let kbContent = '';
+            let modelKBContent = '';
+            let resolvedModelName = targetModel || '';
             try {
                 const qualityKB = readKBFile('03_Pack_Image_Quality_Control.md');
                 const coreKB = readKBFile('01_Core_Realism_Principles.md');
                 kbContent = [qualityKB, coreKB].filter(Boolean).join('\n\n');
             } catch (err) {
                 console.warn('[entity-analyze] Could not load KB:', err.message);
+            }
+            // Load model-specific KB for revised prompt syntax
+            if (targetModel) {
+                try {
+                    modelKBContent = loadKBForModel(targetModel);
+                } catch (err) {
+                    console.warn(`[entity-analyze] Could not load model KB for ${targetModel}:`, err.message);
+                }
             }
 
             // For turnaround sheets, load the reference image for comparison
@@ -209,10 +220,15 @@ export default function createGenerationRoutes({ db, sanitize, analyzeEntityImag
                 entityDescription,
                 project,
                 kbContent,
+                modelKBContent,
+                targetModel: resolvedModelName,
                 referenceImageBuffer,
                 referenceImageMimeType,
                 isTurnaround: entityImg.image_type === 'turnaround',
             });
+
+            // Stamp the target model onto the analysis so the UI can display it
+            analysis.target_model = resolvedModelName || null;
 
             // Store analysis results on the entity image record
             db.prepare('UPDATE entity_reference_images SET analysis_json = ? WHERE id = ?')

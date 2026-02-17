@@ -591,8 +591,12 @@ export const updateEntityImagePrompt = async (id: number, prompt: string): Promi
     });
 };
 
-export const analyzeEntityImage = async (imageId: number): Promise<any> => {
-    return apiCall(`/entity-images/${imageId}/analyze`, { method: 'POST' });
+export const analyzeEntityImage = async (imageId: number, targetModel?: string): Promise<any> => {
+    return apiCall(`/entity-images/${imageId}/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetModel }),
+    });
 };
 
 export const getEntityImageAnalysis = async (imageId: number): Promise<any> => {

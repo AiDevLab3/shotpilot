@@ -220,7 +220,7 @@ OUTPUT VALID JSON ONLY:
  * will integrate seamlessly when used in shot generation — same quality bar,
  * same visual language, same realism standards.
  */
-async function analyzeEntityImage({ imageBuffer, mimeType, originalPrompt, entityType, entityName, entityDescription, project, kbContent, referenceImageBuffer, referenceImageMimeType, isTurnaround }) {
+async function analyzeEntityImage({ imageBuffer, mimeType, originalPrompt, entityType, entityName, entityDescription, project, kbContent, modelKBContent, targetModel, referenceImageBuffer, referenceImageMimeType, isTurnaround }) {
     const projectBlock = project ? buildContextBlock('PROJECT', project) : '';
     const entityLabel = entityType === 'character' ? 'Character' : 'Object';
 
@@ -287,9 +287,17 @@ For each pattern detected, classify severity as "severe" (dominates the image), 
         ? `PROMPT USED TO GENERATE THIS IMAGE (for iteration context — NOT an evaluation rubric):\n${originalPrompt}\nUse this prompt to understand what the user was going for and to write targeted revisions in your revised_prompt. If something needs fixing, show exactly what to change in the prompt to fix it.`
         : `NO ORIGINAL PROMPT PROVIDED — The user uploaded this image without including the prompt they used. Reverse-engineer a complete prompt from what you observe in the image (put this in revised_prompt) so the user has a starting point for iteration.`;
 
-    const userPrompt = `${kbContent ? `KNOWLEDGE BASE (use for evaluation criteria):\n${kbContent}\n\n` : ''}${projectBlock}
+    const modelSection = targetModel && modelKBContent
+        ? `TARGET MODEL: ${targetModel}\nMODEL-SPECIFIC SYNTAX GUIDE:\n${modelKBContent}\n\nIMPORTANT: The revised_prompt MUST use the exact syntax, parameters, and conventions for ${targetModel} as described in the guide above. Include model-specific flags (e.g., --ar, --v, --s, --oref for Midjourney).`
+        : targetModel
+            ? `TARGET MODEL: ${targetModel}\nWrite the revised_prompt using the correct syntax and conventions for ${targetModel}.`
+            : 'No target model specified. Write the revised_prompt in generic natural language that works across models.';
+
+    const userPrompt = `${kbContent ? `KNOWLEDGE BASE (use for evaluation criteria):\n${kbContent}\n\n` : ''}${modelKBContent ? `MODEL GUIDE:\n${modelKBContent}\n\n` : ''}${projectBlock}
 ${contextLines.length > 0 ? `\n${entityLabel.toUpperCase()} DETAILS:\n${contextLines.join('\n')}\n` : ''}
 ${promptSection}
+
+${modelSection}
 
 Analyze the uploaded ${entityLabel.toLowerCase()} reference image across ALL 6 dimensions. Compare against the project DNA and ${entityLabel.toLowerCase()} description. Score the IMAGE QUALITY itself — not how well it matches a prompt.
 
@@ -303,7 +311,7 @@ Then provide:
 - List of specific issues found
 - What specifically works well
 - Suggested prompt adjustments to fix identified issues (if a prompt was provided, reference specific parts to change; if not, write suggestions from scratch)
-- A complete revised prompt that addresses all identified issues (if a prompt was provided, start from it and show what changed; if not, write one from scratch based on the image)
+- A complete revised prompt that addresses all identified issues (if a prompt was provided, start from it and show what changed; if not, write one from scratch based on the image). Format this prompt for ${targetModel || 'the user\\'s chosen model'}.
 
 OUTPUT VALID JSON ONLY:
 {
@@ -352,7 +360,7 @@ OUTPUT VALID JSON ONLY:
   ],
   "what_works": ["Specific element that matches well"],
   "prompt_adjustments": ["Specific change: add/remove/modify X in the prompt"],
-  "revised_prompt": "Complete revised prompt with all fixes applied, ready to copy and paste",
+  "revised_prompt": "Complete revised prompt with all fixes applied, formatted for ${targetModel || 'generic use'}, ready to copy and paste",
   "summary": "2-3 sentence assessment"
 }`;
 

@@ -145,7 +145,7 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
         if (!img) return;
         setAnalyzingSlot(slot);
         try {
-            const result = await analyzeEntityImage(img.id);
+            const result = await analyzeEntityImage(img.id, selectedModel || undefined);
             setAnalysisResults(prev => ({ ...prev, [slot]: result }));
             setAnalysisExpanded(prev => ({ ...prev, [slot]: true }));
         } catch (err: any) {
@@ -411,7 +411,9 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
                         {analysis.revised_prompt && (
                             <div>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                    <span style={{ fontSize: '10px', fontWeight: 600, color: '#22d3ee', textTransform: 'uppercase' }}>Revised prompt</span>
+                                    <span style={{ fontSize: '10px', fontWeight: 600, color: '#22d3ee', textTransform: 'uppercase' }}>
+                                        Revised prompt{analysis.target_model ? ` for ${analysis.target_model}` : ''}
+                                    </span>
                                     <button
                                         onClick={() => handleCopyRevisedPrompt(slot, analysis.revised_prompt)}
                                         style={styles.copyBtn}

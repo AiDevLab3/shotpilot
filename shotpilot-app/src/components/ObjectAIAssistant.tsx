@@ -139,7 +139,7 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
         if (!img) return;
         setAnalyzingSlot(slot);
         try {
-            const result = await analyzeEntityImage(img.id);
+            const result = await analyzeEntityImage(img.id, selectedModel || undefined);
             setAnalysisResults(prev => ({ ...prev, [slot]: result }));
             setAnalysisExpanded(prev => ({ ...prev, [slot]: true }));
         } catch (err: any) {
@@ -401,7 +401,9 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                         {analysis.revised_prompt && (
                             <div>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                    <span style={{ fontSize: '10px', fontWeight: 600, color: '#22d3ee', textTransform: 'uppercase' }}>Revised prompt</span>
+                                    <span style={{ fontSize: '10px', fontWeight: 600, color: '#22d3ee', textTransform: 'uppercase' }}>
+                                        Revised prompt{analysis.target_model ? ` for ${analysis.target_model}` : ''}
+                                    </span>
                                     <button
                                         onClick={() => handleCopyRevisedPrompt(slot, analysis.revised_prompt)}
                                         style={styles.copyBtn}
@@ -437,6 +439,18 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
 
         return (
             <div style={styles.triggerContainer}>
+                {/* Target Model selector — applies to analysis and generation */}
+                {availableModels.length > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px', width: '100%' }}>
+                        <label style={{ fontSize: '11px', color: '#9ca3af', whiteSpace: 'nowrap' }}>Target Model:</label>
+                        <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} style={{ ...styles.modelSelect, flex: 1 }}>
+                            <option value="">Auto (let AI decide)</option>
+                            {availableModels.map((m) => (
+                                <option key={m.name} value={m.name}>{m.displayName || m.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
                 {!hasRefImage ? (
                     <>
                         {/* Path A: Upload existing image */}
@@ -479,17 +493,6 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                         </div>
 
                         {/* Path B: Generate AI prompt */}
-                        {availableModels.length > 0 && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                                <label style={{ fontSize: '11px', color: '#9ca3af' }}>Target Model:</label>
-                                <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} style={styles.modelSelect}>
-                                    <option value="">Auto (let AI decide)</option>
-                                    {availableModels.map((m) => (
-                                        <option key={m.name} value={m.name}>{m.displayName || m.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
                         <button
                             onClick={() => loadFullSuggestions()}
                             disabled={nameIsEmpty}
@@ -569,21 +572,10 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                         {/* Divider + Generate Prompt option */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '12px 0 8px' }}>
                             <div style={{ flex: 1, height: '1px', backgroundColor: '#3f3f46' }} />
-                            <span style={{ fontSize: '10px', color: '#6b7280' }}>optional</span>
+                            <span style={{ fontSize: '10px', color: '#6b7280' }}>or start fresh</span>
                             <div style={{ flex: 1, height: '1px', backgroundColor: '#3f3f46' }} />
                         </div>
 
-                        {availableModels.length > 0 && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                                <label style={{ fontSize: '11px', color: '#9ca3af' }}>Target Model:</label>
-                                <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} style={styles.modelSelect}>
-                                    <option value="">Auto (let AI decide)</option>
-                                    {availableModels.map((m) => (
-                                        <option key={m.name} value={m.name}>{m.displayName || m.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
                         <button
                             onClick={() => loadFullSuggestions()}
                             disabled={nameIsEmpty}
@@ -593,7 +585,7 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                             Generate AI Prompt & Turnaround
                         </button>
                         <span style={styles.triggerHint}>
-                            Get AI-generated turnaround prompts for multi-angle consistency
+                            Generate a new prompt from your description + multi-angle turnarounds
                         </span>
                     </div>
                 )}
