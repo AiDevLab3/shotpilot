@@ -664,6 +664,13 @@ export default function createAIRoutes({
                 targetModel, modelKBContent,
             });
 
+            // Log what the AI returned for debugging entity creation/update issues
+            console.log('[creative-director] Response keys:', Object.keys(result || {}));
+            if (result.objectCreations) console.log('[creative-director] objectCreations:', JSON.stringify(result.objectCreations));
+            if (result.objectUpdates) console.log('[creative-director] objectUpdates:', JSON.stringify(result.objectUpdates));
+            if (result.characterCreations) console.log('[creative-director] characterCreations:', JSON.stringify(result.characterCreations));
+            if (result.characterUpdates) console.log('[creative-director] characterUpdates:', JSON.stringify(result.characterUpdates));
+
             // Helper: attach a reference image to an entity (character or object)
             const attachReferenceImage = (entityType, entityId, imageUrl, prompt) => {
                 if (!imageUrl) return;
@@ -742,12 +749,26 @@ export default function createAIRoutes({
             }
 
             // Update existing characters when Director fleshes out details
+            // If the AI puts a NEW character in characterUpdates (name doesn't match any existing), create it instead of silently skipping
             const updatedCharacters = [];
             if (result.characterUpdates && Array.isArray(result.characterUpdates)) {
                 for (const update of result.characterUpdates) {
                     if (!update.name) continue;
                     const existing = characters.find(c => c.name.toLowerCase() === update.name.toLowerCase());
-                    if (!existing) continue;
+                    if (!existing) {
+                        // AI put a new character in "updates" — create it instead of losing it
+                        console.log(`[creative-director] characterUpdates contains new character "${update.name}" — creating it`);
+                        try {
+                            const info = db.prepare('INSERT INTO characters (project_id, name, description, personality) VALUES (@projectId, @name, @description, @personality)')
+                                .run({ projectId, name: sanitize(update.name), description: sanitize(update.description || ''), personality: sanitize(update.personality || '') });
+                            const newId = info.lastInsertRowid;
+                            createdCharacters.push({ id: newId, name: update.name });
+                            if (update.referenceImageUrl) attachReferenceImage('character', newId, update.referenceImageUrl, null);
+                        } catch (err) {
+                            console.warn(`[creative-director] Could not create character from update "${update.name}":`, err.message);
+                        }
+                        continue;
+                    }
                     try {
                         const sets = [];
                         const params = { id: existing.id };
@@ -771,12 +792,26 @@ export default function createAIRoutes({
             }
 
             // Update existing objects when Director fleshes out details
+            // If the AI puts a NEW object in objectUpdates (name doesn't match any existing), create it instead of silently skipping
             const updatedObjects = [];
             if (result.objectUpdates && Array.isArray(result.objectUpdates)) {
                 for (const update of result.objectUpdates) {
                     if (!update.name) continue;
                     const existing = objects.find(o => o.name.toLowerCase() === update.name.toLowerCase());
-                    if (!existing) continue;
+                    if (!existing) {
+                        // AI put a new object in "updates" — create it instead of losing it
+                        console.log(`[creative-director] objectUpdates contains new object "${update.name}" — creating it`);
+                        try {
+                            const info = db.prepare('INSERT INTO objects (project_id, name, description) VALUES (@projectId, @name, @description)')
+                                .run({ projectId, name: sanitize(update.name), description: sanitize(update.description || '') });
+                            const newId = info.lastInsertRowid;
+                            createdObjects.push({ id: newId, name: update.name });
+                            if (update.referenceImageUrl) attachReferenceImage('object', newId, update.referenceImageUrl, update.referenceImagePrompt || null);
+                        } catch (err) {
+                            console.warn(`[creative-director] Could not create object from update "${update.name}":`, err.message);
+                        }
+                        continue;
+                    }
                     try {
                         if (update.description) {
                             db.prepare('UPDATE objects SET description = @description WHERE id = @id')

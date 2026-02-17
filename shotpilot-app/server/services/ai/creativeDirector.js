@@ -44,6 +44,7 @@ OUTPUT VALID JSON ONLY:
         let parsed;
         try {
             parsed = JSON.parse(text);
+            if (Array.isArray(parsed)) parsed = parsed[0];
         } catch (e) {
             const jsonMatch = text.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
@@ -257,12 +258,14 @@ OUTPUT VALID JSON ONLY:
             systemInstruction,
             thinkingLevel: 'high',
             responseMimeType: 'application/json',
-            maxOutputTokens: 3072,
+            maxOutputTokens: 8192,
         });
 
         let parsed;
         try {
             parsed = JSON.parse(text);
+            // Gemini sometimes wraps JSON in an array — unwrap it
+            if (Array.isArray(parsed)) parsed = parsed[0];
         } catch (e) {
             // Fallback 1: Extract JSON object from surrounding text
             const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -285,12 +288,18 @@ OUTPUT VALID JSON ONLY:
                         const responseText = responseMatch
                             ? responseMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"')
                             : text.substring(0, 500);
-                        parsed = { response: responseText, projectUpdates: null, scriptUpdates: null, characterCreations: null, objectCreations: null, sceneCreations: null };
+                        parsed = { response: responseText, projectUpdates: null, scriptUpdates: null, characterCreations: null, characterUpdates: null, objectCreations: null, objectUpdates: null, sceneCreations: null };
                     }
                 }
             } else {
-                parsed = { response: text, projectUpdates: null, scriptUpdates: null, characterCreations: null, objectCreations: null, sceneCreations: null };
+                parsed = { response: text, projectUpdates: null, scriptUpdates: null, characterCreations: null, characterUpdates: null, objectCreations: null, objectUpdates: null, sceneCreations: null };
             }
+        }
+        // Log what the AI actually returned so we can diagnose missing entities
+        const entityFields = ['characterCreations', 'characterUpdates', 'objectCreations', 'objectUpdates', 'sceneCreations'];
+        const present = entityFields.filter(f => parsed[f] && Array.isArray(parsed[f]) && parsed[f].length > 0);
+        if (present.length > 0) {
+            console.log('[creative-director] Entity actions in response:', present.map(f => `${f}: ${JSON.stringify(parsed[f].map(e => e.name || '(unnamed)'))}`).join(', '));
         }
         return parsed;
     } catch (error) {
@@ -347,6 +356,7 @@ Summarize this conversation into a context digest.`;
         let parsed;
         try {
             parsed = JSON.parse(text);
+            if (Array.isArray(parsed)) parsed = parsed[0];
         } catch (e) {
             const jsonMatch = text.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
