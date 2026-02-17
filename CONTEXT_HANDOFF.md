@@ -87,7 +87,7 @@ shotpilot-app/kb/
 | `ai/shared.js` | `buildContextBlock`, `buildImageParts` (returns `{ parts, imageMap }` with numbered refs), `callGemini` (core Gemini API client) |
 | `ai/readiness.js` | `analyzeReadiness`, `generateRecommendations` |
 | `ai/promptGeneration.js` | `generatePrompt`, `refinePromptFromAudit` |
-| `ai/suggestions.js` | `generateAestheticSuggestions`, `generateCharacterSuggestions`, `generateObjectSuggestions` |
+| `ai/suggestions.js` | `generateAestheticSuggestions`, `generateCharacterSuggestions`, `generateObjectSuggestions`, `buildStoryContext` (internal helper for enhance flows) |
 | `ai/shotPlanning.js` | `generateShotPlan`, `readinessDialogue` |
 | `ai/scriptAnalysis.js` | `analyzeScript` |
 | `ai/creativeDirector.js` | `creativeDirectorCollaborate`, `summarizeConversation`, `refineContent` |
@@ -141,6 +141,33 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 ---
 
 ## 5. What Was Done in Recent Sessions
+
+### Session: Feb 17 — Creative Workflow Alignment, Objects Dual-Path, Director Entity Management
+
+#### Creative Director Workflow Enforcement
+1. **Characters/Objects gate** — Director was jumping from script analysis straight to scene breakdowns, skipping character/object review. Added hard stop after extraction + prerequisite check before scene creation. Director now checks if characters have real descriptions (not just names from extraction) before creating scenes
+2. **Director knows about entity page tools** — When guiding users to Characters/Objects pages, Director now mentions "Enhance with AI" button and reference image upload tools specifically
+
+#### Objects Page — Dual-Path Add Object
+3. **Upload Image or Generate Prompt** — Add Object flow used to assume AI-first only. Now offers two paths: upload a reference image (with analyze, add prompt, turnaround options), or generate AI prompt from scratch. Detects previously uploaded images on re-open
+4. **Promptless image analysis** — When user uploads without including their prompt, the analyzer gets clear instructions to evaluate quality on its own and reverse-engineer a usable prompt from the image. UI hint explains both options
+
+#### Enhance with AI — Story Context
+5. **Script/character/scene context** — "Enhance with AI" on both Characters and Objects pages now pulls in the project script (truncated to 2K), other characters, and relevant scenes. AI grounds descriptions in the story instead of enhancing in a vacuum. `buildStoryContext()` helper in `suggestions.js` filters scenes to those mentioning the entity by name
+
+#### Creative Director — Entity Management
+6. **Director can update existing entities** — New `characterUpdates`/`objectUpdates` output fields let the Director write production-ready descriptions to existing entity cards (previously only created new ones, silently discarded updates to existing). Purple "Characters enhanced" / "Objects enhanced" badges in chat
+7. **Image-to-entity transfer** — When user shares an image in Director chat for a character/object, Director creates/updates the entity, attaches the image as reference via `entity_reference_images`, stores the generation prompt if provided, syncs `reference_image_url` on the entity record. `attachReferenceImage()` helper handles upsert + grid card sync. Image URLs passed to Gemini prompt so Director can reference them in output
+
+#### Files Modified
+- `server/services/ai/creativeDirector.js` — IMAGE-TO-ENTITY WORKFLOW section, characterUpdates/objectUpdates schema, referenceImageUrl/referenceImagePrompt fields, image URL pass-through in prompt
+- `server/services/ai/suggestions.js` — `buildStoryContext()` helper, storyContext in character/object enhance prompts
+- `server/services/ai/imageAudit.js` — Promptless analysis handling (no-prompt detection, reverse-engineer instructions)
+- `server/routes/ai.js` — `attachReferenceImage()` helper, characterUpdates/objectUpdates DB handling, storyContext fetching for enhance endpoints
+- `src/components/ObjectAIAssistant.tsx` — Dual-path trigger view (upload-first vs generate-prompt), promptless UI hint
+- `src/components/ChatSidebar.tsx` — updatedCharacters/updatedObjects in message, purple "enhanced" badges, Sparkles import
+- `src/stores/creativeDirectorStore.ts` — updatedCharacters/updatedObjects on Message interface
+- `tests/visual-test-feb17.md` — 10-test visual test script for all session changes
 
 ### Session: Feb 16-17 — Prompt UX, Image References, Safety Framing
 
@@ -269,6 +296,11 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 - ~~Generated prompts missing image references~~ — **FIXED Feb 17**: Numbered imageMap system, "Image 1" / "Image 2" syntax with identity-locking instructions
 - ~~Safety filter violations on realistic weapon prompts~~ — **FIXED Feb 17**: Film production framing (prop weapons, actors, film sets)
 - ~~Prompts appear erased after navigation~~ — **FIXED Feb 17**: All scenes expand by default, VariantList starts expanded
+- ~~Creative Director skips character/object phase~~ — **FIXED Feb 17**: Hard stop after script extraction, prerequisite check before scene creation
+- ~~Enhance with AI has no story context~~ — **FIXED Feb 17**: Pulls script, characters, scenes into enhance prompts
+- ~~Objects page assumes AI-first only~~ — **FIXED Feb 17**: Dual-path upload-first or generate-prompt
+- ~~Director can't update existing entity descriptions~~ — **FIXED Feb 17**: characterUpdates/objectUpdates output fields with DB handling
+- ~~Images uploaded in Director chat not attached to entities~~ — **FIXED Feb 17**: Image-to-entity transfer with referenceImageUrl pass-through
 
 ---
 
@@ -350,6 +382,15 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 ## 9. Git Commit History (Reverse Chronological)
 
 ```
+a538266 Add visual test script for Feb 17 session changes
+d6deffd Enable Creative Director to attach uploaded images to entities
+18a7195 Let Creative Director update existing character/object descriptions
+49d972e Tell Creative Director about Enhance with AI tools on entity pages
+ca7800e Add script/character/scene context to Enhance with AI descriptions
+9f8b836 Handle promptless image analysis: reverse-engineer prompt from image
+000ec6b Add dual-path Add Object flow: Upload Image or Generate Prompt
+250ced7 Enforce Characters/Objects gate before Scene creation in Creative Director
+1f255b3 Update CONTEXT_HANDOFF.md with Feb 16-17 session work
 c9b05de Fix prompt appearing erased after navigation
 3d23540 Add safety-aware framing to prompt generation
 4da2f6b Add numbered image references to generated prompts
