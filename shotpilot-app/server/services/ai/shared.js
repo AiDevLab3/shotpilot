@@ -136,6 +136,11 @@ async function callGemini({ parts, systemInstruction, thinkingLevel = 'high', re
     // Only set temperature if explicitly provided (Gemini default is 1.0)
     if (temperature !== undefined) {
         generationConfig.temperature = temperature;
+        // Force greedy decoding when temperature is 0 for deterministic output
+        if (temperature === 0) {
+            generationConfig.topK = 1;
+            generationConfig.topP = 0;
+        }
     }
 
     if (responseMimeType) {

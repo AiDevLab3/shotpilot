@@ -160,8 +160,8 @@ OUTPUT VALID JSON ONLY:
         const text = await callGemini({
             parts,
             systemInstruction,
-            thinkingLevel: 'high',
-            temperature: 0, // deterministic scoring — same image should get same scores
+            thinkingLevel: 'low',  // lower thinking = less reasoning variability for scoring consistency
+            temperature: 0,
             // Note: responseMimeType omitted — Gemini thinking mode with inline
             // image data does not reliably support forced JSON response mode.
             maxOutputTokens: 4096,
@@ -390,8 +390,8 @@ OUTPUT VALID JSON ONLY:
         const text = await callGemini({
             parts,
             systemInstruction,
-            thinkingLevel: 'high',
-            temperature: 0, // deterministic scoring — same image should get same scores
+            thinkingLevel: 'low',  // lower thinking = less reasoning variability for scoring consistency
+            temperature: 0,
             maxOutputTokens: 4096,
         });
 
