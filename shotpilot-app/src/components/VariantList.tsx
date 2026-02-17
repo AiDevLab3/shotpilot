@@ -12,7 +12,7 @@ export const VariantList: React.FC<VariantListProps> = ({ shotId }) => {
     const [variants, setVariants] = useState<ImageVariant[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [isExpanded, setIsExpanded] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(true);
 
     const loadVariants = async () => {
         setLoading(true);

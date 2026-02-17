@@ -187,10 +187,8 @@ const ShotBoardPage: React.FC = () => {
                 console.error('Failed to load characters/objects for mentions', e);
             }
 
-            // Auto-expand first scene
-            if (fetchedScenes.length > 0) {
-                setExpandedScenes([fetchedScenes[0].id]);
-            }
+            // Auto-expand all scenes so generated prompts stay visible after navigation
+            setExpandedScenes(fetchedScenes.map(s => s.id));
 
             // Load Credits
             try {
