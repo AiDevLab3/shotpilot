@@ -55,6 +55,13 @@ const FIELD_TO_API: Record<string, string> = {
     scene_time_of_day: 'time_of_day',
 };
 
+// Determine save target from field name (no backend dependency)
+function getFieldSource(field: string): 'shot' | 'scene' | 'project' {
+    if (field.startsWith('scene_')) return 'scene';
+    if (field === 'style_aesthetic') return 'project';
+    return 'shot';
+}
+
 // Dropdown options for fields that have preset choices
 const DROPDOWN_OPTIONS: Record<string, string[]> = {
     shot_type: ['Wide', 'Medium', 'Close-up', 'Extreme Close-up'],
@@ -137,9 +144,10 @@ export function GeneratePromptModal({
         }
     };
 
+    // Fast refresh — uses basic local check only (no slow Gemini call)
     const refreshReadiness = useCallback(async () => {
         if (!shot?.id) return;
-        const rs = await checkShotReadiness(shot.id).catch(() => null);
+        const rs = await checkShotReadiness(shot.id, false).catch(() => null);
         if (rs) setReadiness(rs);
     }, [shot?.id]);
 
@@ -150,8 +158,7 @@ export function GeneratePromptModal({
 
         setSavingField(field);
         try {
-            const missing = readiness?.allMissing?.find(m => m.field === field);
-            const source = missing?.source || 'shot';
+            const source = getFieldSource(field);
 
             if (source === 'shot') {
                 await updateShot(shot.id, { [apiField]: value } as any);
@@ -161,7 +168,9 @@ export function GeneratePromptModal({
                 await updateProject(project.id, { [apiField]: value } as any);
             }
 
+            // Brief "saved" flash before hiding the field
             setSavedFields(prev => new Set(prev).add(field));
+            // Instant score refresh (basic check, no Gemini delay)
             await refreshReadiness();
         } catch (err) {
             console.error('Failed to save field:', field, err);
@@ -203,15 +212,15 @@ export function GeneratePromptModal({
 
     if (!isOpen) return null;
 
-    const missingFields = readiness?.allMissing?.filter(f => !savedFields.has(f.field)) || [];
+    const missingFields = readiness?.allMissing?.filter((f: MissingField) => !savedFields.has(f.field)) || [];
     const score = readiness?.score ?? readiness?.percentage ?? 0;
     const tier = readiness?.tier || 'draft';
     const scoreColor = tier === 'production' ? '#10b981' : '#fbbf24';
     const hasMissing = missingFields.length > 0;
 
-    // Split missing fields into shot vs context
-    const missingShotFields = missingFields.filter(f => f.source === 'shot');
-    const missingContextFields = missingFields.filter(f => f.source === 'scene' || f.source === 'project');
+    // Split missing fields into shot vs context (client-side detection)
+    const missingShotFields = missingFields.filter((f: MissingField) => getFieldSource(f.field) === 'shot');
+    const missingContextFields = missingFields.filter((f: MissingField) => getFieldSource(f.field) !== 'shot');
 
     return (
         <div style={styles.overlay}>
@@ -455,13 +464,41 @@ function FieldEditor({ field, value, onChange, onSave, saving }: {
     onSave: (v: string) => void;
     saving: boolean;
 }) {
+    const [saved, setSaved] = useState(false);
     const options = DROPDOWN_OPTIONS[field.field];
     const isDropdown = !!options;
 
+    const handleSave = (v: string) => {
+        if (!v.trim()) return;
+        setSaved(true);
+        onSave(v);
+    };
+
     const handleDropdownChange = (v: string) => {
         onChange(v);
-        if (v) onSave(v);
+        if (v) handleSave(v);
     };
+
+    // Show "Saved!" confirmation state
+    if (saved) {
+        return (
+            <div style={{
+                marginBottom: '10px',
+                padding: '8px 12px',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '12px',
+                color: '#10b981',
+                fontWeight: 600,
+            }}>
+                <Check size={14} /> {field.label} saved (+{field.weight}pts)
+            </div>
+        );
+    }
 
     return (
         <div style={{ marginBottom: '10px' }}>
@@ -496,7 +533,7 @@ function FieldEditor({ field, value, onChange, onSave, saving }: {
                         value={value}
                         onChange={(e) => onChange(e.target.value)}
                         placeholder={field.description || `Enter ${field.label.toLowerCase()}`}
-                        onKeyDown={(e) => { if (e.key === 'Enter' && value.trim()) onSave(value); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && value.trim()) handleSave(value); }}
                         style={{
                             flex: 1,
                             backgroundColor: '#09090b',
@@ -509,7 +546,7 @@ function FieldEditor({ field, value, onChange, onSave, saving }: {
                         }}
                     />
                     <button
-                        onClick={() => { if (value.trim()) onSave(value); }}
+                        onClick={() => handleSave(value)}
                         disabled={!value.trim() || saving}
                         style={{
                             backgroundColor: value.trim() ? '#0f766e' : '#3f3f46',

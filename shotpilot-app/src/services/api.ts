@@ -262,9 +262,10 @@ export const generatePrompt = async (shotId: number, modelName: string): Promise
     });
 };
 
-export const checkShotReadiness = async (shotId: number): Promise<any> => {
+export const checkShotReadiness = async (shotId: number, useKB = true): Promise<any> => {
     return apiCall(`/shots/${shotId}/check-readiness`, {
-        method: 'POST'
+        method: 'POST',
+        body: JSON.stringify({ useKB }),
     });
 };
 
