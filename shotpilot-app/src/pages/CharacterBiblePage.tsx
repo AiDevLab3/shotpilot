@@ -54,6 +54,7 @@ export const CharacterBiblePage: React.FC = () => {
         setIsModalOpen(false);
         setEditingChar(null);
         setFormData({});
+        loadData();
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

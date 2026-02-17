@@ -54,6 +54,7 @@ export const ObjectBiblePage: React.FC = () => {
         setIsModalOpen(false);
         setEditingObj(null);
         setFormData({});
+        loadData();
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
