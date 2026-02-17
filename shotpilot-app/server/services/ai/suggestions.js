@@ -159,14 +159,20 @@ ${character.personality ? `EXISTING PERSONALITY: ${character.personality}` : ''}
 
 Generate comprehensive, prompt-ready character details following the Character Bible Checklist.
 
-Also generate a single turnaround sheet prompt — one prompt that produces a 2x2 grid image showing the character from 4 angles (front portrait, 3/4 profile, side profile, back view) in a unified character model sheet style. This is how concept artists work — all angles in one image ensures internal consistency. The prompt should explicitly ask for a "character turnaround sheet" or "character model sheet" layout with labeled angles, neutral pose, consistent lighting across all four views, and a clean/simple background.
+Also generate a single turnaround sheet prompt — one prompt that produces a 2x2 grid image showing the character from 4 angles (front portrait, 3/4 profile, side profile, back view) in a unified character model sheet style.
+
+CRITICAL for turnaround prompt: The model does NOT know who this character is by name alone. The prompt MUST be written assuming the user will attach their reference image from Step 1. Structure it as: "Character turnaround sheet of the character in the attached reference image. 4-angle model sheet: [front portrait description], [3/4 profile description], [side profile description], [back view description]." Include the character's key visual identifiers (clothing, hair, build) so the model knows what to preserve across angles, but reference "the attached image" as the visual source rather than relying on the character's name.
+
+If the target model supports reference image parameters (e.g. Midjourney --oref, or image-to-image features), include those parameters in the prompt. Set turnaroundUsesRef to true.
+If the target model does NOT support attaching a reference image, write the prompt with full standalone physical descriptions instead, and set turnaroundUsesRef to false.
 
 OUTPUT VALID JSON ONLY:
 {
   "description": "Detailed physical description covering: face (eye color, nose shape, jawline, distinguishing marks), age & skin (specific age range, skin tone with undertones), hair (style, color, length, texture), build & posture (body type, posture habits), wardrobe (default clothing, accessories). Written as a dense paragraph optimized for AI image generation prompts.",
   "personality": "2-3 core personality traits with behavioral mannerisms. Written to guide expression and body language in generated images.",
   "referencePrompt": "A model-specific prompt to generate a master reference image for this character. Must use exact model syntax (e.g. Midjourney parameters, Higgsfield camera rig language, etc). Include specific physical details, lighting, and framing.",
-  "turnaroundPrompt": "A single model-specific prompt that generates a 2x2 character turnaround sheet showing front portrait, 3/4 profile, side profile, and back view. Must use exact model syntax. Include all physical details, neutral pose, consistent even lighting, clean background.",
+  "turnaroundPrompt": "A single model-specific prompt for a 2x2 character turnaround sheet. Must reference the attached image as the visual source. Include model-specific syntax for reference image attachment if supported.",
+  "turnaroundUsesRef": true,
   "consistencyTips": ["Tip 1 for maintaining this character across shots", "Tip 2", "Tip 3"],
   "recommendedModel": "JUST the model name, e.g. 'midjourney' or 'higgsfield'. Must match one of the supported model IDs exactly. Null if a target model was selected.",
   "recommendedModelReason": "One plain-English sentence explaining WHY this model is best for this character. No technical jargon — write it for someone who has never used AI image tools. Null if a target model was selected."
@@ -259,13 +265,19 @@ ${object.description ? `EXISTING DESCRIPTION: ${object.description}` : ''}
 
 Generate comprehensive, prompt-ready object details. The reference prompt MUST use the target model's exact syntax and parameters from the KB.
 
-Also generate a single turnaround sheet prompt — one prompt that produces a 2x2 grid image showing the object from 4 angles (front 3/4 view, side profile, back view, detail close-up) in a unified object reference sheet style. All angles in one image ensures internal consistency. The prompt should explicitly ask for an "object turnaround sheet" or "prop reference sheet" layout with labeled angles, consistent lighting across all four views, and a clean/simple background.
+Also generate a single turnaround sheet prompt — one prompt that produces a 2x2 grid image showing the object from 4 angles (front 3/4 view, side profile, back view, detail close-up) in a unified object reference sheet style.
+
+CRITICAL for turnaround prompt: The model does NOT know what this object looks like by name alone. The prompt MUST be written assuming the user will attach their reference image from Step 1. Structure it as: "Object turnaround sheet of the object in the attached reference image. 4-angle reference sheet: [front 3/4 description], [side profile description], [back view description], [detail close-up description]." Include the object's key visual identifiers (material, color, distinctive features) so the model knows what to preserve, but reference "the attached image" as the visual source rather than relying on the object's name.
+
+If the target model supports reference image parameters (e.g. Midjourney --oref, or image-to-image features), include those parameters in the prompt. Set turnaroundUsesRef to true.
+If the target model does NOT support attaching a reference image, write the prompt with full standalone physical descriptions instead, and set turnaroundUsesRef to false.
 
 OUTPUT VALID JSON ONLY:
 {
   "description": "Detailed physical description covering: material, color, texture, condition (new/worn/damaged), dimensions/scale relative to human, distinctive features, contextual placement. Written as a dense paragraph optimized for AI image generation prompts.",
   "referencePrompt": "A model-specific prompt to generate a master reference image for this object. Must use exact model syntax (e.g. Midjourney parameters, Higgsfield camera rig language, etc). Include specific material details, lighting, and framing.",
-  "turnaroundPrompt": "A single model-specific prompt that generates a 2x2 object turnaround sheet showing front 3/4 view, side profile, back view, and detail close-up. Must use exact model syntax. Include all material/color/texture details, consistent even lighting, clean background.",
+  "turnaroundPrompt": "A single model-specific prompt for a 2x2 object turnaround sheet. Must reference the attached image as the visual source. Include model-specific syntax for reference image attachment if supported.",
+  "turnaroundUsesRef": true,
   "consistencyTips": ["Tip 1 for maintaining this object across shots", "Tip 2"],
   "recommendedModel": "JUST the model name, e.g. 'midjourney' or 'higgsfield'. Must match one of the supported model IDs exactly. Null if a target model was selected.",
   "recommendedModelReason": "One plain-English sentence explaining WHY this model is best for this object. No technical jargon — write it for someone who has never used AI image tools. Null if a target model was selected."

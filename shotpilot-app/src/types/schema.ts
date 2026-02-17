@@ -154,6 +154,7 @@ export interface CharacterSuggestions {
     personality: string;
     referencePrompt: string;
     turnaroundPrompt?: string;
+    turnaroundUsesRef?: boolean;
     turnaroundPrompts?: string[]; // legacy — old generations may still have this
     consistencyTips: string[];
     recommendedModel?: string | null;
@@ -214,6 +215,7 @@ export interface ObjectSuggestions {
     description: string;
     referencePrompt: string;
     turnaroundPrompt?: string;
+    turnaroundUsesRef?: boolean;
     turnaroundPrompts?: string[]; // legacy — old generations may still have this
     consistencyTips: string[];
     recommendedModel?: string | null;

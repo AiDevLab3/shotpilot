@@ -650,6 +650,12 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                                     </button>
                                 </div>
                                 <p style={{ ...styles.promptText, margin: '0', fontSize: '11px' }}>{turnaroundPrompt}</p>
+                                <span style={styles.promptHint}>
+                                    {suggestions.turnaroundUsesRef !== false
+                                        ? `Copy this prompt and attach your reference image from Step 1 into ${selectedModel ? (availableModels.find(m => m.name === selectedModel)?.displayName || selectedModel) : 'your AI image tool'}, then upload the result below`
+                                        : `Copy this prompt into ${selectedModel ? (availableModels.find(m => m.name === selectedModel)?.displayName || selectedModel) : 'your AI image tool'} (no reference image needed — full description included), then upload the result below`
+                                    }
+                                </span>
                                 {objectId && (
                                     <div style={{ ...styles.uploadSlot, marginTop: '6px' }}>
                                         {entityImages[slotKey] ? (
