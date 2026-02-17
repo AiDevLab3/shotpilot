@@ -286,6 +286,34 @@ export const initDatabase = () => {
         console.error("Phase 5 (Project Images) Migration failed:", e);
     }
 
+    // Phase 8: AI Generation History + Entity Reference Images
+    try {
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS ai_generations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                entity_type TEXT NOT NULL,
+                entity_id INTEGER NOT NULL,
+                model TEXT,
+                suggestions_json TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS entity_reference_images (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                entity_type TEXT NOT NULL,
+                entity_id INTEGER NOT NULL,
+                image_type TEXT NOT NULL,
+                image_url TEXT NOT NULL,
+                label TEXT,
+                prompt TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+    } catch (e) {
+        console.error("Phase 8 (AI Generations + Entity Images) Migration failed:", e);
+    }
+
     // Create default test user if not exists
     try {
         const testUser = db.prepare('SELECT * FROM users WHERE email = ?').get('test@shotpilot.com');

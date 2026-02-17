@@ -418,6 +418,7 @@ export const CharacterBiblePage: React.FC = () => {
                             <div style={styles.formGroup}>
                                 <CharacterAIAssistant
                                     projectId={projectId}
+                                    characterId={editingChar?.id}
                                     characterName={formData.name || ''}
                                     currentDescription={formData.description}
                                     currentPersonality={formData.personality}

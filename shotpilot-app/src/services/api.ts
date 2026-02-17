@@ -549,5 +549,39 @@ export const deleteProjectImage = async (id: number): Promise<void> => {
     await apiCall(`/project-images/${id}`, { method: 'DELETE' });
 };
 
+// ── AI Generation History ──────────────────────────────────────
+
+export const getGenerations = async (entityType: string, entityId: number): Promise<any[]> => {
+    return apiCall(`/generations/${entityType}/${entityId}`);
+};
+
+export const getLatestGeneration = async (entityType: string, entityId: number): Promise<any | null> => {
+    return apiCall(`/generations/${entityType}/${entityId}/latest`);
+};
+
+export const saveGeneration = async (entityType: string, entityId: number, model: string | null, suggestions: any): Promise<{ id: number }> => {
+    return apiCall('/generations', {
+        method: 'POST',
+        body: JSON.stringify({ entity_type: entityType, entity_id: entityId, model, suggestions }),
+    });
+};
+
+// ── Entity Reference Images ────────────────────────────────────
+
+export const getEntityImages = async (entityType: string, entityId: number): Promise<any[]> => {
+    return apiCall(`/entity-images/${entityType}/${entityId}`);
+};
+
+export const saveEntityImage = async (entityType: string, entityId: number, imageType: string, imageUrl: string, label?: string, prompt?: string): Promise<{ id: number }> => {
+    return apiCall('/entity-images', {
+        method: 'POST',
+        body: JSON.stringify({ entity_type: entityType, entity_id: entityId, image_type: imageType, image_url: imageUrl, label, prompt }),
+    });
+};
+
+export const deleteEntityImage = async (id: number): Promise<void> => {
+    await apiCall(`/entity-images/${id}`, { method: 'DELETE' });
+};
+
 // Deprecated or Unused in Server Mode
 export const saveDB = async () => { };

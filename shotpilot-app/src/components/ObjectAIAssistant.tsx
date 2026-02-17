@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Sparkles, Loader2, Check, Copy, ChevronDown, Send, MessageCircle, RotateCw, HelpCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Sparkles, Loader2, Check, Copy, ChevronDown, Send, MessageCircle, RotateCw, HelpCircle, Upload, X } from 'lucide-react';
 import type { ObjectSuggestions, AIModel } from '../types/schema';
-import { getObjectSuggestions, getAvailableModels, refineContent } from '../services/api';
+import { getObjectSuggestions, getAvailableModels, refineContent, getLatestGeneration, saveGeneration, getGenerations, getEntityImages, saveEntityImage, deleteEntityImage, fileToBase64 } from '../services/api';
 
 interface ObjectAIAssistantProps {
     projectId: number;
+    objectId?: number;
     objectName: string;
     currentDescription?: string;
     onAcceptDescription: (description: string) => void;
@@ -12,6 +13,7 @@ interface ObjectAIAssistantProps {
 
 export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
     projectId,
+    objectId,
     objectName,
     currentDescription,
     onAcceptDescription,
@@ -34,9 +36,17 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
     const [enhanceMode, setEnhanceMode] = useState<'idle' | 'enhanced' | 'skipped'>('idle');
     const [isEnhancing, setIsEnhancing] = useState(false);
 
+    // Generation history + entity images
+    const [generationHistory, setGenerationHistory] = useState<any[]>([]);
+    const [activeGenerationId, setActiveGenerationId] = useState<number | null>(null);
+    const [entityImages, setEntityImages] = useState<Record<string, any>>({});
+    const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
+    const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
     const nameIsEmpty = !objectName || objectName.trim().length === 0;
     const descriptionIsBasic = !currentDescription || currentDescription.trim().length < 100;
 
+    // Load available models
     useEffect(() => {
         getAvailableModels()
             .then((models) => {
@@ -45,6 +55,77 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
             })
             .catch(() => {});
     }, []);
+
+    // Load previous generation + entity images when editing an existing object
+    useEffect(() => {
+        if (!objectId) return;
+        getLatestGeneration('object', objectId).then((gen) => {
+            if (gen && gen.suggestions_json) {
+                try {
+                    const parsed = JSON.parse(gen.suggestions_json);
+                    setSuggestions(parsed);
+                    setHasLoaded(true);
+                    setActiveGenerationId(gen.id);
+                    if (gen.model) setSelectedModel(gen.model);
+                } catch { /* ignore parse errors */ }
+            }
+        }).catch(() => {});
+        getGenerations('object', objectId).then(setGenerationHistory).catch(() => {});
+        loadEntityImages();
+    }, [objectId]);
+
+    const loadEntityImages = async () => {
+        if (!objectId) return;
+        try {
+            const images = await getEntityImages('object', objectId);
+            const map: Record<string, any> = {};
+            images.forEach((img: any) => { map[img.image_type] = img; });
+            setEntityImages(map);
+        } catch { /* ignore */ }
+    };
+
+    const handleImageUpload = async (slot: string, label: string, prompt: string) => {
+        if (!objectId) return;
+        const input = fileInputRefs.current[slot];
+        if (!input?.files?.[0]) return;
+        const file = input.files[0];
+        if (file.size > 20 * 1024 * 1024) {
+            alert('File is too large! Please choose an image under 20MB.');
+            return;
+        }
+        setUploadingSlot(slot);
+        try {
+            const base64 = await fileToBase64(file);
+            await saveEntityImage('object', objectId, slot, base64, label, prompt);
+            await loadEntityImages();
+        } catch (err) {
+            console.error('Failed to upload image', err);
+        } finally {
+            setUploadingSlot(null);
+            if (input) input.value = '';
+        }
+    };
+
+    const handleRemoveImage = async (slot: string) => {
+        const img = entityImages[slot];
+        if (!img) return;
+        try {
+            await deleteEntityImage(img.id);
+            await loadEntityImages();
+        } catch (err) {
+            console.error('Failed to remove image', err);
+        }
+    };
+
+    const loadHistoryGeneration = (gen: any) => {
+        try {
+            const parsed = JSON.parse(gen.suggestions_json);
+            setSuggestions(parsed);
+            setHasLoaded(true);
+            setActiveGenerationId(gen.id);
+            setDescriptionApplied(false);
+        } catch { /* ignore */ }
+    };
 
     const handleGenerateClick = () => {
         if (descriptionIsBasic && enhanceMode === 'idle') {
@@ -98,6 +179,14 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
             });
             setSuggestions(result);
             setHasLoaded(true);
+            // Persist generation if we have an object ID
+            if (objectId) {
+                try {
+                    const saved = await saveGeneration('object', objectId, model || result.recommendedModel || null, result);
+                    setActiveGenerationId(saved.id);
+                    getGenerations('object', objectId).then(setGenerationHistory).catch(() => {});
+                } catch { /* non-critical */ }
+            }
         } catch (err: any) {
             setError(err.message || 'Failed to generate suggestions');
         } finally {
@@ -119,7 +208,6 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                 setPromptCopied(true);
                 setTimeout(() => setPromptCopied(false), 2000);
             } catch {
-                // Fallback for environments without clipboard API
                 const textarea = document.createElement('textarea');
                 textarea.value = suggestions.referencePrompt;
                 document.body.appendChild(textarea);
@@ -276,18 +364,37 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                     <Sparkles size={14} color="#8b5cf6" />
                     <span style={styles.headerTitle}>AI Object Assistant</span>
                 </div>
-                <button
-                    onClick={() => loadFullSuggestions()}
-                    disabled={loading || nameIsEmpty}
-                    style={{
-                        ...styles.regenerateBtn,
-                        opacity: loading || nameIsEmpty ? 0.5 : 1,
-                        cursor: loading || nameIsEmpty ? 'not-allowed' : 'pointer',
-                    }}
-                >
-                    <Sparkles size={12} />
-                    Regenerate
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {generationHistory.length > 1 && (
+                        <select
+                            value={activeGenerationId || ''}
+                            onChange={(e) => {
+                                const gen = generationHistory.find(g => g.id === Number(e.target.value));
+                                if (gen) loadHistoryGeneration(gen);
+                            }}
+                            style={{ ...styles.modelSelect, maxWidth: '140px', fontSize: '10px' }}
+                            title="Generation history"
+                        >
+                            {generationHistory.map((gen, i) => (
+                                <option key={gen.id} value={gen.id}>
+                                    {i === 0 ? 'Latest' : `v${generationHistory.length - i}`} — {new Date(gen.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                </option>
+                            ))}
+                        </select>
+                    )}
+                    <button
+                        onClick={() => loadFullSuggestions()}
+                        disabled={loading || nameIsEmpty}
+                        style={{
+                            ...styles.regenerateBtn,
+                            opacity: loading || nameIsEmpty ? 0.5 : 1,
+                            cursor: loading || nameIsEmpty ? 'not-allowed' : 'pointer',
+                        }}
+                    >
+                        <Sparkles size={12} />
+                        Regenerate
+                    </button>
+                </div>
             </div>
 
             {/* Model selector row */}
@@ -364,10 +471,9 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                                 {enhanceMode !== 'enhanced' && (
                                     <li><strong>Apply</strong> the Description below to fill in your object details</li>
                                 )}
-                                <li><strong>Copy</strong> the Reference Image Prompt and paste it into your AI image tool to create a master reference photo</li>
-                                <li><strong>Upload</strong> that generated image to the "Reference Image" section below this assistant</li>
-                                <li><strong>Copy</strong> the 3 Turnaround Shot prompts to create front, side, and detail views for consistency</li>
-                                <li>When creating shots in Scene Manager, your uploaded reference image will automatically be included for consistency</li>
+                                <li><strong>Copy</strong> each prompt and paste it into your AI image tool to generate an image</li>
+                                <li><strong>Upload</strong> the generated images using the upload button below each prompt</li>
+                                <li>When creating shots in Scene Manager, your uploaded reference images will automatically be included for consistency</li>
                             </ol>
                         )}
                     </div>
@@ -425,6 +531,32 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                         <span style={styles.promptHint}>
                             Copy this prompt into {selectedModel ? (availableModels.find(m => m.name === selectedModel)?.displayName || selectedModel) : 'your AI image tool'} to generate a master reference image, then upload the result below
                         </span>
+                        {/* Reference image upload slot */}
+                        {objectId && (
+                            <div style={styles.uploadSlot}>
+                                {entityImages['reference'] ? (
+                                    <div style={styles.uploadPreview}>
+                                        <img src={entityImages['reference'].image_url} alt="Reference" style={styles.uploadImg} />
+                                        <button onClick={() => handleRemoveImage('reference')} style={styles.uploadRemoveBtn}><X size={10} /></button>
+                                    </div>
+                                ) : (
+                                    <label style={styles.uploadSlotLabel}>
+                                        {uploadingSlot === 'reference' ? (
+                                            <Loader2 size={14} className="spin" color="#8b5cf6" />
+                                        ) : (
+                                            <><Upload size={12} /> Upload reference image</>
+                                        )}
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            ref={el => { fileInputRefs.current['reference'] = el; }}
+                                            onChange={() => handleImageUpload('reference', 'Reference Image', suggestions?.referencePrompt || '')}
+                                            style={{ display: 'none' }}
+                                        />
+                                    </label>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Turnaround Prompts */}
@@ -438,26 +570,56 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                             <span style={{ fontSize: '10px', color: '#6b7280', fontStyle: 'italic', display: 'block', marginBottom: '8px' }}>
                                 After creating your reference image, use these prompts to generate multi-angle views for object consistency across shots
                             </span>
-                            {suggestions.turnaroundPrompts.map((prompt, index) => (
-                                <div key={index} style={{ marginBottom: index < suggestions.turnaroundPrompts!.length - 1 ? '6px' : '0' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                        <span style={{ fontSize: '11px', color: '#fbbf24', fontWeight: 600 }}>
-                                            {index === 0 ? 'Front 3/4 View' : index === 1 ? 'Side Profile' : index === 2 ? 'Detail Close-up' : `Angle ${index + 1}`}
-                                        </span>
-                                        <button
-                                            onClick={() => handleCopyTurnaround(prompt, index)}
-                                            style={styles.copyBtn}
-                                        >
-                                            {turnaroundCopied === index ? (
-                                                <><Check size={12} color="#10b981" /> Copied</>
-                                            ) : (
-                                                <><Copy size={12} /> Copy</>
-                                            )}
-                                        </button>
+                            {suggestions.turnaroundPrompts.map((prompt, index) => {
+                                const turnaroundLabel = index === 0 ? 'Front 3/4 View' : index === 1 ? 'Side Profile' : index === 2 ? 'Detail Close-up' : `Angle ${index + 1}`;
+                                const slotKey = `turnaround_${index}`;
+                                return (
+                                    <div key={index} style={{ marginBottom: index < suggestions.turnaroundPrompts!.length - 1 ? '10px' : '0' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                            <span style={{ fontSize: '11px', color: '#fbbf24', fontWeight: 600 }}>
+                                                {turnaroundLabel}
+                                            </span>
+                                            <button
+                                                onClick={() => handleCopyTurnaround(prompt, index)}
+                                                style={styles.copyBtn}
+                                            >
+                                                {turnaroundCopied === index ? (
+                                                    <><Check size={12} color="#10b981" /> Copied</>
+                                                ) : (
+                                                    <><Copy size={12} /> Copy</>
+                                                )}
+                                            </button>
+                                        </div>
+                                        <p style={{ ...styles.promptText, margin: '0', fontSize: '11px' }}>{prompt}</p>
+                                        {/* Turnaround image upload slot */}
+                                        {objectId && (
+                                            <div style={{ ...styles.uploadSlot, marginTop: '4px' }}>
+                                                {entityImages[slotKey] ? (
+                                                    <div style={styles.uploadPreview}>
+                                                        <img src={entityImages[slotKey].image_url} alt={turnaroundLabel} style={styles.uploadImg} />
+                                                        <button onClick={() => handleRemoveImage(slotKey)} style={styles.uploadRemoveBtn}><X size={10} /></button>
+                                                    </div>
+                                                ) : (
+                                                    <label style={styles.uploadSlotLabel}>
+                                                        {uploadingSlot === slotKey ? (
+                                                            <Loader2 size={14} className="spin" color="#f59e0b" />
+                                                        ) : (
+                                                            <><Upload size={12} /> Upload {turnaroundLabel.toLowerCase()}</>
+                                                        )}
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            ref={el => { fileInputRefs.current[slotKey] = el; }}
+                                                            onChange={() => handleImageUpload(slotKey, turnaroundLabel, prompt)}
+                                                            style={{ display: 'none' }}
+                                                        />
+                                                    </label>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
-                                    <p style={{ ...styles.promptText, margin: '0', fontSize: '11px' }}>{prompt}</p>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
 
@@ -730,5 +892,49 @@ const styles: Record<string, React.CSSProperties> = {
         outline: 'none',
         flex: 1,
         maxWidth: '200px',
+    },
+    uploadSlot: {
+        marginTop: '6px',
+    },
+    uploadSlotLabel: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px',
+        padding: '4px 10px',
+        border: '1px dashed #3f3f46',
+        borderRadius: '4px',
+        color: '#6b7280',
+        fontSize: '10px',
+        cursor: 'pointer',
+    },
+    uploadPreview: {
+        position: 'relative' as const,
+        display: 'inline-block',
+        width: '80px',
+        height: '80px',
+        borderRadius: '4px',
+        overflow: 'hidden',
+        border: '1px solid #3f3f46',
+    },
+    uploadImg: {
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover' as const,
+    },
+    uploadRemoveBtn: {
+        position: 'absolute' as const,
+        top: '2px',
+        right: '2px',
+        width: '16px',
+        height: '16px',
+        borderRadius: '50%',
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        color: 'white',
+        border: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        padding: 0,
     },
 };

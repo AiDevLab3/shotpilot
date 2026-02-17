@@ -409,6 +409,7 @@ export const ObjectBiblePage: React.FC = () => {
                             <div style={styles.formGroup}>
                                 <ObjectAIAssistant
                                     projectId={projectId}
+                                    objectId={editingObj?.id}
                                     objectName={formData.name || ''}
                                     currentDescription={formData.description}
                                     onAcceptDescription={(desc) => setFormData(prev => ({ ...prev, description: desc }))}

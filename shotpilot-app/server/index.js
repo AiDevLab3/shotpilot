@@ -22,6 +22,7 @@ import createSceneRoutes from './routes/scenes.js';
 import createShotRoutes from './routes/shots.js';
 import createImageRoutes from './routes/images.js';
 import createConversationRoutes from './routes/conversations.js';
+import createGenerationRoutes from './routes/generations.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -61,7 +62,7 @@ app.use((req, res, next) => {
 });
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '25mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // --- HEALTH CHECK ---
@@ -130,6 +131,7 @@ app.use(createImageRoutes({
     deductCredit, logAIFeatureUsage,
 }));
 app.use(createConversationRoutes({ db, requireAuth }));
+app.use(createGenerationRoutes({ db, sanitize }));
 
 // Only listen when run directly (not imported for testing)
 if (process.env.NODE_ENV !== 'test') {
