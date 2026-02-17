@@ -311,7 +311,7 @@ Then provide:
 - List of specific issues found
 - What specifically works well
 - Suggested prompt adjustments to fix identified issues (if a prompt was provided, reference specific parts to change; if not, write suggestions from scratch)
-- A complete revised prompt that addresses all identified issues (if a prompt was provided, start from it and show what changed; if not, write one from scratch based on the image). Format this prompt for ${targetModel || 'the user\\'s chosen model'}.
+- A complete revised prompt that addresses all identified issues (if a prompt was provided, start from it and show what changed; if not, write one from scratch based on the image). Format this prompt for ${targetModel || 'the target model'}.
 
 OUTPUT VALID JSON ONLY:
 {
