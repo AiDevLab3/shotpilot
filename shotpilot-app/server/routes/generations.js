@@ -239,6 +239,20 @@ export default function createGenerationRoutes({ db, sanitize, analyzeEntityImag
         }
     });
 
+    // Update the stored prompt on an entity image (e.g. user-provided images)
+    router.patch('/api/entity-images/:id/prompt', (req, res) => {
+        try {
+            const { id } = req.params;
+            const { prompt } = req.body;
+            const row = db.prepare('SELECT id FROM entity_reference_images WHERE id = ?').get(id);
+            if (!row) return res.status(404).json({ error: 'Entity image not found' });
+            db.prepare('UPDATE entity_reference_images SET prompt = ? WHERE id = ?').run(prompt || null, id);
+            res.json({ success: true, prompt: prompt || null });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
     // Delete a specific entity image
     router.delete('/api/entity-images/:id', (req, res) => {
         // Look up the image before deleting so we can clear the entity's reference_image_url if needed

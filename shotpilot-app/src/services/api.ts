@@ -583,6 +583,13 @@ export const deleteEntityImage = async (id: number): Promise<void> => {
     await apiCall(`/entity-images/${id}`, { method: 'DELETE' });
 };
 
+export const updateEntityImagePrompt = async (id: number, prompt: string): Promise<{ success: boolean }> => {
+    return apiCall(`/entity-images/${id}/prompt`, {
+        method: 'PATCH',
+        body: JSON.stringify({ prompt }),
+    });
+};
+
 export const analyzeEntityImage = async (imageId: number): Promise<any> => {
     return apiCall(`/entity-images/${imageId}/analyze`, { method: 'POST' });
 };

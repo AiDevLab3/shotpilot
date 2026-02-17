@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, Loader2, Check, Copy, ChevronDown, Send, MessageCircle, RotateCw, HelpCircle, Upload, X, Clock, Image as ImageIcon, Search, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import type { CharacterSuggestions, AIModel } from '../types/schema';
-import { getCharacterSuggestions, getAvailableModels, refineContent, getLatestGeneration, saveGeneration, getGenerations, getEntityImages, saveEntityImage, deleteEntityImage, fileToBase64, analyzeEntityImage, generateTurnaroundPrompt } from '../services/api';
+import { getCharacterSuggestions, getAvailableModels, refineContent, getLatestGeneration, saveGeneration, getGenerations, getEntityImages, saveEntityImage, deleteEntityImage, fileToBase64, analyzeEntityImage, generateTurnaroundPrompt, updateEntityImagePrompt } from '../services/api';
 
 interface CharacterAIAssistantProps {
     projectId: number;
@@ -37,6 +37,11 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
     const [turnaroundData, setTurnaroundData] = useState<{ turnaroundPrompt: string; turnaroundUsesRef: boolean } | null>(null);
     const [turnaroundLoading, setTurnaroundLoading] = useState(false);
     const [turnaroundError, setTurnaroundError] = useState<string | null>(null);
+
+    // Prompt editing for user-provided reference images
+    const [editingRefPrompt, setEditingRefPrompt] = useState(false);
+    const [refPromptDraft, setRefPromptDraft] = useState('');
+    const [savingRefPrompt, setSavingRefPrompt] = useState(false);
 
     // Generation history + entity images
     const [generationHistory, setGenerationHistory] = useState<any[]>([]);
@@ -165,6 +170,21 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
         }
         setRevisedPromptCopied(slot);
         setTimeout(() => setRevisedPromptCopied(null), 2000);
+    };
+
+    const handleSaveRefPrompt = async () => {
+        const img = entityImages['reference'];
+        if (!img) return;
+        setSavingRefPrompt(true);
+        try {
+            await updateEntityImagePrompt(img.id, refPromptDraft);
+            await loadEntityImages();
+            setEditingRefPrompt(false);
+        } catch (err) {
+            console.error('Failed to save prompt', err);
+        } finally {
+            setSavingRefPrompt(false);
+        }
     };
 
     const loadHistoryGeneration = (gen: any) => {
@@ -629,14 +649,59 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
                                                         <><Search size={11} /> Analyze</>
                                                     )}
                                                 </button>
-                                                <span style={{ fontSize: '9px', color: '#6b7280', maxWidth: '140px' }}>
-                                                    {entityImages['reference'].prompt
-                                                        ? `Prompt stored`
-                                                        : `No prompt stored — AI will analyze the image for turnaround`
-                                                    }
-                                                </span>
+                                                <button
+                                                    onClick={() => {
+                                                        setRefPromptDraft(entityImages['reference'].prompt || '');
+                                                        setEditingRefPrompt(prev => !prev);
+                                                    }}
+                                                    style={{ ...styles.copyBtn, fontSize: '9px', padding: '2px 6px', color: entityImages['reference'].prompt ? '#10b981' : '#f59e0b' }}
+                                                >
+                                                    {entityImages['reference'].prompt ? 'Prompt stored' : 'Add prompt used'}
+                                                </button>
                                             </div>
                                         </div>
+                                        {editingRefPrompt && (
+                                            <div style={{ marginTop: '6px', padding: '8px', backgroundColor: '#18181b', borderRadius: '6px', border: '1px solid #3f3f46' }}>
+                                                <label style={{ fontSize: '10px', color: '#9ca3af', display: 'block', marginBottom: '4px' }}>
+                                                    Paste the prompt you used to create this image (optional — helps turnaround accuracy)
+                                                </label>
+                                                <textarea
+                                                    value={refPromptDraft}
+                                                    onChange={(e) => setRefPromptDraft(e.target.value)}
+                                                    placeholder="e.g. Cinematic still frame, front portrait of a detective..."
+                                                    rows={3}
+                                                    style={{
+                                                        width: '100%',
+                                                        padding: '6px 8px',
+                                                        backgroundColor: '#27272a',
+                                                        border: '1px solid #3f3f46',
+                                                        borderRadius: '4px',
+                                                        color: '#e5e7eb',
+                                                        fontSize: '11px',
+                                                        fontFamily: 'monospace',
+                                                        resize: 'vertical',
+                                                        outline: 'none',
+                                                        boxSizing: 'border-box',
+                                                    }}
+                                                />
+                                                <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                                                    <button
+                                                        onClick={handleSaveRefPrompt}
+                                                        disabled={savingRefPrompt}
+                                                        style={{ ...styles.triggerBtn, fontSize: '10px', padding: '4px 10px', backgroundColor: '#059669' }}
+                                                    >
+                                                        {savingRefPrompt ? <Loader2 size={10} className="spin" /> : <Check size={10} />}
+                                                        Save
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setEditingRefPrompt(false)}
+                                                        style={{ ...styles.copyBtn, fontSize: '10px', padding: '4px 10px' }}
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                         {renderAnalysisResults('reference')}
                                     </div>
                                 ) : (
