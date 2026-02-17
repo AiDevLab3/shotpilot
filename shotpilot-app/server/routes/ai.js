@@ -1,6 +1,12 @@
 import { Router } from 'express';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { filterByMentions } from '../utils/mentionParser.js';
 import { callGemini } from '../services/ai/shared.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export default function createAIRoutes({
     db, requireAuth, checkCredits, sanitize,
@@ -436,8 +442,45 @@ export default function createAIRoutes({
             const refImg = db.prepare(
                 'SELECT prompt, image_url FROM entity_reference_images WHERE entity_type = ? AND entity_id = ? AND image_type = ?'
             ).get(entityType, entityId, 'reference');
-            if (!refImg || !refImg.prompt) {
-                return res.status(400).json({ error: 'No reference image with a stored prompt found. Generate and upload a reference image first.' });
+            if (!refImg) {
+                return res.status(400).json({ error: 'No reference image found. Upload a reference image first.' });
+            }
+
+            // If no stored prompt (user uploaded their own image), analyze the image
+            // with Gemini to generate a description to use as the reference prompt
+            let originalRefPrompt = refImg.prompt || '';
+            if (!originalRefPrompt.trim() && refImg.image_url) {
+                try {
+                    const imgPath = refImg.image_url.startsWith('/')
+                        ? path.join(__dirname, '../..', refImg.image_url)
+                        : refImg.image_url;
+                    if (fs.existsSync(imgPath)) {
+                        const imageBuffer = fs.readFileSync(imgPath);
+                        const ext = path.extname(imgPath).toLowerCase();
+                        const mimeMap = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp' };
+                        const mimeType = mimeMap[ext] || 'image/jpeg';
+                        const base64 = imageBuffer.toString('base64');
+
+                        const entityLabel = entityType === 'character' ? 'character' : 'object';
+                        const describeText = await callGemini({
+                            parts: [
+                                { inlineData: { mimeType, data: base64 } },
+                                { text: `Describe this ${entityLabel} reference image in detail as if writing a prompt to recreate it. Include: physical appearance, clothing/textures, pose, lighting, style/aesthetic, background, camera angle, and color palette. Be specific and thorough. Write it as a single continuous prompt paragraph, NOT as a list.` },
+                            ],
+                            systemInstruction: `You are an expert at describing images for AI image generation. Write a detailed, prompt-style description that captures everything visible in the image. No preamble — just the description.`,
+                            thinkingLevel: 'low',
+                            maxOutputTokens: 1024,
+                        });
+                        originalRefPrompt = describeText.trim();
+                        console.log('[turnaround-prompt] No stored prompt — generated description from image analysis');
+                    }
+                } catch (err) {
+                    console.warn('[turnaround-prompt] Could not analyze reference image:', err.message);
+                }
+            }
+
+            if (!originalRefPrompt.trim()) {
+                return res.status(400).json({ error: 'Could not determine what the reference image contains. Try re-uploading from the AI assistant.' });
             }
 
             // Look up entity details
@@ -495,7 +538,7 @@ export default function createAIRoutes({
                 entityType,
                 entityName,
                 entityDescription,
-                originalRefPrompt: refImg.prompt,
+                originalRefPrompt,
                 project,
                 kbContent,
                 modelKBContent,

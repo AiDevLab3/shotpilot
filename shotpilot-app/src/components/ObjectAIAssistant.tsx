@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Loader2, Check, Copy, ChevronDown, Send, MessageCircle, RotateCw, HelpCircle, Upload, X, Search, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Sparkles, Loader2, Check, Copy, ChevronDown, Send, MessageCircle, RotateCw, HelpCircle, Upload, X, Search, AlertTriangle, CheckCircle2, Image as ImageIcon } from 'lucide-react';
 import type { ObjectSuggestions, AIModel } from '../types/schema';
 import { getObjectSuggestions, getAvailableModels, refineContent, getLatestGeneration, saveGeneration, getGenerations, getEntityImages, saveEntityImage, deleteEntityImage, fileToBase64, analyzeEntityImage, generateTurnaroundPrompt } from '../services/api';
 
@@ -93,16 +93,17 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
         } catch { /* ignore */ }
     };
 
-    const handleImageUpload = async (slot: string, label: string, prompt: string) => {
+    const handleImageUpload = async (slot: string, label: string, prompt: string, sourceRef?: string) => {
         if (!objectId) return;
-        const input = fileInputRefs.current[slot];
+        const refKey = sourceRef || slot;
+        const input = fileInputRefs.current[refKey];
         if (!input?.files?.[0]) return;
         const file = input.files[0];
         if (file.size > 20 * 1024 * 1024) {
             alert('File is too large! Please choose an image under 20MB.');
             return;
         }
-        setUploadingSlot(slot);
+        setUploadingSlot(refKey);
         try {
             const base64 = await fileToBase64(file);
             await saveEntityImage('object', objectId, slot, base64, label, prompt);
@@ -600,41 +601,65 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                                                 <img src={entityImages['reference'].image_url} alt="Reference" style={styles.uploadImg} />
                                                 <button onClick={() => handleRemoveImage('reference')} style={styles.uploadRemoveBtn}><X size={10} /></button>
                                             </div>
-                                            <button
-                                                onClick={() => handleAnalyzeImage('reference')}
-                                                disabled={analyzingSlot === 'reference'}
-                                                style={{
-                                                    ...styles.analyzeBtn,
-                                                    opacity: analyzingSlot === 'reference' ? 0.5 : 1,
-                                                    cursor: analyzingSlot === 'reference' ? 'not-allowed' : 'pointer',
-                                                }}
-                                            >
-                                                {analyzingSlot === 'reference' ? (
-                                                    <><Loader2 size={11} className="spin" /> Analyzing...</>
-                                                ) : analysisResults['reference'] && !analysisResults['reference'].error ? (
-                                                    <><Search size={11} /> Re-analyze</>
-                                                ) : (
-                                                    <><Search size={11} /> Analyze</>
-                                                )}
-                                            </button>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                <button
+                                                    onClick={() => handleAnalyzeImage('reference')}
+                                                    disabled={analyzingSlot === 'reference'}
+                                                    style={{
+                                                        ...styles.analyzeBtn,
+                                                        opacity: analyzingSlot === 'reference' ? 0.5 : 1,
+                                                        cursor: analyzingSlot === 'reference' ? 'not-allowed' : 'pointer',
+                                                    }}
+                                                >
+                                                    {analyzingSlot === 'reference' ? (
+                                                        <><Loader2 size={11} className="spin" /> Analyzing...</>
+                                                    ) : analysisResults['reference'] && !analysisResults['reference'].error ? (
+                                                        <><Search size={11} /> Re-analyze</>
+                                                    ) : (
+                                                        <><Search size={11} /> Analyze</>
+                                                    )}
+                                                </button>
+                                                <span style={{ fontSize: '9px', color: '#6b7280', maxWidth: '140px' }}>
+                                                    {entityImages['reference'].prompt
+                                                        ? `Prompt stored`
+                                                        : `No prompt stored — AI will analyze the image for turnaround`
+                                                    }
+                                                </span>
+                                            </div>
                                         </div>
                                         {renderAnalysisResults('reference')}
                                     </div>
                                 ) : (
-                                    <label style={styles.uploadSlotLabel}>
-                                        {uploadingSlot === 'reference' ? (
-                                            <Loader2 size={14} className="spin" color="#8b5cf6" />
-                                        ) : (
-                                            <><Upload size={12} /> Upload reference image</>
-                                        )}
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            ref={el => { fileInputRefs.current['reference'] = el; }}
-                                            onChange={() => handleImageUpload('reference', 'Reference Image', suggestions?.referencePrompt || '')}
-                                            style={{ display: 'none' }}
-                                        />
-                                    </label>
+                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                        <label style={styles.uploadSlotLabel}>
+                                            {uploadingSlot === 'reference' ? (
+                                                <Loader2 size={14} className="spin" color="#8b5cf6" />
+                                            ) : (
+                                                <><Upload size={12} /> Upload generated image</>
+                                            )}
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                ref={el => { fileInputRefs.current['reference'] = el; }}
+                                                onChange={() => handleImageUpload('reference', 'Reference Image', suggestions?.referencePrompt || '')}
+                                                style={{ display: 'none' }}
+                                            />
+                                        </label>
+                                        <label style={{ ...styles.uploadSlotLabel, borderColor: '#4b5563' }}>
+                                            {uploadingSlot === 'reference-own' ? (
+                                                <Loader2 size={14} className="spin" color="#6b7280" />
+                                            ) : (
+                                                <><ImageIcon size={12} /> Upload your own image</>
+                                            )}
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                ref={el => { fileInputRefs.current['reference-own'] = el; }}
+                                                onChange={() => handleImageUpload('reference', 'Reference Image (user-provided)', '', 'reference-own')}
+                                                style={{ display: 'none' }}
+                                            />
+                                        </label>
+                                    </div>
                                 )}
                             </div>
                         )}
