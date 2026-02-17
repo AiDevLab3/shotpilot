@@ -121,7 +121,6 @@ export default function createGenerationRoutes({ db, sanitize, analyzeEntityImag
             const entityImg = db.prepare('SELECT * FROM entity_reference_images WHERE id = ?').get(id);
             if (!entityImg) return res.status(404).json({ error: 'Entity image not found' });
             if (!entityImg.image_url) return res.status(400).json({ error: 'No image uploaded' });
-            if (!entityImg.prompt) return res.status(400).json({ error: 'No prompt associated with this image — analysis needs the original prompt to compare against' });
 
             // Resolve image path on disk
             const imagePath = entityImg.image_url.startsWith('/')
