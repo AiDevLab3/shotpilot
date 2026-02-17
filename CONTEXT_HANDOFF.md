@@ -1,6 +1,6 @@
 # ShotPilot — Context Handoff Summary
 
-**Date:** February 16, 2026
+**Date:** February 17, 2026
 **Creator:** Caleb (self-described "visionary, not developer" — surface-level code understanding, defers technical decisions)
 **Repository:** `cramsey28/cine-ai-knowledge-base`
 **Active Branch:** `main`
@@ -84,7 +84,7 @@ shotpilot-app/kb/
 
 | Module | Functions |
 |--------|-----------|
-| `ai/shared.js` | `buildContextBlock`, `buildImageParts`, `callGemini` (core Gemini API client) |
+| `ai/shared.js` | `buildContextBlock`, `buildImageParts` (returns `{ parts, imageMap }` with numbered refs), `callGemini` (core Gemini API client) |
 | `ai/readiness.js` | `analyzeReadiness`, `generateRecommendations` |
 | `ai/promptGeneration.js` | `generatePrompt`, `refinePromptFromAudit` |
 | `ai/suggestions.js` | `generateAestheticSuggestions`, `generateCharacterSuggestions`, `generateObjectSuggestions` |
@@ -141,6 +141,18 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 ---
 
 ## 5. What Was Done in Recent Sessions
+
+### Session: Feb 16-17 — Prompt UX, Image References, Safety Framing
+
+#### Inline Field Editing in Generate Prompt Modal
+1. **Fill-the-gaps UX** — Readiness score showed what's missing (83% DRAFT) but gave no way to improve from the modal. Added inline editing: progress bar, collapsible "Fill gaps" section with missing fields, FieldEditor component (dropdowns for shot_type/camera_angle/camera_movement, text inputs for others), fields grouped by Shot vs Scene/Project with point values, save updates backend and refreshes score
+2. **Fixed inline save** — Three issues fixed: (a) Source detection relied on missing backend data → added client-side `getFieldSource()`, (b) Readiness refresh triggered slow Gemini call → added `useKB: false` param for fast basic-only check, (c) No visual feedback → added "Saved!" green checkmark confirmation state
+3. **Key mappings** — qualityCheck field names differ from DB columns (e.g. `shot_description` → `description`, `scene_lighting_notes` → `lighting_notes`). `FIELD_TO_API` map in GeneratePromptModal handles translation. `getFieldSource()` determines save target (shot/scene/project) from field name prefix
+
+#### Prompt Generation Improvements
+4. **Numbered image references** — `buildImageParts()` in shared.js now returns `{ parts, imageMap }` where imageMap tracks `[{ imageNum, type, name, description }]`. Generated prompts include "Image 1", "Image 2" syntax with identity-locking instructions (e.g. "Use Image 1 for Detective Marlowe's facial features — keep identity exact"). Reference Image Map appended to output
+5. **Safety-aware framing** — Added SAFETY-AWARE FRAMING section to system instruction. Everything framed as film production to avoid AI model content safety filters: weapons = "prop revolver" / "rubber stunt knife", characters = "actor holding a prop [weapon]", scenes = "on the film set" / "practical set lighting". Strategy is invisible to user — applied silently, never mentioned in assumptions
+6. **Fixed prompt appearing erased after navigation** — Navigating to Objects page and back made prompts look gone. Root cause: scenes collapsed to only-first-expanded, VariantList started collapsed. Fix: all scenes expand by default on load, VariantList defaults to expanded when it has variants
 
 ### Session: Feb 16 — Character AI Parity, Bug Fixes & Prompt Quality
 
@@ -253,6 +265,10 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 - ~~Character suggestions lack model-specific KB~~ — **FIXED Feb 16**: Auto mode picks best model, loads full KB, falls back to Midjourney
 - ~~Tests stale after Feb 15 changes~~ — **FIXED Feb 16**: Updated with conversation CRUD, variant lock/unlock, session cookies
 - ~~Gemini using deprecated --v 6.1~~ — **FIXED Feb 16**: Explicit V7/--oref constraints in system prompts
+- ~~Readiness score with no way to improve~~ — **FIXED Feb 17**: Inline field editing in Generate Prompt modal with progress bar, dropdowns, and live score refresh
+- ~~Generated prompts missing image references~~ — **FIXED Feb 17**: Numbered imageMap system, "Image 1" / "Image 2" syntax with identity-locking instructions
+- ~~Safety filter violations on realistic weapon prompts~~ — **FIXED Feb 17**: Film production framing (prop weapons, actors, film sets)
+- ~~Prompts appear erased after navigation~~ — **FIXED Feb 17**: All scenes expand by default, VariantList starts expanded
 
 ---
 
@@ -272,9 +288,10 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 | `src/components/ChatSidebar.tsx` | Creative Director chat UI (persistent sidebar) |
 | `src/components/ObjectAIAssistant.tsx` | Object prompt generation with model selector + turnaround |
 | `src/components/CharacterAIAssistant.tsx` | Character prompt generation with model selector + turnaround |
-| `src/components/GeneratePromptModal.tsx` | Shot prompt generation modal |
+| `src/components/GeneratePromptModal.tsx` | Shot prompt generation modal with inline field editing + readiness progress bar |
 | `src/components/ImageAuditReport.tsx` | 6-dimension audit display + realism diagnosis |
-| `src/components/VariantList.tsx` | Image variant cards with audit/refine/upload |
+| `src/components/VariantList.tsx` | Generated prompt list per shot (starts expanded, sorted by model type + date) |
+| `src/components/VariantCard.tsx` | Individual variant display with audit/refine/lock/copy actions |
 | `src/components/MentionTextarea.tsx` | @mention autocomplete textarea for shot fields |
 | `server/utils/mentionParser.js` | @mention parsing + entity filtering for AI context |
 | `server/routes/conversations.js` | Conversation persistence CRUD routes |
@@ -333,6 +350,13 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 ## 9. Git Commit History (Reverse Chronological)
 
 ```
+c9b05de Fix prompt appearing erased after navigation
+3d23540 Add safety-aware framing to prompt generation
+4da2f6b Add numbered image references to generated prompts
+277e104 Fix inline field save: client-side source detection, fast refresh, visual feedback
+67ca46b Add inline field editing to Generate Prompt modal
+abb0999 Fix Gemini JSON parsing and server error handling
+906b9a0 Add CLAUDE.md project operating instructions
 54eb938 Add description enhancement gate before prompt generation
 25af3b3 Always load full model KB — auto-pick model in Auto mode
 26ececa Fix confusing recommendation banner: prompts already use the model
