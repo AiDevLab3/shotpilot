@@ -1,6 +1,6 @@
 # ShotPilot — Context Handoff Summary
 
-**Date:** February 15, 2026
+**Date:** February 16, 2026
 **Creator:** Caleb (self-described "visionary, not developer" — surface-level code understanding, defers technical decisions)
 **Repository:** `cramsey28/cine-ai-knowledge-base`
 **Active Branch:** `main`
@@ -54,11 +54,11 @@ An AI cinematography copilot — not a generic prompt optimizer. It's a professi
 ### Knowledge Base Hierarchy
 ```
 shotpilot-app/kb/
-├── 01_Core_Realism_Principles.md    ← Loaded in ALL 11 AI endpoints (most critical file)
-├── 02_Model_*.md (7 files)          ← Condensed model guides (~600 words each)
-├── 03_Pack_*.md (4 files)           ← Specialized cinematography packs
+├── 01_Core_Realism_Principles.md    ← Loaded in all AI endpoints (most critical file)
+├── 02_Model_*.md (6 files)          ← Condensed model guides (Higgsfield, MJ, GPT Image, Nano Banana, Kling 2.6, VEO 3.1)
+├── 03_Pack_*.md (6 files)           ← Specialized packs (Character Consistency, Image QC, Video QC, Motion, Spatial, QC)
 ├── 04_Translation_Matrix.md         ← Cross-model parameter mapping
-├── models/                          ← Full research per model (loaded for deep queries)
+├── models/                          ← Full research per model (always loaded for prompt generation since Feb 16)
 │   ├── midjourney/Prompting_Mastery.md  ← Updated to V7 (--oref replaces --cref)
 │   ├── gpt_image_1_5/
 │   ├── nano_banana_pro/
@@ -66,7 +66,7 @@ shotpilot-app/kb/
 └── archive/                         ← Old versions, not active
 ```
 
-**KB Loading Flow:** `kbLoader.js` → `readKBFile()` / `loadKBForModel()` → concatenated into Gemini system instruction context.
+**KB Loading Flow:** `kbLoader.js` → `readKBFile()` / `loadKBForModel()` → concatenated into Gemini system instruction context. In Auto mode, a quick Gemini call picks the best model first, then full model KB is loaded (never generates prompts without model-specific knowledge).
 
 ### Database Schema (SQLite, WAL mode)
 - `users` — auth (MVP uses hardcoded test user)
@@ -109,11 +109,11 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 | `routes/images.js` | Upload, variants CRUD, holistic image audit, lock/unlock |
 | `routes/conversations.js` | Conversation persistence CRUD (load, save, replace, clear) |
 
-53 total endpoints across 9 route modules. Each module exports a factory function receiving dependencies (db, services, middleware).
+63 total endpoints across 9 route modules. Each module exports a factory function receiving dependencies (db, services, middleware).
 
 ### Frontend Pages (5 active, routed in App.tsx)
-- **Creative Director** (`/projects/:id`) — AI chat sidebar (persistent via zustand) + project info display + script upload/analysis. Absorbed the former standalone ScriptAnalyzerPage and ProjectInfoPage.
-- **Characters** (`/projects/:id/characters`) — Bible page with AI assistant, reference image upload
+- **Creative Director** (`/projects/:id`) — AI chat sidebar (persistent via zustand) + project info display + script upload/analysis
+- **Characters** (`/projects/:id/characters`) — Bible page with AI assistant (model selector, turnaround prompts), reference image upload
 - **Objects** (`/projects/:id/objects`) — Bible page with AI assistant (model selector, turnaround prompts)
 - **Scene Manager** (`/projects/:id/scenes`) — Shot board with variant management, audit, prompt generation
 - **Image Library** (`/projects/:id/images`) — Project-level image parking lot for alternates/references
@@ -142,6 +142,25 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 
 ## 5. What Was Done in Recent Sessions
 
+### Session: Feb 16 — Character AI Parity, Bug Fixes & Prompt Quality
+
+#### Character AI Assistant Parity
+1. **Model selector + turnaround prompts added** — CharacterAIAssistant now mirrors ObjectAIAssistant: model dropdown (image models only), targetModel passed through full stack, model-specific KB loaded, turnaround prompts (front portrait, 3/4 profile, full body), recommended model display in Auto mode
+
+#### Prompt Quality Improvements
+2. **Full model KB always loaded** — In Auto mode, backend now makes a quick Gemini call to pick the best model first, then loads that model's full KB before generating prompts. No more "lesser" prompts without the full model guide. Falls back to Midjourney if auto-pick fails
+3. **Description enhancement gate** — When users click Generate Prompt with thin descriptions (<100 chars description, <50 chars personality), they get prompted to enhance first via AI. "Enhance First" auto-applies improved text to the form, "Skip, Use As-Is" proceeds with original. Regenerate always bypasses the gate
+4. **Fixed Gemini using deprecated --v 6.1** — In Auto mode without model KB, Gemini fell back to training data. Added explicit constraints: ALWAYS --v 7 / --oref, NEVER --v 6 / --cref
+
+#### UX Improvements
+5. **AI assistant UX clarity** — Recommendation banner moved to top, structured display (model name + plain-English reason), collapsible "How to use these results" 5-step workflow guide, Step 1/Step 2 labels on Reference/Turnaround sections. Applied to both Character and Object assistants
+6. **Fixed confusing recommendation banner** — "Best model for this character" → "Prompts formatted for" (prompts already use the selected model). "Select & Regenerate" → "Lock this model" (no misleading re-generation)
+
+#### Bug Fixes
+7. **Gemini array-wrapping bug** — Gemini sometimes wraps JSON responses in `[{...}]` instead of `{...}`, causing turnaroundPrompts/recommendedModel to go missing. Both parsers now unwrap arrays
+8. **Generate Prompt button fix** — `onClick={loadSuggestions}` was passing the MouseEvent as modelOverride. Wrapped in arrow function
+9. **Test suite updated** — Added cookie jar for session persistence, conversation CRUD tests, variant lock/unlock tests, updated variant status to match new lifecycle. All 19 focused tests pass
+
 ### Session: Feb 15 — 9-Task Improvement Sprint (ALL COMPLETED)
 
 #### Phase 1 — Foundation
@@ -169,9 +188,8 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 - Fixed backward-compat aliases (`check-quality`, `quality-dialogue`) that broke during refactor — now use 307 redirects
 
 #### Route Test Suite
-- Added `tests/route-test.js` — comprehensive test hitting all 50 endpoints
-- 41/50 pass locally (9 AI endpoints need external Gemini API access)
-- Tests cover full CRUD lifecycle: create → read → update → delete for all entities
+- `tests/route-test.js` — comprehensive test covering CRUD lifecycle, conversation persistence, variant lock/unlock, session cookies
+- AI endpoints require external Gemini API access and are tested separately via `tests/visual-test-prompt.md`
 
 ### Session: Feb 13-14 — Features & Fixes
 
@@ -206,17 +224,12 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 
 ## 6. Known Issues NOT Yet Addressed
 
-### Feature Gaps (Planned)
-- **Character AI Assistant** does NOT have the model selector or turnaround prompts yet (only Object AI Assistant was updated).
-- **Character suggestions lack model-specific KB** — `generateCharacterSuggestions` generates generic reference prompts instead of model-optimized ones.
-
 ### Deferred (Not Lite Version Scope)
 - **In-app image generation** — Direct API integration planned for Full version. Lite proves the KB/AI expertise works first.
 - **Video generation workflow** — Video models are in KB and registry but no UI exists. Deferred until image workflow is fully refined and locked in.
 - **Multi-agent architecture** — Original vision was 5 specialized agents. Currently single Gemini with different system prompts. Deliberate MVP trade-off.
 
 ### Other Known Issues
-- **Tests may be stale** — Test files from earlier phases may not cover recent changes.
 - **Auth is placeholder** — MVP uses hardcoded `test@shotpilot.com` with auto-login.
 - **Credits system is mostly cosmetic** — Credit tracking exists but is loosely enforced.
 - **No image optimization** — Uploaded images aren't resized or compressed before storage.
@@ -236,6 +249,10 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 - ~~Audit system buried in UI~~ — **FIXED Feb 15**: Status lifecycle, iteration tracking, 3-strike pivot, lock/unlock
 - ~~KB knowledge invisible to users~~ — **FIXED Feb 15**: AI presents expertise naturally in all responses
 - ~~No conversation persistence~~ — **FIXED Feb 15**: Server-side SQLite storage, survives page refresh
+- ~~Character AI Assistant lacks model selector/turnarounds~~ — **FIXED Feb 16**: Full parity with ObjectAIAssistant
+- ~~Character suggestions lack model-specific KB~~ — **FIXED Feb 16**: Auto mode picks best model, loads full KB, falls back to Midjourney
+- ~~Tests stale after Feb 15 changes~~ — **FIXED Feb 16**: Updated with conversation CRUD, variant lock/unlock, session cookies
+- ~~Gemini using deprecated --v 6.1~~ — **FIXED Feb 16**: Explicit V7/--oref constraints in system prompts
 
 ---
 
@@ -244,17 +261,17 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 | File | What It Does |
 |------|-------------|
 | `server/index.js` | Server setup, middleware, mounts route modules (~140 lines) |
-| `server/routes/*.js` | 8 route modules (auth, ai, projects, characters, objects, scenes, shots, images) |
+| `server/routes/*.js` | 9 route modules (auth, ai, projects, characters, objects, scenes, shots, images, conversations) |
 | `server/services/geminiService.js` | Barrel re-export of all AI functions from `services/ai/` |
 | `server/services/ai/*.js` | 7 AI domain modules (shared, readiness, promptGeneration, suggestions, shotPlanning, scriptAnalysis, creativeDirector, imageAudit) |
 | `server/services/kbLoader.js` | KB file loading, model registry, file concatenation |
 | `server/services/creditService.js` | Credit deduction, usage logging, stats |
 | `server/database.js` | SQLite schema + migrations |
 | `server/middleware/auth.js` | Express-session auth + checkCredits middleware |
-| `tests/route-test.js` | Comprehensive route test suite (50 endpoints) |
+| `tests/route-test.js` | Route test suite (CRUD, conversations, variant lifecycle, sessions) |
 | `src/components/ChatSidebar.tsx` | Creative Director chat UI (persistent sidebar) |
 | `src/components/ObjectAIAssistant.tsx` | Object prompt generation with model selector + turnaround |
-| `src/components/CharacterAIAssistant.tsx` | Character prompt generation (no model selector yet) |
+| `src/components/CharacterAIAssistant.tsx` | Character prompt generation with model selector + turnaround |
 | `src/components/GeneratePromptModal.tsx` | Shot prompt generation modal |
 | `src/components/ImageAuditReport.tsx` | 6-dimension audit display + realism diagnosis |
 | `src/components/VariantList.tsx` | Image variant cards with audit/refine/upload |
@@ -316,6 +333,16 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 ## 9. Git Commit History (Reverse Chronological)
 
 ```
+54eb938 Add description enhancement gate before prompt generation
+25af3b3 Always load full model KB — auto-pick model in Auto mode
+26ececa Fix confusing recommendation banner: prompts already use the model
+f4c6c37 Fix Generate Prompt button passing MouseEvent as model override
+42a07ad Fix Gemini using deprecated --v 6.1 instead of V7 from KB
+55108b3 Improve Character/Object AI assistant UX clarity
+bf43fb0 Add visual test prompt for browser-controlled QA testing
+bd80b34 Fix Gemini array-wrapping bug in character/object suggestions
+a97acc9 Update test suite: conversation CRUD, variant lock/unlock, session cookies
+b626053 Add model selector + turnaround prompts to Character AI Assistant
 5919cda Add server-side conversation persistence
 901054e Surface KB knowledge as expert cinematography advice in all AI responses
 f27f47a Elevate audit system: status lifecycle, iteration tracking, 3-strike pivot
@@ -349,14 +376,13 @@ d0cc29c Phase 4 polish: welcome screen, UX cleanup, repo cleanup, bug fixes
 
 ## 10. What to Work on Next (Suggested Priority)
 
-### All 9 Planned Tasks — COMPLETED (Feb 15)
-All Phase 1/2/3 tasks from the improvement sprint are done. See Section 5 for details.
+### All Planned Lite Feature Gaps — COMPLETED (Feb 16)
+Character AI parity, model-specific KB loading, and test suite all done. See Sessions in Section 5.
 
-### Remaining Feature Gaps
-1. **Character AI Assistant parity** — Add model selector + turnaround prompts (mirror ObjectAIAssistant)
-2. **Character suggestions model-specific KB** — generateCharacterSuggestions needs model-aware prompts
-3. **Test suite update** — Route tests may be stale after Feb 15 changes (new routes, modified endpoints)
-4. **End-to-end workflow testing** — Full flow: create project → chat → build shots → @mention → generate prompt → upload image → audit → lock in
+### Remaining Work
+1. **End-to-end workflow testing** — Full flow: create project → chat → build shots → @mention → generate prompt → upload image → audit → refine → lock in. Visual test prompt exists at `tests/visual-test-prompt.md`
+2. **KB accuracy audit** — Compare condensed `02_Model_*.md` files against full research in `kb/models/` dirs. Previous "optimization" lost critical info
+3. **Repo organization** — Root-level docs (AGENTS.md, CONCEPT_PITCH.md, PRODUCTION_WORKFLOW.md, MASTER_INDEX.md) may be stale
 
 ### Deferred (Not Lite Version Scope)
 - In-app image generation (Full version)

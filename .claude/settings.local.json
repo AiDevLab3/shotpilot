@@ -14,7 +14,9 @@
       "Bash(git reset:*)",
       "Bash(npx kill-port:*)",
       "Bash(timeout:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(ls:*)",
+      "Bash(grep:*)"
     ]
   }
 }

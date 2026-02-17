@@ -251,10 +251,10 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
                         width: '100%',
                     }}>
                         <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#fbbf24', fontWeight: 600 }}>
-                            Your descriptions look basic
+                            Add more detail for better results
                         </p>
                         <p style={{ margin: '0 0 12px 0', fontSize: '11px', color: '#d1d5db', lineHeight: '1.5' }}>
-                            Better descriptions produce better prompts. Would you like AI to enhance your description and personality first? You can review and edit the results before generating prompts.
+                            The more specific your description and personality are — and the more they align with your project's visual direction — the more accurate your prompts will be. Want AI to help flesh these out? You can review and edit before generating.
                         </p>
                         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                             <button
@@ -385,7 +385,9 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
                         </button>
                         {workflowExpanded && (
                             <ol style={{ margin: '0', padding: '0 12px 12px 28px', fontSize: '12px', color: '#d1d5db', lineHeight: '1.8' }}>
-                                <li><strong>Apply</strong> the Description and Personality below to fill in your character fields</li>
+                                {enhanceMode !== 'enhanced' && (
+                                    <li><strong>Apply</strong> the Description and Personality below to fill in your character fields</li>
+                                )}
                                 <li><strong>Copy</strong> the Reference Image Prompt and paste it into your AI image tool (e.g. Midjourney) to create a master reference photo</li>
                                 <li><strong>Upload</strong> that generated image to the "Reference Image" section below this assistant</li>
                                 <li><strong>Copy</strong> the 3 Turnaround Shot prompts to create front, profile, and full-body views for consistency</li>
@@ -394,63 +396,66 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
                         )}
                     </div>
 
-                    {/* Description Suggestion */}
-                    <div style={{
-                        ...styles.suggestionCard,
-                        borderLeftColor: descriptionApplied ? '#10b981' : '#8b5cf6',
-                    }}>
-                        <div style={styles.cardHeader}>
-                            <span style={styles.fieldLabel}>Description</span>
-                            {descriptionApplied && (
-                                <span style={styles.appliedBadge}>
-                                    <Check size={11} /> Applied
-                                </span>
-                            )}
-                        </div>
-                        <p style={styles.suggestionText}>{suggestions.description}</p>
-                        <button
-                            onClick={handleAcceptDescription}
-                            style={{
-                                ...styles.applyBtn,
-                                backgroundColor: descriptionApplied ? '#10b981' : '#8b5cf6',
-                            }}
-                        >
-                            {descriptionApplied ? (
-                                <><Check size={13} /> Applied</>
-                            ) : (
-                                'Apply'
-                            )}
-                        </button>
-                    </div>
+                    {/* Description & Personality Suggestions — hidden if user already enhanced */}
+                    {enhanceMode !== 'enhanced' && (
+                        <>
+                            <div style={{
+                                ...styles.suggestionCard,
+                                borderLeftColor: descriptionApplied ? '#10b981' : '#8b5cf6',
+                            }}>
+                                <div style={styles.cardHeader}>
+                                    <span style={styles.fieldLabel}>Description</span>
+                                    {descriptionApplied && (
+                                        <span style={styles.appliedBadge}>
+                                            <Check size={11} /> Applied
+                                        </span>
+                                    )}
+                                </div>
+                                <p style={styles.suggestionText}>{suggestions.description}</p>
+                                <button
+                                    onClick={handleAcceptDescription}
+                                    style={{
+                                        ...styles.applyBtn,
+                                        backgroundColor: descriptionApplied ? '#10b981' : '#8b5cf6',
+                                    }}
+                                >
+                                    {descriptionApplied ? (
+                                        <><Check size={13} /> Applied</>
+                                    ) : (
+                                        'Apply'
+                                    )}
+                                </button>
+                            </div>
 
-                    {/* Personality Suggestion */}
-                    <div style={{
-                        ...styles.suggestionCard,
-                        borderLeftColor: personalityApplied ? '#10b981' : '#8b5cf6',
-                    }}>
-                        <div style={styles.cardHeader}>
-                            <span style={styles.fieldLabel}>Personality</span>
-                            {personalityApplied && (
-                                <span style={styles.appliedBadge}>
-                                    <Check size={11} /> Applied
-                                </span>
-                            )}
-                        </div>
-                        <p style={styles.suggestionText}>{suggestions.personality}</p>
-                        <button
-                            onClick={handleAcceptPersonality}
-                            style={{
-                                ...styles.applyBtn,
-                                backgroundColor: personalityApplied ? '#10b981' : '#8b5cf6',
-                            }}
-                        >
-                            {personalityApplied ? (
-                                <><Check size={13} /> Applied</>
-                            ) : (
-                                'Apply'
-                            )}
-                        </button>
-                    </div>
+                            <div style={{
+                                ...styles.suggestionCard,
+                                borderLeftColor: personalityApplied ? '#10b981' : '#8b5cf6',
+                            }}>
+                                <div style={styles.cardHeader}>
+                                    <span style={styles.fieldLabel}>Personality</span>
+                                    {personalityApplied && (
+                                        <span style={styles.appliedBadge}>
+                                            <Check size={11} /> Applied
+                                        </span>
+                                    )}
+                                </div>
+                                <p style={styles.suggestionText}>{suggestions.personality}</p>
+                                <button
+                                    onClick={handleAcceptPersonality}
+                                    style={{
+                                        ...styles.applyBtn,
+                                        backgroundColor: personalityApplied ? '#10b981' : '#8b5cf6',
+                                    }}
+                                >
+                                    {personalityApplied ? (
+                                        <><Check size={13} /> Applied</>
+                                    ) : (
+                                        'Apply'
+                                    )}
+                                </button>
+                            </div>
+                        </>
+                    )}
 
                     {/* Reference Prompt */}
                     <div style={styles.promptCard}>

@@ -227,10 +227,10 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                         width: '100%',
                     }}>
                         <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#fbbf24', fontWeight: 600 }}>
-                            Your description looks basic
+                            Add more detail for better results
                         </p>
                         <p style={{ margin: '0 0 12px 0', fontSize: '11px', color: '#d1d5db', lineHeight: '1.5' }}>
-                            A more detailed description produces better prompts. Would you like AI to enhance your description first? You can review and edit the result before generating prompts.
+                            The more specific your description is — and the more it aligns with your project's visual direction — the more accurate your prompts will be. Want AI to help flesh this out? You can review and edit before generating.
                         </p>
                         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                             <button
@@ -361,7 +361,9 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                         </button>
                         {workflowExpanded && (
                             <ol style={{ margin: '0', padding: '0 12px 12px 28px', fontSize: '12px', color: '#d1d5db', lineHeight: '1.8' }}>
-                                <li><strong>Apply</strong> the Description below to fill in your object details</li>
+                                {enhanceMode !== 'enhanced' && (
+                                    <li><strong>Apply</strong> the Description below to fill in your object details</li>
+                                )}
                                 <li><strong>Copy</strong> the Reference Image Prompt and paste it into your AI image tool to create a master reference photo</li>
                                 <li><strong>Upload</strong> that generated image to the "Reference Image" section below this assistant</li>
                                 <li><strong>Copy</strong> the 3 Turnaround Shot prompts to create front, side, and detail views for consistency</li>
@@ -370,34 +372,36 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                         )}
                     </div>
 
-                    {/* Description Suggestion */}
-                    <div style={{
-                        ...styles.suggestionCard,
-                        borderLeftColor: descriptionApplied ? '#10b981' : '#8b5cf6',
-                    }}>
-                        <div style={styles.cardHeader}>
-                            <span style={styles.fieldLabel}>Description</span>
-                            {descriptionApplied && (
-                                <span style={styles.appliedBadge}>
-                                    <Check size={11} /> Applied
-                                </span>
-                            )}
+                    {/* Description Suggestion — hidden if user already enhanced */}
+                    {enhanceMode !== 'enhanced' && (
+                        <div style={{
+                            ...styles.suggestionCard,
+                            borderLeftColor: descriptionApplied ? '#10b981' : '#8b5cf6',
+                        }}>
+                            <div style={styles.cardHeader}>
+                                <span style={styles.fieldLabel}>Description</span>
+                                {descriptionApplied && (
+                                    <span style={styles.appliedBadge}>
+                                        <Check size={11} /> Applied
+                                    </span>
+                                )}
+                            </div>
+                            <p style={styles.suggestionText}>{suggestions.description}</p>
+                            <button
+                                onClick={handleAcceptDescription}
+                                style={{
+                                    ...styles.applyBtn,
+                                    backgroundColor: descriptionApplied ? '#10b981' : '#8b5cf6',
+                                }}
+                            >
+                                {descriptionApplied ? (
+                                    <><Check size={13} /> Applied</>
+                                ) : (
+                                    'Apply'
+                                )}
+                            </button>
                         </div>
-                        <p style={styles.suggestionText}>{suggestions.description}</p>
-                        <button
-                            onClick={handleAcceptDescription}
-                            style={{
-                                ...styles.applyBtn,
-                                backgroundColor: descriptionApplied ? '#10b981' : '#8b5cf6',
-                            }}
-                        >
-                            {descriptionApplied ? (
-                                <><Check size={13} /> Applied</>
-                            ) : (
-                                'Apply'
-                            )}
-                        </button>
-                    </div>
+                    )}
 
                     {/* Reference Prompt */}
                     <div style={styles.promptCard}>
