@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Sparkles, Loader2 } from 'lucide-react';
 import type { Character } from '../types/schema';
-import { getCharacters, createCharacter, updateCharacter, deleteCharacter, getCharacterSuggestions } from '../services/api';
+import { getCharacters, createCharacter, updateCharacter, deleteCharacter, getCharacterSuggestions, getEntityImages } from '../services/api';
 import { CharacterAIAssistant } from '../components/CharacterAIAssistant';
 import { useProjectContext } from '../components/ProjectLayout';
 
@@ -50,10 +50,15 @@ export const CharacterBiblePage: React.FC = () => {
         setIsModalOpen(true);
     };
 
-    const handleCloseModal = () => {
+    const handleCloseModal = async () => {
+        const charId = editingChar?.id;
         setIsModalOpen(false);
         setEditingChar(null);
         setFormData({});
+        // Trigger entity-image sync before refreshing grid
+        if (charId) {
+            try { await getEntityImages('character', charId); } catch {}
+        }
         loadData();
     };
 

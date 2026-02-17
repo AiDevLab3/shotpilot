@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Sparkles, Loader2 } from 'lucide-react';
 import type { ObjectItem } from '../types/schema';
-import { getObjects, createObject, updateObject, deleteObject, getObjectSuggestions } from '../services/api';
+import { getObjects, createObject, updateObject, deleteObject, getObjectSuggestions, getEntityImages } from '../services/api';
 import { ObjectAIAssistant } from '../components/ObjectAIAssistant';
 import { useProjectContext } from '../components/ProjectLayout';
 
@@ -50,10 +50,15 @@ export const ObjectBiblePage: React.FC = () => {
         setIsModalOpen(true);
     };
 
-    const handleCloseModal = () => {
+    const handleCloseModal = async () => {
+        const objId = editingObj?.id;
         setIsModalOpen(false);
         setEditingObj(null);
         setFormData({});
+        // Trigger entity-image sync before refreshing grid
+        if (objId) {
+            try { await getEntityImages('object', objId); } catch {}
+        }
         loadData();
     };
 
