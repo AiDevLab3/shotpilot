@@ -11,6 +11,8 @@ interface Message {
     imageUrls?: string[] | null;
     createdCharacters?: { id: number; name: string }[] | null;
     createdObjects?: { id: number; name: string }[] | null;
+    updatedCharacters?: { id: number; name: string }[] | null;
+    updatedObjects?: { id: number; name: string }[] | null;
     createdScenes?: { id: number; name: string; shotCount: number }[] | null;
     keyDecisions?: string[] | null;
 }

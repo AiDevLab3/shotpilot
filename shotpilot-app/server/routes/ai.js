@@ -713,6 +713,53 @@ export default function createAIRoutes({
                 }
             }
 
+            // Update existing characters when Director fleshes out details
+            const updatedCharacters = [];
+            if (result.characterUpdates && Array.isArray(result.characterUpdates)) {
+                for (const update of result.characterUpdates) {
+                    if (!update.name) continue;
+                    const existing = characters.find(c => c.name.toLowerCase() === update.name.toLowerCase());
+                    if (!existing) continue;
+                    try {
+                        const sets = [];
+                        const params = { id: existing.id };
+                        if (update.description) {
+                            sets.push('description = @description');
+                            params.description = sanitize(update.description);
+                        }
+                        if (update.personality) {
+                            sets.push('personality = @personality');
+                            params.personality = sanitize(update.personality);
+                        }
+                        if (sets.length > 0) {
+                            db.prepare(`UPDATE characters SET ${sets.join(', ')} WHERE id = @id`).run(params);
+                            updatedCharacters.push({ id: existing.id, name: existing.name });
+                        }
+                    } catch (err) {
+                        console.warn(`[creative-director] Could not update character "${update.name}":`, err.message);
+                    }
+                }
+            }
+
+            // Update existing objects when Director fleshes out details
+            const updatedObjects = [];
+            if (result.objectUpdates && Array.isArray(result.objectUpdates)) {
+                for (const update of result.objectUpdates) {
+                    if (!update.name) continue;
+                    const existing = objects.find(o => o.name.toLowerCase() === update.name.toLowerCase());
+                    if (!existing) continue;
+                    try {
+                        if (update.description) {
+                            db.prepare('UPDATE objects SET description = @description WHERE id = @id')
+                                .run({ id: existing.id, description: sanitize(update.description) });
+                            updatedObjects.push({ id: existing.id, name: existing.name });
+                        }
+                    } catch (err) {
+                        console.warn(`[creative-director] Could not update object "${update.name}":`, err.message);
+                    }
+                }
+            }
+
             // Auto-create scenes (and their suggested shots)
             const createdScenes = [];
             if (result.sceneCreations && Array.isArray(result.sceneCreations)) {
@@ -771,7 +818,7 @@ export default function createAIRoutes({
             }
 
             logAIFeatureUsage(db, req.session.userId, 'creative_director', projectId);
-            res.json({ ...result, kbFilesUsed, createdCharacters, createdObjects, createdScenes });
+            res.json({ ...result, kbFilesUsed, createdCharacters, createdObjects, createdScenes, updatedCharacters, updatedObjects });
         } catch (error) {
             console.error('Creative Director error:', error);
             res.status(500).json({ error: error.message });

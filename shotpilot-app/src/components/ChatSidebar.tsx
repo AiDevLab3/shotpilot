@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Send, Loader2, FileText, Lightbulb, Check, Upload, Image, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Send, Loader2, FileText, Lightbulb, Check, Upload, Image, X, PanelLeftClose, PanelLeftOpen, Sparkles } from 'lucide-react';
 import { creativeDirectorChat, getAvailableModels, compactConversation, loadConversation, saveConversationMessage, replaceConversationMessages, clearConversation } from '../services/api';
 import { useCreativeDirectorStore } from '../stores/creativeDirectorStore';
 import type { Message } from '../stores/creativeDirectorStore';
@@ -172,6 +172,8 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 scriptUpdates: result.scriptUpdates,
                 createdCharacters: result.createdCharacters,
                 createdObjects: result.createdObjects,
+                updatedCharacters: result.updatedCharacters,
+                updatedObjects: result.updatedObjects,
                 createdScenes: result.createdScenes,
             };
             store.addMessage(projectId, assistantMsg);
@@ -486,6 +488,16 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                         {msg.createdObjects && msg.createdObjects.length > 0 && (
                             <div style={styles.updateBadge}>
                                 <Check size={11} /> Objects added: {msg.createdObjects.map(o => o.name).join(', ')}
+                            </div>
+                        )}
+                        {msg.updatedCharacters && msg.updatedCharacters.length > 0 && (
+                            <div style={{ ...styles.updateBadge, borderColor: '#8b5cf6' }}>
+                                <Sparkles size={11} /> Characters enhanced: {msg.updatedCharacters.map(c => c.name).join(', ')}
+                            </div>
+                        )}
+                        {msg.updatedObjects && msg.updatedObjects.length > 0 && (
+                            <div style={{ ...styles.updateBadge, borderColor: '#8b5cf6' }}>
+                                <Sparkles size={11} /> Objects enhanced: {msg.updatedObjects.map(o => o.name).join(', ')}
                             </div>
                         )}
                         {msg.createdScenes && msg.createdScenes.length > 0 && (
