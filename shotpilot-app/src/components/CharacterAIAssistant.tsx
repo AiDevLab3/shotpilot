@@ -9,8 +9,6 @@ interface CharacterAIAssistantProps {
     characterName: string;
     currentDescription?: string;
     currentPersonality?: string;
-    onAcceptDescription: (description: string) => void;
-    onAcceptPersonality: (personality: string) => void;
 }
 
 export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
@@ -19,15 +17,11 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
     characterName,
     currentDescription,
     currentPersonality,
-    onAcceptDescription,
-    onAcceptPersonality,
 }) => {
     const [suggestions, setSuggestions] = useState<CharacterSuggestions | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [hasLoaded, setHasLoaded] = useState(false);
-    const [descriptionApplied, setDescriptionApplied] = useState(false);
-    const [personalityApplied, setPersonalityApplied] = useState(false);
     const [promptCopied, setPromptCopied] = useState(false);
     const [tipsExpanded, setTipsExpanded] = useState(false);
     const [chatOpen, setChatOpen] = useState(false);
@@ -38,9 +32,6 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
     const [selectedModel, setSelectedModel] = useState<string>('');
     const [turnaroundCopied, setTurnaroundCopied] = useState<number | null>(null);
     const [workflowExpanded, setWorkflowExpanded] = useState(false);
-    const [showEnhancePrompt, setShowEnhancePrompt] = useState(false);
-    const [enhanceMode, setEnhanceMode] = useState<'idle' | 'enhanced' | 'skipped'>('idle');
-    const [isEnhancing, setIsEnhancing] = useState(false);
 
     // Generation history + entity images
     const [generationHistory, setGenerationHistory] = useState<any[]>([]);
@@ -54,8 +45,6 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
     const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
     const nameIsEmpty = !characterName || characterName.trim().length === 0;
-    const descriptionsAreBasic = (!currentDescription || currentDescription.trim().length < 100)
-        && (!currentPersonality || currentPersonality.trim().length < 50);
 
     // Load available models
     useEffect(() => {
@@ -178,60 +167,12 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
             setSuggestions(parsed);
             setHasLoaded(true);
             setActiveGenerationId(gen.id);
-            setDescriptionApplied(false);
-            setPersonalityApplied(false);
         } catch { /* ignore */ }
-    };
-
-    const handleGenerateClick = () => {
-        // If descriptions are basic and user hasn't already enhanced or skipped, prompt them
-        if (descriptionsAreBasic && enhanceMode === 'idle') {
-            setShowEnhancePrompt(true);
-            return;
-        }
-        loadFullSuggestions();
-    };
-
-    const loadEnhanceOnly = async () => {
-        setShowEnhancePrompt(false);
-        setLoading(true);
-        setIsEnhancing(true);
-        setError(null);
-        try {
-            const result = await getCharacterSuggestions(projectId, {
-                name: characterName,
-                description: currentDescription,
-                personality: currentPersonality,
-                descriptionOnly: true,
-            });
-            // Auto-apply enhanced descriptions to the form
-            if (result.description) {
-                onAcceptDescription(result.description);
-            }
-            if (result.personality) {
-                onAcceptPersonality(result.personality);
-            }
-            setEnhanceMode('enhanced');
-            setHasLoaded(false); // Stay on trigger view so user can review and then generate prompts
-        } catch (err: any) {
-            setError(err.message || 'Failed to enhance descriptions');
-        } finally {
-            setLoading(false);
-            setIsEnhancing(false);
-        }
-    };
-
-    const handleSkipEnhance = () => {
-        setShowEnhancePrompt(false);
-        setEnhanceMode('skipped');
-        loadFullSuggestions();
     };
 
     const loadFullSuggestions = async (modelOverride?: string) => {
         setLoading(true);
         setError(null);
-        setDescriptionApplied(false);
-        setPersonalityApplied(false);
         setPromptCopied(false);
         setTipsExpanded(false);
         const model = modelOverride !== undefined ? modelOverride : selectedModel;
@@ -257,20 +198,6 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
             setError(err.message || 'Failed to generate suggestions');
         } finally {
             setLoading(false);
-        }
-    };
-
-    const handleAcceptDescription = () => {
-        if (suggestions) {
-            onAcceptDescription(suggestions.description);
-            setDescriptionApplied(true);
-        }
-    };
-
-    const handleAcceptPersonality = () => {
-        if (suggestions) {
-            onAcceptPersonality(suggestions.personality);
-            setPersonalityApplied(true);
         }
     };
 
@@ -496,74 +423,22 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
                     </div>
                 )}
                 <button
-                    onClick={() => handleGenerateClick()}
-                    disabled={nameIsEmpty || showEnhancePrompt}
+                    onClick={() => loadFullSuggestions()}
+                    disabled={nameIsEmpty}
                     style={{
                         ...styles.triggerBtn,
-                        opacity: nameIsEmpty || showEnhancePrompt ? 0.5 : 1,
-                        cursor: nameIsEmpty || showEnhancePrompt ? 'not-allowed' : 'pointer',
+                        opacity: nameIsEmpty ? 0.5 : 1,
+                        cursor: nameIsEmpty ? 'not-allowed' : 'pointer',
                     }}
                 >
                     <Sparkles size={14} />
-                    {enhanceMode === 'enhanced' ? 'Generate Prompts' : 'Generate Prompt'}
+                    Generate Prompt
                 </button>
                 <span style={styles.triggerHint}>
                     {nameIsEmpty
                         ? 'Enter a name first'
-                        : enhanceMode === 'enhanced'
-                        ? 'Descriptions enhanced — review them above, then generate prompts'
-                        : 'AI will suggest description, personality, and a reference image prompt'}
+                        : 'AI will generate a reference image prompt based on your description'}
                 </span>
-
-                {/* Enhance prompt dialog */}
-                {showEnhancePrompt && (
-                    <div style={{
-                        marginTop: '8px',
-                        padding: '12px',
-                        backgroundColor: '#1a1a2e',
-                        border: '1px solid #f59e0b',
-                        borderRadius: '6px',
-                        width: '100%',
-                    }}>
-                        <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#fbbf24', fontWeight: 600 }}>
-                            Add more detail for better results
-                        </p>
-                        <p style={{ margin: '0 0 12px 0', fontSize: '11px', color: '#d1d5db', lineHeight: '1.5' }}>
-                            The more specific your description and personality are — and the more they align with your project's visual direction — the more accurate your prompts will be. Want AI to help flesh these out? You can review and edit before generating.
-                        </p>
-                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                            <button
-                                onClick={loadEnhanceOnly}
-                                style={{
-                                    padding: '6px 14px',
-                                    backgroundColor: '#f59e0b',
-                                    color: '#18181b',
-                                    border: 'none',
-                                    borderRadius: '5px',
-                                    fontSize: '12px',
-                                    fontWeight: 600,
-                                    cursor: 'pointer',
-                                }}
-                            >
-                                Enhance First
-                            </button>
-                            <button
-                                onClick={handleSkipEnhance}
-                                style={{
-                                    padding: '6px 14px',
-                                    backgroundColor: '#27272a',
-                                    color: '#9ca3af',
-                                    border: '1px solid #3f3f46',
-                                    borderRadius: '5px',
-                                    fontSize: '12px',
-                                    cursor: 'pointer',
-                                }}
-                            >
-                                Skip, Use As-Is
-                            </button>
-                        </div>
-                    </div>
-                )}
             </div>
         );
     }
@@ -629,13 +504,13 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
                 <div style={styles.loadingState}>
                     <Loader2 size={18} className="spin" color="#8b5cf6" />
                     <span style={styles.loadingText}>
-                        {isEnhancing ? 'Enhancing descriptions...' : 'Generating character bible...'}
+                        Generating character bible...
                     </span>
                 </div>
             ) : error ? (
                 <div style={styles.errorState}>
                     <p style={styles.errorText}>{error}</p>
-                    <button onClick={() => handleGenerateClick()} style={styles.retryBtn}>
+                    <button onClick={() => loadFullSuggestions()} style={styles.retryBtn}>
                         Retry
                     </button>
                 </div>
@@ -679,76 +554,12 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
                         </button>
                         {workflowExpanded && (
                             <ol style={{ margin: '0', padding: '0 12px 12px 28px', fontSize: '12px', color: '#d1d5db', lineHeight: '1.8' }}>
-                                {enhanceMode !== 'enhanced' && (
-                                    <li><strong>Apply</strong> the Description and Personality below to fill in your character fields</li>
-                                )}
                                 <li><strong>Copy</strong> each prompt and paste it into your AI image tool (e.g. Midjourney) to generate an image</li>
                                 <li><strong>Upload</strong> the generated images using the upload button below each prompt</li>
                                 <li>When creating shots in Scene Manager, your uploaded reference images will automatically be included for consistency</li>
                             </ol>
                         )}
                     </div>
-
-                    {/* Description & Personality Suggestions — hidden if user already enhanced */}
-                    {enhanceMode !== 'enhanced' && (
-                        <>
-                            <div style={{
-                                ...styles.suggestionCard,
-                                borderLeftColor: descriptionApplied ? '#10b981' : '#8b5cf6',
-                            }}>
-                                <div style={styles.cardHeader}>
-                                    <span style={styles.fieldLabel}>Description</span>
-                                    {descriptionApplied && (
-                                        <span style={styles.appliedBadge}>
-                                            <Check size={11} /> Applied
-                                        </span>
-                                    )}
-                                </div>
-                                <p style={styles.suggestionText}>{suggestions.description}</p>
-                                <button
-                                    onClick={handleAcceptDescription}
-                                    style={{
-                                        ...styles.applyBtn,
-                                        backgroundColor: descriptionApplied ? '#10b981' : '#8b5cf6',
-                                    }}
-                                >
-                                    {descriptionApplied ? (
-                                        <><Check size={13} /> Applied</>
-                                    ) : (
-                                        'Apply'
-                                    )}
-                                </button>
-                            </div>
-
-                            <div style={{
-                                ...styles.suggestionCard,
-                                borderLeftColor: personalityApplied ? '#10b981' : '#8b5cf6',
-                            }}>
-                                <div style={styles.cardHeader}>
-                                    <span style={styles.fieldLabel}>Personality</span>
-                                    {personalityApplied && (
-                                        <span style={styles.appliedBadge}>
-                                            <Check size={11} /> Applied
-                                        </span>
-                                    )}
-                                </div>
-                                <p style={styles.suggestionText}>{suggestions.personality}</p>
-                                <button
-                                    onClick={handleAcceptPersonality}
-                                    style={{
-                                        ...styles.applyBtn,
-                                        backgroundColor: personalityApplied ? '#10b981' : '#8b5cf6',
-                                    }}
-                                >
-                                    {personalityApplied ? (
-                                        <><Check size={13} /> Applied</>
-                                    ) : (
-                                        'Apply'
-                                    )}
-                                </button>
-                            </div>
-                        </>
-                    )}
 
                     {/* Reference Prompt */}
                     <div style={styles.promptCard}>

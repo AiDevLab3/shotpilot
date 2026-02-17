@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { Sparkles, Loader2 } from 'lucide-react';
 import type { Character } from '../types/schema';
-import { getCharacters, createCharacter, updateCharacter, deleteCharacter, fileToBase64 } from '../services/api';
+import { getCharacters, createCharacter, updateCharacter, deleteCharacter, fileToBase64, getCharacterSuggestions } from '../services/api';
 import { CharacterAIAssistant } from '../components/CharacterAIAssistant';
 import { useProjectContext } from '../components/ProjectLayout';
 
@@ -11,6 +12,7 @@ export const CharacterBiblePage: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingChar, setEditingChar] = useState<Character | null>(null);
     const [formData, setFormData] = useState<Partial<Character>>({});
+    const [enhancing, setEnhancing] = useState(false);
 
     // Parse project frame_size (e.g. "16:9 Widescreen") to CSS aspect-ratio (e.g. "16/9")
     const frameAspectRatio = (() => {
@@ -93,6 +95,25 @@ export const CharacterBiblePage: React.FC = () => {
         } catch (error: any) {
             console.error("Failed to save character", error);
             alert(`Failed to save: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    };
+
+    const handleEnhance = async () => {
+        if (!projectId || !formData.name) return;
+        setEnhancing(true);
+        try {
+            const result = await getCharacterSuggestions(projectId, {
+                name: formData.name,
+                description: formData.description,
+                personality: formData.personality,
+                descriptionOnly: true,
+            });
+            if (result.description) setFormData(prev => ({ ...prev, description: result.description }));
+            if (result.personality) setFormData(prev => ({ ...prev, personality: result.personality }));
+        } catch (err) {
+            console.error('Failed to enhance', err);
+        } finally {
+            setEnhancing(false);
         }
     };
 
@@ -394,7 +415,23 @@ export const CharacterBiblePage: React.FC = () => {
                             />
                         </div>
                         <div style={styles.formGroup}>
-                            <label style={styles.label}>Description</label>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                <label style={{ ...styles.label, marginBottom: 0 }}>Description</label>
+                                <button
+                                    onClick={handleEnhance}
+                                    disabled={enhancing || !formData.name}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: '4px',
+                                        padding: '3px 8px', backgroundColor: 'transparent',
+                                        border: '1px solid #8b5cf6', borderRadius: '4px',
+                                        color: '#a78bfa', fontSize: '11px', cursor: enhancing || !formData.name ? 'not-allowed' : 'pointer',
+                                        opacity: enhancing || !formData.name ? 0.5 : 1,
+                                    }}
+                                >
+                                    {enhancing ? <Loader2 size={11} className="spin" /> : <Sparkles size={11} />}
+                                    {enhancing ? 'Enhancing...' : 'Enhance with AI'}
+                                </button>
+                            </div>
                             <textarea
                                 name="description"
                                 value={formData.description || ''}
@@ -422,8 +459,6 @@ export const CharacterBiblePage: React.FC = () => {
                                     characterName={formData.name || ''}
                                     currentDescription={formData.description}
                                     currentPersonality={formData.personality}
-                                    onAcceptDescription={(desc) => setFormData(prev => ({ ...prev, description: desc }))}
-                                    onAcceptPersonality={(pers) => setFormData(prev => ({ ...prev, personality: pers }))}
                                 />
                             </div>
                         )}
