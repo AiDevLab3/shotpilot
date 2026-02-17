@@ -26,6 +26,13 @@ export const ObjectBiblePage: React.FC = () => {
         loadData();
     }, [projectId]);
 
+    // Refresh when Creative Director creates/updates objects
+    useEffect(() => {
+        const handler = () => loadData();
+        window.addEventListener('objectsChanged', handler);
+        return () => window.removeEventListener('objectsChanged', handler);
+    }, [projectId]);
+
     const loadData = async () => {
         if (!projectId) return;
         setLoading(true);

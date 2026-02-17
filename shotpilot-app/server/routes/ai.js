@@ -826,7 +826,19 @@ export default function createAIRoutes({
             }
 
             // Auto-create scenes (and their suggested shots)
+            // BACKEND GATE: Only allow scene creation if characters have real descriptions (not just names from extraction)
             const createdScenes = [];
+            let sceneGateBlocked = false;
+            if (result.sceneCreations && Array.isArray(result.sceneCreations) && result.sceneCreations.length > 0) {
+                // Re-fetch characters (may have been created in this same request)
+                const currentChars = db.prepare('SELECT name, description FROM characters WHERE project_id = ?').all(projectId);
+                const hasFleschedOutChars = currentChars.some(c => c.description && c.description.trim().length > 50);
+                if (currentChars.length === 0 || !hasFleschedOutChars) {
+                    console.log(`[creative-director] SCENE GATE BLOCKED: ${currentChars.length} characters, none with descriptions >50 chars. Stripping ${result.sceneCreations.length} scenes.`);
+                    sceneGateBlocked = true;
+                    result.sceneCreations = null;
+                }
+            }
             if (result.sceneCreations && Array.isArray(result.sceneCreations)) {
                 const existingSceneNames = scenes.map(s => s.name.toLowerCase());
                 const insertScene = db.prepare(
@@ -883,7 +895,7 @@ export default function createAIRoutes({
             }
 
             logAIFeatureUsage(db, req.session.userId, 'creative_director', projectId);
-            res.json({ ...result, kbFilesUsed, createdCharacters, createdObjects, createdScenes, updatedCharacters, updatedObjects });
+            res.json({ ...result, kbFilesUsed, createdCharacters, createdObjects, createdScenes, updatedCharacters, updatedObjects, sceneGateBlocked });
         } catch (error) {
             console.error('Creative Director error:', error);
             res.status(500).json({ error: error.message });

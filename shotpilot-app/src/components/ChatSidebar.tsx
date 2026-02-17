@@ -178,6 +178,17 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
             };
             store.addMessage(projectId, assistantMsg);
 
+            // Notify entity pages to refresh their grids
+            if (result.createdObjects?.length || result.updatedObjects?.length) {
+                window.dispatchEvent(new CustomEvent('objectsChanged'));
+            }
+            if (result.createdCharacters?.length || result.updatedCharacters?.length) {
+                window.dispatchEvent(new CustomEvent('charactersChanged'));
+            }
+            if (result.createdScenes?.length) {
+                window.dispatchEvent(new CustomEvent('scenesChanged'));
+            }
+
             // Persist both messages to server (fire-and-forget)
             const sessionState = { mode: currentMode, scriptContent: session.scriptContent, targetModel: session.targetModel };
             saveConversationMessage(projectId, userMsg, sessionState).catch(e =>

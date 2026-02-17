@@ -26,6 +26,13 @@ export const CharacterBiblePage: React.FC = () => {
         loadData();
     }, [projectId]);
 
+    // Refresh when Creative Director creates/updates characters
+    useEffect(() => {
+        const handler = () => loadData();
+        window.addEventListener('charactersChanged', handler);
+        return () => window.removeEventListener('charactersChanged', handler);
+    }, [projectId]);
+
     const loadData = async () => {
         if (!projectId) return;
         setLoading(true);
