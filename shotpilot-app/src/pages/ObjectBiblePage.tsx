@@ -3,6 +3,7 @@ import { Sparkles, Loader2 } from 'lucide-react';
 import type { ObjectItem } from '../types/schema';
 import { getObjects, createObject, updateObject, deleteObject, getObjectSuggestions, getEntityImages } from '../services/api';
 import { ObjectAIAssistant } from '../components/ObjectAIAssistant';
+import { ImageLightbox } from '../components/ImageLightbox';
 import { useProjectContext } from '../components/ProjectLayout';
 
 export const ObjectBiblePage: React.FC = () => {
@@ -13,6 +14,7 @@ export const ObjectBiblePage: React.FC = () => {
     const [editingObj, setEditingObj] = useState<ObjectItem | null>(null);
     const [formData, setFormData] = useState<Partial<ObjectItem>>({});
     const [enhancing, setEnhancing] = useState(false);
+    const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
     // Parse project frame_size (e.g. "16:9 Widescreen") to CSS aspect-ratio (e.g. "16/9")
     const frameAspectRatio = (() => {
@@ -322,7 +324,8 @@ export const ObjectBiblePage: React.FC = () => {
                                 <img
                                     src={obj.reference_image_url}
                                     alt={obj.name}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'zoom-in' }}
+                                    onClick={(e) => { e.stopPropagation(); setLightboxSrc(obj.reference_image_url!); }}
                                 />
                             ) : (
                                 <span>No Image</span>
@@ -343,6 +346,8 @@ export const ObjectBiblePage: React.FC = () => {
                     No objects created yet.
                 </div>
             )}
+
+            {lightboxSrc && <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
 
             {/* Modal */}
             {isModalOpen && (

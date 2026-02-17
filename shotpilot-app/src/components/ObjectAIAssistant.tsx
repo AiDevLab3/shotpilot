@@ -3,6 +3,7 @@ import { Sparkles, Loader2, Check, Copy, ChevronDown, Send, MessageCircle, Rotat
 import type { ObjectSuggestions, AIModel } from '../types/schema';
 import { getObjectSuggestions, getAvailableModels, refineContent, getLatestGeneration, saveGeneration, getGenerations, getEntityImages, saveEntityImage, deleteEntityImage, fileToBase64, analyzeEntityImage, generateTurnaroundPrompt, updateEntityImagePrompt } from '../services/api';
 import { useCreativeDirectorStore } from '../stores/creativeDirectorStore';
+import { ImageLightbox } from './ImageLightbox';
 
 interface ObjectAIAssistantProps {
     projectId: number;
@@ -51,6 +52,7 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
     const [analysisResults, setAnalysisResults] = useState<Record<string, any>>({});
     const [analysisExpanded, setAnalysisExpanded] = useState<Record<string, boolean>>({});
     const [revisedPromptCopied, setRevisedPromptCopied] = useState<string | null>(null);
+    const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
     const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
     const nameIsEmpty = !objectName || objectName.trim().length === 0;
@@ -514,7 +516,7 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                     <div style={{ width: '100%' }}>
                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '10px' }}>
                             <div style={styles.uploadPreview}>
-                                <img src={hasRefImage.image_url} alt="Reference" style={styles.uploadImg} />
+                                <img src={hasRefImage.image_url} alt="Reference" style={{ ...styles.uploadImg, cursor: 'zoom-in' }} onClick={() => setLightboxSrc(hasRefImage.image_url)} />
                                 <button onClick={() => handleRemoveImage('reference')} style={styles.uploadRemoveBtn}><X size={10} /></button>
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
@@ -744,7 +746,7 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                                     <div>
                                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                                             <div style={styles.uploadPreview}>
-                                                <img src={entityImages['reference'].image_url} alt="Reference" style={styles.uploadImg} />
+                                                <img src={entityImages['reference'].image_url} alt="Reference" style={{ ...styles.uploadImg, cursor: 'zoom-in' }} onClick={() => setLightboxSrc(entityImages['reference'].image_url)} />
                                                 <button onClick={() => handleRemoveImage('reference')} style={styles.uploadRemoveBtn}><X size={10} /></button>
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -928,7 +930,7 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                                                     <div>
                                                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                                                             <div style={styles.uploadPreview}>
-                                                                <img src={entityImages[slotKey].image_url} alt="Turnaround Sheet" style={styles.uploadImg} />
+                                                                <img src={entityImages[slotKey].image_url} alt="Turnaround Sheet" style={{ ...styles.uploadImg, cursor: 'zoom-in' }} onClick={() => setLightboxSrc(entityImages[slotKey].image_url)} />
                                                                 <button onClick={() => handleRemoveImage(slotKey)} style={styles.uploadRemoveBtn}><X size={10} /></button>
                                                             </div>
                                                             <button
@@ -1033,6 +1035,7 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                     </div>
                 </div>
             ) : null}
+        {lightboxSrc && <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
         </div>
     );
 };

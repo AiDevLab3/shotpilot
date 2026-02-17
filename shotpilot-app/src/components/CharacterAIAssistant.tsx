@@ -3,6 +3,7 @@ import { Sparkles, Loader2, Check, Copy, ChevronDown, Send, MessageCircle, Rotat
 import type { CharacterSuggestions, AIModel } from '../types/schema';
 import { getCharacterSuggestions, getAvailableModels, refineContent, getLatestGeneration, saveGeneration, getGenerations, getEntityImages, saveEntityImage, deleteEntityImage, fileToBase64, analyzeEntityImage, generateTurnaroundPrompt, updateEntityImagePrompt } from '../services/api';
 import { useCreativeDirectorStore } from '../stores/creativeDirectorStore';
+import { ImageLightbox } from './ImageLightbox';
 
 interface CharacterAIAssistantProps {
     projectId: number;
@@ -56,6 +57,7 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
     const [revisedPromptCopied, setRevisedPromptCopied] = useState<string | null>(null);
     const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
+    const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
     const nameIsEmpty = !characterName || characterName.trim().length === 0;
 
     // Load available models
@@ -634,7 +636,7 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
                                     <div>
                                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                                             <div style={styles.uploadPreview}>
-                                                <img src={entityImages['reference'].image_url} alt="Reference" style={styles.uploadImg} />
+                                                <img src={entityImages['reference'].image_url} alt="Reference" style={{ ...styles.uploadImg, cursor: 'zoom-in' }} onClick={() => setLightboxSrc(entityImages['reference'].image_url)} />
                                                 <button onClick={() => handleRemoveImage('reference')} style={styles.uploadRemoveBtn}><X size={10} /></button>
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -818,7 +820,7 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
                                                     <div>
                                                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                                                             <div style={styles.uploadPreview}>
-                                                                <img src={entityImages[slotKey].image_url} alt="Turnaround Sheet" style={styles.uploadImg} />
+                                                                <img src={entityImages[slotKey].image_url} alt="Turnaround Sheet" style={{ ...styles.uploadImg, cursor: 'zoom-in' }} onClick={() => setLightboxSrc(entityImages[slotKey].image_url)} />
                                                                 <button onClick={() => handleRemoveImage(slotKey)} style={styles.uploadRemoveBtn}><X size={10} /></button>
                                                             </div>
                                                             <button
@@ -997,6 +999,7 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
                     </div>
                 </div>
             ) : null}
+            {lightboxSrc && <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
         </div>
     );
 };
