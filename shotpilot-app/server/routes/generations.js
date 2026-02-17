@@ -168,9 +168,10 @@ export default function createGenerationRoutes({ db, sanitize, analyzeEntityImag
             }
 
             // Load KB for quality evaluation + model-specific syntax
+            // Model resolution: frontend sends selectedModel || directorModel || empty
+            // If still empty here, default to Midjourney (app's universal fallback)
             let kbContent = '';
             let modelKBContent = '';
-            // Default to Midjourney when Auto (empty) — it's the app's universal fallback
             let resolvedModelName = targetModel || 'midjourney';
             try {
                 const qualityKB = readKBFile('03_Pack_Image_Quality_Control.md');

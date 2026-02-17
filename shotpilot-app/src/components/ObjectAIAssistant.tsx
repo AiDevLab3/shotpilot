@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, Loader2, Check, Copy, ChevronDown, Send, MessageCircle, RotateCw, HelpCircle, Upload, X, Search, AlertTriangle, CheckCircle2, Image as ImageIcon } from 'lucide-react';
 import type { ObjectSuggestions, AIModel } from '../types/schema';
 import { getObjectSuggestions, getAvailableModels, refineContent, getLatestGeneration, saveGeneration, getGenerations, getEntityImages, saveEntityImage, deleteEntityImage, fileToBase64, analyzeEntityImage, generateTurnaroundPrompt, updateEntityImagePrompt } from '../services/api';
+import { useCreativeDirectorStore } from '../stores/creativeDirectorStore';
 
 interface ObjectAIAssistantProps {
     projectId: number;
@@ -27,6 +28,7 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
     const [refining, setRefining] = useState(false);
     const [availableModels, setAvailableModels] = useState<AIModel[]>([]);
     const [selectedModel, setSelectedModel] = useState<string>('');
+    const directorModel = useCreativeDirectorStore(s => s.sessions[projectId]?.targetModel || '');
     const [turnaroundCopied, setTurnaroundCopied] = useState<boolean>(false);
     const [workflowExpanded, setWorkflowExpanded] = useState(false);
 
@@ -139,7 +141,9 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
         if (!img) return;
         setAnalyzingSlot(slot);
         try {
-            const result = await analyzeEntityImage(img.id, selectedModel || undefined);
+            // Model resolution chain: local selector → Director's model → let backend decide
+            const resolvedModel = selectedModel || directorModel || undefined;
+            const result = await analyzeEntityImage(img.id, resolvedModel);
             setAnalysisResults(prev => ({ ...prev, [slot]: result }));
             setAnalysisExpanded(prev => ({ ...prev, [slot]: true }));
         } catch (err: any) {
