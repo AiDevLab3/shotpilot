@@ -1,6 +1,47 @@
 import { buildContextBlock, callGemini } from './shared.js';
 
 /**
+ * Build a concise story-context block for description enhancement.
+ * Gives the AI awareness of the script, other entities, and scenes
+ * so it can ground its enhancement in the actual story.
+ */
+function buildStoryContext(storyContext, entityType, entityName) {
+    if (!storyContext) return '';
+    const lines = [];
+
+    // Script — truncate to keep token budget reasonable
+    if (storyContext.script) {
+        const scriptPreview = storyContext.script.length > 2000
+            ? storyContext.script.substring(0, 2000) + '\n[... truncated]'
+            : storyContext.script;
+        lines.push(`SCRIPT:\n${scriptPreview}`);
+    }
+
+    // Other characters (for character enhance) or all characters (for object enhance)
+    const chars = storyContext.otherCharacters || storyContext.characters || [];
+    if (chars.length > 0) {
+        const charList = chars.map(c => `  - ${c.name}${c.description ? `: ${c.description.substring(0, 120)}` : ''}`).join('\n');
+        lines.push(`${entityType === 'character' ? 'OTHER ' : ''}CHARACTERS IN PROJECT:\n${charList}`);
+    }
+
+    // Scenes — show which ones mention this entity or are relevant
+    if (storyContext.scenes && storyContext.scenes.length > 0) {
+        const nameLower = (entityName || '').toLowerCase();
+        const relevant = storyContext.scenes.filter(s => {
+            const desc = (s.description || '').toLowerCase();
+            const present = (s.characters_present || '').toLowerCase();
+            return desc.includes(nameLower) || present.includes(nameLower);
+        });
+        const scenesToShow = relevant.length > 0 ? relevant : storyContext.scenes.slice(0, 5);
+        const label = relevant.length > 0 ? `SCENES FEATURING "${entityName}"` : 'SCENES IN PROJECT (first 5)';
+        const sceneList = scenesToShow.map(s => `  - ${s.name}${s.description ? `: ${s.description.substring(0, 150)}` : ''}`).join('\n');
+        lines.push(`${label}:\n${sceneList}`);
+    }
+
+    return lines.length > 0 ? lines.join('\n\n') + '\n' : '';
+}
+
+/**
  * Generate aesthetic suggestions for a project based on its context.
  * Returns AI-driven suggestions for style_aesthetic, atmosphere_mood,
  * lighting_directions, and cinematic_references.
@@ -116,7 +157,7 @@ OUTPUT VALID JSON ARRAY ONLY:
  * Supports model-specific prompts and turnaround shots.
  */
 async function generateCharacterSuggestions(context) {
-    const { character, project, kbContent, modelKBContent, targetModel, descriptionOnly } = context;
+    const { character, project, kbContent, modelKBContent, targetModel, descriptionOnly, storyContext } = context;
 
     const projectBlock = buildContextBlock('PROJECT', project);
 
@@ -130,22 +171,25 @@ CRITICAL RULE: Only use model syntax, parameters, and version numbers that appea
 
 ${modelNote}`;
 
+    // Build story context block for description enhancement
+    const storyBlock = buildStoryContext(storyContext, 'character', character.name);
+
     const userPrompt = descriptionOnly
         ? `Enhance this character's description and personality for an AI filmmaking project. Keep the character's core identity but make details specific, vivid, and optimized for AI image generation.
 
 ${kbContent ? `CORE KB PRINCIPLES:\n${kbContent}\n` : ''}
 ${projectBlock}
-
+${storyBlock}
 CHARACTER NAME: ${character.name || 'Unnamed Character'}
 ${character.description ? `EXISTING DESCRIPTION: ${character.description}` : ''}
 ${character.personality ? `EXISTING PERSONALITY: ${character.personality}` : ''}
 
-Expand and enhance the description and personality. Be specific — include exact physical details (eye color, hair texture, skin tone, build, wardrobe). Keep the original intent but make it production-ready.
+Expand and enhance the description and personality. Use the script and scene context to understand this character's role, arc, and relationships. Be specific — include exact physical details (eye color, hair texture, skin tone, build, wardrobe) that align with who this character is in the story. Keep the original intent but make it production-ready.
 
 OUTPUT VALID JSON ONLY:
 {
-  "description": "Detailed physical description covering: face (eye color, nose shape, jawline, distinguishing marks), age & skin (specific age range, skin tone with undertones), hair (style, color, length, texture), build & posture (body type, posture habits), wardrobe (default clothing, accessories). Written as a dense paragraph optimized for AI image generation prompts.",
-  "personality": "2-3 core personality traits with behavioral mannerisms. Written to guide expression and body language in generated images."
+  "description": "Detailed physical description covering: face (eye color, nose shape, jawline, distinguishing marks), age & skin (specific age range, skin tone with undertones), hair (style, color, length, texture), build & posture (body type, posture habits), wardrobe (default clothing, accessories). Ground choices in the character's story role and personality. Written as a dense paragraph optimized for AI image generation prompts.",
+  "personality": "2-3 core personality traits with behavioral mannerisms drawn from the script context. Written to guide expression and body language in generated images."
 }`
         : `Generate a detailed character bible for an AI filmmaking project.
 
@@ -216,7 +260,7 @@ OUTPUT VALID JSON ONLY:
  * Phase 3.6: Generate detailed object/prop suggestions.
  */
 async function generateObjectSuggestions(context) {
-    const { object, project, kbContent, modelKBContent, targetModel, descriptionOnly } = context;
+    const { object, project, kbContent, modelKBContent, targetModel, descriptionOnly, storyContext } = context;
 
     const projectBlock = buildContextBlock('PROJECT', project);
 
@@ -230,20 +274,23 @@ CRITICAL RULE: Only use model syntax, parameters, and version numbers that appea
 
 ${modelNote}`;
 
+    // Build story context block for description enhancement
+    const storyBlock = buildStoryContext(storyContext, 'object', object.name);
+
     const userPrompt = descriptionOnly
         ? `Enhance this object's description for an AI filmmaking project. Keep the object's core identity but make details specific, vivid, and optimized for AI image generation.
 
 ${kbContent ? `CORE KB PRINCIPLES:\n${kbContent}\n` : ''}
 ${projectBlock}
-
+${storyBlock}
 OBJECT NAME: ${object.name || 'Unnamed Object'}
 ${object.description ? `EXISTING DESCRIPTION: ${object.description}` : ''}
 
-Expand and enhance the description. Be specific — include exact material, color, texture, condition, dimensions, distinctive features, and contextual placement. Keep the original intent but make it production-ready.
+Expand and enhance the description. Use the script and scene context to understand this object's role in the story — how it's used, who handles it, what it means narratively. Be specific — include exact material, color, texture, condition, dimensions, distinctive features, and contextual placement. Keep the original intent but make it production-ready.
 
 OUTPUT VALID JSON ONLY:
 {
-  "description": "Detailed physical description covering: material, color, texture, condition (new/worn/damaged), dimensions/scale relative to human, distinctive features, contextual placement. Written as a dense paragraph optimized for AI image generation prompts."
+  "description": "Detailed physical description covering: material, color, texture, condition (new/worn/damaged), dimensions/scale relative to human, distinctive features, contextual placement. Ground details in the story context — if the script tells you this is a weathered heirloom, make it look like one. Written as a dense paragraph optimized for AI image generation prompts."
 }`
         : `Generate a detailed object/prop description for an AI filmmaking project.
 

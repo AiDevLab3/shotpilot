@@ -166,11 +166,21 @@ export default function createAIRoutes({
 
             // Description-only mode: skip model picking and full KB, just enhance text
             if (descriptionOnly) {
+                // Fetch story context so the enhancement knows this character's role
+                const conversation = db.prepare('SELECT script_content FROM conversations WHERE project_id = ?').get(projectId);
+                const otherCharacters = db.prepare('SELECT name, description FROM characters WHERE project_id = ? AND name != ?').all(projectId, name);
+                const scenes = db.prepare('SELECT name, description, characters_present FROM scenes WHERE project_id = ? ORDER BY order_index ASC').all(projectId);
+
                 const suggestions = await generateCharacterSuggestions({
                     character: { name, description, personality },
                     project,
                     kbContent,
                     descriptionOnly: true,
+                    storyContext: {
+                        script: conversation?.script_content || null,
+                        otherCharacters,
+                        scenes,
+                    },
                 });
                 logAIFeatureUsage(db, req.session.userId, 'character_enhance', projectId);
                 return res.json({ ...suggestions, kbFilesUsed });
@@ -369,11 +379,21 @@ export default function createAIRoutes({
 
             // Description-only mode: skip model picking and full KB, just enhance text
             if (descriptionOnly) {
+                // Fetch story context so the enhancement knows WHY this object matters
+                const conversation = db.prepare('SELECT script_content FROM conversations WHERE project_id = ?').get(projectId);
+                const characters = db.prepare('SELECT name, description FROM characters WHERE project_id = ?').all(projectId);
+                const scenes = db.prepare('SELECT name, description FROM scenes WHERE project_id = ? ORDER BY order_index ASC').all(projectId);
+
                 const suggestions = await generateObjectSuggestions({
                     object: { name, description },
                     project,
                     kbContent,
                     descriptionOnly: true,
+                    storyContext: {
+                        script: conversation?.script_content || null,
+                        characters,
+                        scenes,
+                    },
                 });
                 logAIFeatureUsage(db, req.session.userId, 'object_enhance', projectId);
                 return res.json({ ...suggestions, kbFilesUsed });
