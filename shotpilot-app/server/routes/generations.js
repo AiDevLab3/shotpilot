@@ -1,6 +1,12 @@
 import { Router } from 'express';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-export default function createGenerationRoutes({ db, sanitize }) {
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export default function createGenerationRoutes({ db, sanitize, analyzeEntityImage, loadKBForModel, readKBFile }) {
     const router = Router();
 
     // ── AI Generation History ──────────────────────────────────────
@@ -74,7 +80,7 @@ export default function createGenerationRoutes({ db, sanitize }) {
 
         if (existing) {
             db.prepare(
-                'UPDATE entity_reference_images SET image_url = ?, label = ?, prompt = ? WHERE id = ?'
+                'UPDATE entity_reference_images SET image_url = ?, label = ?, prompt = ?, analysis_json = NULL WHERE id = ?'
             ).run(image_url, label || null, prompt || null, existing.id);
             res.json({ id: existing.id, updated: true });
         } else {
@@ -82,6 +88,104 @@ export default function createGenerationRoutes({ db, sanitize }) {
                 'INSERT INTO entity_reference_images (entity_type, entity_id, image_type, image_url, label, prompt) VALUES (?, ?, ?, ?, ?, ?)'
             ).run(entity_type, entity_id, image_type, image_url, label || null, prompt || null);
             res.json({ id: info.lastInsertRowid });
+        }
+    });
+
+    // ── Analyze an uploaded entity image against its prompt ────────
+    router.post('/api/entity-images/:id/analyze', async (req, res) => {
+        try {
+            const { id } = req.params;
+            const entityImg = db.prepare('SELECT * FROM entity_reference_images WHERE id = ?').get(id);
+            if (!entityImg) return res.status(404).json({ error: 'Entity image not found' });
+            if (!entityImg.image_url) return res.status(400).json({ error: 'No image uploaded' });
+            if (!entityImg.prompt) return res.status(400).json({ error: 'No prompt associated with this image — analysis needs the original prompt to compare against' });
+
+            // Resolve image path on disk
+            const imagePath = entityImg.image_url.startsWith('/')
+                ? path.join(__dirname, '../..', entityImg.image_url)
+                : entityImg.image_url;
+
+            if (!fs.existsSync(imagePath)) {
+                return res.status(404).json({ error: 'Image file not found on disk' });
+            }
+
+            const imageBuffer = fs.readFileSync(imagePath);
+
+            // Detect mime type
+            let mimeType = 'image/jpeg';
+            const ext = path.extname(imagePath).toLowerCase();
+            if (ext) {
+                const mimeMap = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp' };
+                mimeType = mimeMap[ext] || 'image/jpeg';
+            } else {
+                if (imageBuffer[0] === 0x89 && imageBuffer[1] === 0x50) mimeType = 'image/png';
+                else if (imageBuffer[0] === 0x47 && imageBuffer[1] === 0x49) mimeType = 'image/gif';
+                else if (imageBuffer[0] === 0x52 && imageBuffer[1] === 0x49) mimeType = 'image/webp';
+            }
+
+            // Look up entity details for context
+            let entityName = entityImg.label || '';
+            let entityDescription = '';
+            let project = null;
+
+            if (entityImg.entity_type === 'character') {
+                const char = db.prepare('SELECT * FROM characters WHERE id = ?').get(entityImg.entity_id);
+                if (char) {
+                    entityName = char.name || entityName;
+                    entityDescription = char.description || '';
+                    project = db.prepare('SELECT * FROM projects WHERE id = ?').get(char.project_id);
+                }
+            } else if (entityImg.entity_type === 'object') {
+                const obj = db.prepare('SELECT * FROM objects WHERE id = ?').get(entityImg.entity_id);
+                if (obj) {
+                    entityName = obj.name || entityName;
+                    entityDescription = obj.description || '';
+                    project = db.prepare('SELECT * FROM projects WHERE id = ?').get(obj.project_id);
+                }
+            }
+
+            // Load KB for quality evaluation
+            let kbContent = '';
+            try {
+                const qualityKB = readKBFile('03_Pack_Image_Quality_Control.md');
+                const coreKB = readKBFile('01_Core_Realism_Principles.md');
+                kbContent = [qualityKB, coreKB].filter(Boolean).join('\n\n');
+            } catch (err) {
+                console.warn('[entity-analyze] Could not load KB:', err.message);
+            }
+
+            const analysis = await analyzeEntityImage({
+                imageBuffer,
+                mimeType,
+                originalPrompt: entityImg.prompt,
+                entityType: entityImg.entity_type,
+                entityName,
+                entityDescription,
+                project,
+                kbContent,
+            });
+
+            // Store analysis results on the entity image record
+            db.prepare('UPDATE entity_reference_images SET analysis_json = ? WHERE id = ?')
+                .run(JSON.stringify(analysis), id);
+
+            res.json(analysis);
+        } catch (error) {
+            console.error('Entity image analysis error:', error);
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Get stored analysis results for an entity image
+    router.get('/api/entity-images/:id/analysis', (req, res) => {
+        try {
+            const { id } = req.params;
+            const row = db.prepare('SELECT analysis_json FROM entity_reference_images WHERE id = ?').get(id);
+            if (!row) return res.status(404).json({ error: 'Entity image not found' });
+            if (!row.analysis_json) return res.json({ analyzed: false });
+            res.json({ analyzed: true, ...JSON.parse(row.analysis_json) });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
         }
     });
 

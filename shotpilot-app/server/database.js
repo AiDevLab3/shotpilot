@@ -314,6 +314,17 @@ export const initDatabase = () => {
         console.error("Phase 8 (AI Generations + Entity Images) Migration failed:", e);
     }
 
+    // Phase 8b: Add analysis_json column to entity_reference_images (for image analysis results)
+    try {
+        const cols = db.prepare("PRAGMA table_info(entity_reference_images)").all();
+        if (!cols.find(c => c.name === 'analysis_json')) {
+            db.exec('ALTER TABLE entity_reference_images ADD COLUMN analysis_json TEXT');
+            console.log('Added analysis_json column to entity_reference_images');
+        }
+    } catch (e) {
+        console.error("Phase 8b migration failed:", e);
+    }
+
     // Create default test user if not exists
     try {
         const testUser = db.prepare('SELECT * FROM users WHERE email = ?').get('test@shotpilot.com');

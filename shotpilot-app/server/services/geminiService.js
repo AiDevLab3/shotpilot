@@ -9,7 +9,7 @@
  *   - ai/shotPlanning.js     — generateShotPlan, readinessDialogue
  *   - ai/scriptAnalysis.js   — analyzeScript
  *   - ai/creativeDirector.js — creativeDirectorCollaborate, summarizeConversation, refineContent
- *   - ai/imageAudit.js       — holisticImageAudit
+ *   - ai/imageAudit.js       — holisticImageAudit, analyzeEntityImage
  *
  * This file re-exports everything so existing imports continue to work unchanged.
  */
@@ -21,4 +21,4 @@ export { generateAestheticSuggestions, generateCharacterSuggestions, generateObj
 export { generateShotPlan, readinessDialogue } from './ai/shotPlanning.js';
 export { analyzeScript } from './ai/scriptAnalysis.js';
 export { refineContent, creativeDirectorCollaborate, summarizeConversation } from './ai/creativeDirector.js';
-export { holisticImageAudit } from './ai/imageAudit.js';
+export { holisticImageAudit, analyzeEntityImage } from './ai/imageAudit.js';

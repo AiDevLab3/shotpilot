@@ -207,6 +207,113 @@ OUTPUT VALID JSON ONLY:
     }
 }
 
+/**
+ * ENTITY IMAGE ANALYSIS — Lightweight image-vs-prompt comparison.
+ * Analyzes an uploaded character/object reference image against the prompt
+ * that was used to generate it, checking for mismatches, AI artifacts,
+ * and suggesting prompt fixes.
+ *
+ * Returns match_score (0-100), verdict, specific issues, what works,
+ * prompt adjustments, and a complete revised prompt ready to use.
+ */
+async function analyzeEntityImage({ imageBuffer, mimeType, originalPrompt, entityType, entityName, entityDescription, project, kbContent }) {
+    const systemInstruction = `You are an expert AI image quality evaluator for character and object reference images in film production. You analyze whether an AI-generated image matches the prompt that was used to generate it.
+
+Your analysis should be concise and actionable. Focus on:
+1. Does the image match the intended description and prompt?
+2. Are there any AI artifacts or quality issues (plastic skin, wrong anatomy, style drift)?
+3. What specific prompt changes would improve the result?
+
+Be direct and specific — speak like a VFX supervisor reviewing dailies, not a generic AI.
+Don't say "consider improving X" — say exactly what to add, remove, or change in the prompt.
+
+SCORING:
+- 90-100: Strong match, minor tweaks at most
+- 70-89: Good base, needs targeted adjustments
+- 50-69: Noticeable mismatches, prompt needs rework
+- 0-49: Significant mismatch, likely needs regeneration with different approach`;
+
+    const contextLines = [];
+    if (project) {
+        contextLines.push(`Project: ${project.name}`);
+        if (project.genre) contextLines.push(`Genre: ${project.genre}`);
+        if (project.visual_style) contextLines.push(`Visual Style: ${project.visual_style}`);
+        if (project.color_palette) contextLines.push(`Color Palette: ${project.color_palette}`);
+    }
+    const entityLabel = entityType === 'character' ? 'Character' : 'Object';
+    if (entityName) contextLines.push(`${entityLabel} Name: ${entityName}`);
+    if (entityDescription) contextLines.push(`${entityLabel} Description: ${entityDescription}`);
+
+    const userPrompt = `${kbContent ? `KNOWLEDGE BASE (reference for quality evaluation):\n${kbContent}\n\n` : ''}${contextLines.length > 0 ? `CONTEXT:\n${contextLines.join('\n')}\n\n` : ''}ORIGINAL PROMPT USED TO GENERATE THIS IMAGE:
+${originalPrompt}
+
+Analyze the uploaded image against the original prompt and ${entityType} description.
+
+OUTPUT VALID JSON ONLY:
+{
+  "match_score": <0-100>,
+  "verdict": "STRONG MATCH" | "NEEDS TWEAKS" | "SIGNIFICANT MISMATCH",
+  "issues": [
+    {
+      "category": "description_mismatch" | "style_issue" | "ai_artifact" | "composition" | "quality",
+      "detail": "What specifically is wrong",
+      "severity": "minor" | "moderate" | "major"
+    }
+  ],
+  "what_works": ["Specific element that matches well"],
+  "prompt_adjustments": ["Specific change: add/remove/modify X in the prompt"],
+  "revised_prompt": "Complete revised prompt with all fixes applied, ready to copy and paste into the image generator",
+  "summary": "1-2 sentence assessment"
+}`;
+
+    const parts = [
+        {
+            inlineData: {
+                mimeType: mimeType || 'image/jpeg',
+                data: imageBuffer.toString('base64'),
+            }
+        },
+        { text: '↑ Analyze this AI-generated image against the original prompt.\n\n' + userPrompt }
+    ];
+
+    try {
+        const text = await callGemini({
+            parts,
+            systemInstruction,
+            thinkingLevel: 'medium',
+            maxOutputTokens: 3072,
+        });
+
+        let parsed;
+        try {
+            parsed = JSON.parse(text);
+        } catch (e) {
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                parsed = JSON.parse(jsonMatch[0]);
+            } else {
+                throw new Error('Could not parse entity image analysis JSON');
+            }
+        }
+
+        return {
+            match_score: Math.min(100, Math.max(0, parsed.match_score || 0)),
+            verdict: ['STRONG MATCH', 'NEEDS TWEAKS', 'SIGNIFICANT MISMATCH'].includes(parsed.verdict)
+                ? parsed.verdict
+                : (parsed.match_score >= 90 ? 'STRONG MATCH' : parsed.match_score >= 70 ? 'NEEDS TWEAKS' : 'SIGNIFICANT MISMATCH'),
+            issues: Array.isArray(parsed.issues) ? parsed.issues : [],
+            what_works: Array.isArray(parsed.what_works) ? parsed.what_works : [],
+            prompt_adjustments: Array.isArray(parsed.prompt_adjustments) ? parsed.prompt_adjustments : [],
+            revised_prompt: parsed.revised_prompt || originalPrompt,
+            summary: parsed.summary || '',
+        };
+    } catch (error) {
+        console.error('[gemini] Entity image analysis error:', error);
+        throw error;
+    }
+}
+
 export {
     holisticImageAudit,
+    analyzeEntityImage,
 };

@@ -583,5 +583,13 @@ export const deleteEntityImage = async (id: number): Promise<void> => {
     await apiCall(`/entity-images/${id}`, { method: 'DELETE' });
 };
 
+export const analyzeEntityImage = async (imageId: number): Promise<any> => {
+    return apiCall(`/entity-images/${imageId}/analyze`, { method: 'POST' });
+};
+
+export const getEntityImageAnalysis = async (imageId: number): Promise<any> => {
+    return apiCall(`/entity-images/${imageId}/analysis`);
+};
+
 // Deprecated or Unused in Server Mode
 export const saveDB = async () => { };

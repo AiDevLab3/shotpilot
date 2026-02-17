@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Loader2, Check, Copy, ChevronDown, Send, MessageCircle, RotateCw, HelpCircle, Upload, X, Clock, Image as ImageIcon } from 'lucide-react';
+import { Sparkles, Loader2, Check, Copy, ChevronDown, Send, MessageCircle, RotateCw, HelpCircle, Upload, X, Clock, Image as ImageIcon, Search, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import type { CharacterSuggestions, AIModel } from '../types/schema';
-import { getCharacterSuggestions, getAvailableModels, refineContent, getLatestGeneration, saveGeneration, getGenerations, getEntityImages, saveEntityImage, deleteEntityImage, fileToBase64 } from '../services/api';
+import { getCharacterSuggestions, getAvailableModels, refineContent, getLatestGeneration, saveGeneration, getGenerations, getEntityImages, saveEntityImage, deleteEntityImage, fileToBase64, analyzeEntityImage } from '../services/api';
 
 interface CharacterAIAssistantProps {
     projectId: number;
@@ -47,6 +47,10 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
     const [activeGenerationId, setActiveGenerationId] = useState<number | null>(null);
     const [entityImages, setEntityImages] = useState<Record<string, any>>({});
     const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
+    const [analyzingSlot, setAnalyzingSlot] = useState<string | null>(null);
+    const [analysisResults, setAnalysisResults] = useState<Record<string, any>>({});
+    const [analysisExpanded, setAnalysisExpanded] = useState<Record<string, boolean>>({});
+    const [revisedPromptCopied, setRevisedPromptCopied] = useState<string | null>(null);
     const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
     const nameIsEmpty = !characterName || characterName.trim().length === 0;
@@ -89,8 +93,15 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
         try {
             const images = await getEntityImages('character', characterId);
             const map: Record<string, any> = {};
-            images.forEach((img: any) => { map[img.image_type] = img; });
+            const analyses: Record<string, any> = {};
+            images.forEach((img: any) => {
+                map[img.image_type] = img;
+                if (img.analysis_json) {
+                    try { analyses[img.image_type] = JSON.parse(img.analysis_json); } catch { /* ignore */ }
+                }
+            });
             setEntityImages(map);
+            setAnalysisResults(prev => ({ ...prev, ...analyses }));
         } catch { /* ignore */ }
     };
 
@@ -121,10 +132,44 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
         if (!img) return;
         try {
             await deleteEntityImage(img.id);
+            setAnalysisResults(prev => { const next = { ...prev }; delete next[slot]; return next; });
+            setAnalysisExpanded(prev => { const next = { ...prev }; delete next[slot]; return next; });
             await loadEntityImages();
         } catch (err) {
             console.error('Failed to remove image', err);
         }
+    };
+
+    const handleAnalyzeImage = async (slot: string) => {
+        const img = entityImages[slot];
+        if (!img) return;
+        setAnalyzingSlot(slot);
+        try {
+            const result = await analyzeEntityImage(img.id);
+            setAnalysisResults(prev => ({ ...prev, [slot]: result }));
+            setAnalysisExpanded(prev => ({ ...prev, [slot]: true }));
+        } catch (err: any) {
+            console.error('Failed to analyze image', err);
+            setAnalysisResults(prev => ({ ...prev, [slot]: { error: err.message || 'Analysis failed' } }));
+            setAnalysisExpanded(prev => ({ ...prev, [slot]: true }));
+        } finally {
+            setAnalyzingSlot(null);
+        }
+    };
+
+    const handleCopyRevisedPrompt = async (slot: string, prompt: string) => {
+        try {
+            await navigator.clipboard.writeText(prompt);
+        } catch {
+            const textarea = document.createElement('textarea');
+            textarea.value = prompt;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        }
+        setRevisedPromptCopied(slot);
+        setTimeout(() => setRevisedPromptCopied(null), 2000);
     };
 
     const loadHistoryGeneration = (gen: any) => {
@@ -284,6 +329,96 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
         } finally {
             setRefining(false);
         }
+    };
+
+    const renderAnalysisResults = (slot: string) => {
+        const analysis = analysisResults[slot];
+        if (!analysis) return null;
+        const isExpanded = analysisExpanded[slot];
+
+        if (analysis.error) {
+            return (
+                <div style={{ marginTop: '4px', padding: '6px 8px', backgroundColor: '#2a1a1a', border: '1px solid #7f1d1d', borderRadius: '4px', fontSize: '10px', color: '#fca5a5' }}>
+                    Analysis failed: {analysis.error}
+                </div>
+            );
+        }
+
+        const verdictColor = analysis.verdict === 'STRONG MATCH' ? '#10b981' : analysis.verdict === 'NEEDS TWEAKS' ? '#f59e0b' : '#ef4444';
+        const VerdictIcon = analysis.verdict === 'STRONG MATCH' ? CheckCircle2 : AlertTriangle;
+
+        return (
+            <div style={{ marginTop: '6px', backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: '6px', overflow: 'hidden' }}>
+                <button
+                    onClick={() => setAnalysisExpanded(prev => ({ ...prev, [slot]: !prev[slot] }))}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '6px 8px', backgroundColor: 'transparent', border: 'none', cursor: 'pointer', color: '#9ca3af' }}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <VerdictIcon size={12} color={verdictColor} />
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: verdictColor }}>{analysis.verdict}</span>
+                        <span style={{ fontSize: '10px', color: '#6b7280' }}>Score: {analysis.match_score}/100</span>
+                    </div>
+                    <ChevronDown size={12} style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+                </button>
+                {isExpanded && (
+                    <div style={{ padding: '8px', borderTop: '1px solid #27272a' }}>
+                        {analysis.summary && (
+                            <p style={{ margin: '0 0 8px 0', fontSize: '11px', color: '#d1d5db', lineHeight: '1.5' }}>{analysis.summary}</p>
+                        )}
+                        {analysis.what_works && analysis.what_works.length > 0 && (
+                            <div style={{ marginBottom: '8px' }}>
+                                <span style={{ fontSize: '10px', fontWeight: 600, color: '#10b981', textTransform: 'uppercase' }}>What works</span>
+                                <ul style={{ margin: '2px 0 0 0', padding: '0 0 0 14px', listStyle: 'disc' }}>
+                                    {analysis.what_works.map((item: string, i: number) => (
+                                        <li key={i} style={{ fontSize: '10px', color: '#a7f3d0', lineHeight: '1.5' }}>{item}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                        {analysis.issues && analysis.issues.length > 0 && (
+                            <div style={{ marginBottom: '8px' }}>
+                                <span style={{ fontSize: '10px', fontWeight: 600, color: '#f59e0b', textTransform: 'uppercase' }}>Issues found</span>
+                                <ul style={{ margin: '2px 0 0 0', padding: '0 0 0 14px', listStyle: 'disc' }}>
+                                    {analysis.issues.map((issue: any, i: number) => (
+                                        <li key={i} style={{ fontSize: '10px', color: issue.severity === 'major' ? '#fca5a5' : issue.severity === 'moderate' ? '#fde68a' : '#d1d5db', lineHeight: '1.5' }}>
+                                            <span style={{ fontWeight: 600 }}>[{issue.severity}]</span> {issue.detail}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                        {analysis.prompt_adjustments && analysis.prompt_adjustments.length > 0 && (
+                            <div style={{ marginBottom: '8px' }}>
+                                <span style={{ fontSize: '10px', fontWeight: 600, color: '#a78bfa', textTransform: 'uppercase' }}>Prompt fixes</span>
+                                <ul style={{ margin: '2px 0 0 0', padding: '0 0 0 14px', listStyle: 'disc' }}>
+                                    {analysis.prompt_adjustments.map((adj: string, i: number) => (
+                                        <li key={i} style={{ fontSize: '10px', color: '#c4b5fd', lineHeight: '1.5' }}>{adj}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                        {analysis.revised_prompt && (
+                            <div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                    <span style={{ fontSize: '10px', fontWeight: 600, color: '#22d3ee', textTransform: 'uppercase' }}>Revised prompt</span>
+                                    <button
+                                        onClick={() => handleCopyRevisedPrompt(slot, analysis.revised_prompt)}
+                                        style={styles.copyBtn}
+                                    >
+                                        {revisedPromptCopied === slot ? (
+                                            <><Check size={10} color="#10b981" /> Copied</>
+                                        ) : (
+                                            <><Copy size={10} /> Copy</>
+                                        )}
+                                    </button>
+                                </div>
+                                <p style={{ ...styles.promptText, margin: 0, fontSize: '10px', lineHeight: '1.5' }}>{analysis.revised_prompt}</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        );
     };
 
     const quickActions = [
@@ -595,9 +730,31 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
                         {characterId && (
                             <div style={styles.uploadSlot}>
                                 {entityImages['reference'] ? (
-                                    <div style={styles.uploadPreview}>
-                                        <img src={entityImages['reference'].image_url} alt="Reference" style={styles.uploadImg} />
-                                        <button onClick={() => handleRemoveImage('reference')} style={styles.uploadRemoveBtn}><X size={10} /></button>
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                                            <div style={styles.uploadPreview}>
+                                                <img src={entityImages['reference'].image_url} alt="Reference" style={styles.uploadImg} />
+                                                <button onClick={() => handleRemoveImage('reference')} style={styles.uploadRemoveBtn}><X size={10} /></button>
+                                            </div>
+                                            <button
+                                                onClick={() => handleAnalyzeImage('reference')}
+                                                disabled={analyzingSlot === 'reference'}
+                                                style={{
+                                                    ...styles.analyzeBtn,
+                                                    opacity: analyzingSlot === 'reference' ? 0.5 : 1,
+                                                    cursor: analyzingSlot === 'reference' ? 'not-allowed' : 'pointer',
+                                                }}
+                                            >
+                                                {analyzingSlot === 'reference' ? (
+                                                    <><Loader2 size={11} className="spin" /> Analyzing...</>
+                                                ) : analysisResults['reference'] && !analysisResults['reference'].error ? (
+                                                    <><Search size={11} /> Re-analyze</>
+                                                ) : (
+                                                    <><Search size={11} /> Analyze</>
+                                                )}
+                                            </button>
+                                        </div>
+                                        {renderAnalysisResults('reference')}
                                     </div>
                                 ) : (
                                     <label style={styles.uploadSlotLabel}>
@@ -655,9 +812,31 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
                                         {characterId && (
                                             <div style={{ ...styles.uploadSlot, marginTop: '4px' }}>
                                                 {entityImages[slotKey] ? (
-                                                    <div style={styles.uploadPreview}>
-                                                        <img src={entityImages[slotKey].image_url} alt={turnaroundLabel} style={styles.uploadImg} />
-                                                        <button onClick={() => handleRemoveImage(slotKey)} style={styles.uploadRemoveBtn}><X size={10} /></button>
+                                                    <div>
+                                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                                                            <div style={styles.uploadPreview}>
+                                                                <img src={entityImages[slotKey].image_url} alt={turnaroundLabel} style={styles.uploadImg} />
+                                                                <button onClick={() => handleRemoveImage(slotKey)} style={styles.uploadRemoveBtn}><X size={10} /></button>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => handleAnalyzeImage(slotKey)}
+                                                                disabled={analyzingSlot === slotKey}
+                                                                style={{
+                                                                    ...styles.analyzeBtn,
+                                                                    opacity: analyzingSlot === slotKey ? 0.5 : 1,
+                                                                    cursor: analyzingSlot === slotKey ? 'not-allowed' : 'pointer',
+                                                                }}
+                                                            >
+                                                                {analyzingSlot === slotKey ? (
+                                                                    <><Loader2 size={11} className="spin" /> Analyzing...</>
+                                                                ) : analysisResults[slotKey] && !analysisResults[slotKey].error ? (
+                                                                    <><Search size={11} /> Re-analyze</>
+                                                                ) : (
+                                                                    <><Search size={11} /> Analyze</>
+                                                                )}
+                                                            </button>
+                                                        </div>
+                                                        {renderAnalysisResults(slotKey)}
                                                     </div>
                                                 ) : (
                                                     <label style={styles.uploadSlotLabel}>
@@ -1084,5 +1263,19 @@ const styles: Record<string, React.CSSProperties> = {
         justifyContent: 'center',
         cursor: 'pointer',
         padding: 0,
+    },
+    analyzeBtn: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px',
+        padding: '4px 8px',
+        backgroundColor: '#1e293b',
+        border: '1px solid #334155',
+        borderRadius: '4px',
+        color: '#93c5fd',
+        fontSize: '10px',
+        fontWeight: 600,
+        cursor: 'pointer',
+        whiteSpace: 'nowrap' as const,
     },
 };

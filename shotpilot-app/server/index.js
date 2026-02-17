@@ -10,7 +10,7 @@ import { setupAuth, requireAuth, checkCredits } from './middleware/auth.js';
 import { deductCredit, getUserCredits, getUsageStats, logAIFeatureUsage, getAIUsageStats } from './services/creditService.js';
 import { loadKBForModel, getAvailableModels, readKBFile } from './services/kbLoader.js';
 import { calculateCompleteness, checkReadinessWithKB } from './services/qualityCheck.js';
-import { generateRecommendations, generatePrompt, analyzeReadiness, generateAestheticSuggestions, generateCharacterSuggestions, generateShotPlan, readinessDialogue, analyzeScript, generateObjectSuggestions, refineContent, creativeDirectorCollaborate, summarizeConversation, holisticImageAudit, refinePromptFromAudit } from './services/geminiService.js';
+import { generateRecommendations, generatePrompt, analyzeReadiness, generateAestheticSuggestions, generateCharacterSuggestions, generateShotPlan, readinessDialogue, analyzeScript, generateObjectSuggestions, refineContent, creativeDirectorCollaborate, summarizeConversation, holisticImageAudit, refinePromptFromAudit, analyzeEntityImage } from './services/geminiService.js';
 
 // Route modules
 import createAuthRoutes from './routes/auth.js';
@@ -131,7 +131,7 @@ app.use(createImageRoutes({
     deductCredit, logAIFeatureUsage,
 }));
 app.use(createConversationRoutes({ db, requireAuth }));
-app.use(createGenerationRoutes({ db, sanitize }));
+app.use(createGenerationRoutes({ db, sanitize, analyzeEntityImage, loadKBForModel, readKBFile }));
 
 // Only listen when run directly (not imported for testing)
 if (process.env.NODE_ENV !== 'test') {
