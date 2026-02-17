@@ -1,14 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import type { AIModel, Shot, Scene, Project } from '../types/schema';
-import { X, Sparkles, Loader2, Copy, Check, Clapperboard, Camera, Info } from 'lucide-react';
-import { getAvailableModels, generatePrompt, checkShotReadiness } from '../services/api';
-// Assuming api export issues, adapting to imports. 
-// If api is a default export object in service, verify. 
-// Based on previous file, it was `import { getAvailableModels... } from '../services/api'`.
+import { X, Sparkles, Loader2, Copy, Check, Clapperboard, Camera, ChevronDown, ChevronUp, Save } from 'lucide-react';
+import { getAvailableModels, generatePrompt, checkShotReadiness, updateShot, updateScene, updateProject } from '../services/api';
 
-interface ReadinessScore {
+interface MissingField {
+    field: string;
+    weight: number;
+    label: string;
+    description: string;
+    source: 'shot' | 'scene' | 'project';
+}
+
+interface ReadinessData {
     score: number;
+    percentage: number;
     tier: 'draft' | 'production';
+    allMissing: MissingField[];
 }
 
 interface GenerationResult {
@@ -23,25 +30,46 @@ interface GeneratePromptModalProps {
     isOpen: boolean;
     onClose: () => void;
     shot: Shot;
-    scene: Scene; // Derived from props in parent
-    project: Project; // Derived from props in parent
+    scene: Scene;
+    project: Project;
     modelType?: 'image' | 'video';
     onGenerated?: () => void;
-    // Legacy props support if needed during refactor, but we prefer the new structure
     shotId?: number;
     shotContext?: any;
     currentCredits?: number;
 }
+
+// Maps qualityCheck field names → actual API field names
+const FIELD_TO_API: Record<string, string> = {
+    shot_description: 'description',
+    shot_type: 'shot_type',
+    camera_angle: 'camera_angle',
+    camera_movement: 'camera_movement',
+    focal_length: 'focal_length',
+    blocking: 'blocking',
+    camera_lens: 'camera_lens',
+    scene_lighting_notes: 'lighting_notes',
+    scene_mood_tone: 'mood_tone',
+    style_aesthetic: 'style_aesthetic',
+    scene_location_setting: 'location_setting',
+    scene_time_of_day: 'time_of_day',
+};
+
+// Dropdown options for fields that have preset choices
+const DROPDOWN_OPTIONS: Record<string, string[]> = {
+    shot_type: ['Wide', 'Medium', 'Close-up', 'Extreme Close-up'],
+    camera_angle: ['Eye Level', 'Low Angle', 'High Angle', "Bird's Eye", 'Dutch Angle', "Worm's Eye", 'Over the Shoulder'],
+    camera_movement: ['Static', 'Pan', 'Tilt', 'Dolly', 'Handheld'],
+};
 
 export function GeneratePromptModal({
     isOpen,
     onClose,
     shot,
     scene,
-
+    project,
     modelType = 'image',
     onGenerated,
-    // Fallbacks
 }: GeneratePromptModalProps) {
     const [availableModels, setAvailableModels] = useState<AIModel[]>([]);
     const [model, setModel] = useState<string>('');
@@ -50,66 +78,57 @@ export function GeneratePromptModal({
     const [error, setError] = useState<string | null>(null);
     const [result, setResult] = useState<GenerationResult | null>(null);
     const [copied, setCopied] = useState(false);
-    const [readinessScore, setReadinessScore] = useState<ReadinessScore | null>(null);
-    const [showReadinessInfo, setShowReadinessInfo] = useState(false);
+    const [readiness, setReadiness] = useState<ReadinessData | null>(null);
+    const [showGaps, setShowGaps] = useState(false);
+    const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
+    const [savingField, setSavingField] = useState<string | null>(null);
+    const [savedFields, setSavedFields] = useState<Set<string>>(new Set());
 
-    // Dynamic UI
     const isVideoMode = modelType === 'video';
     const Icon = isVideoMode ? Clapperboard : Camera;
     const modelLabel = isVideoMode ? 'VIDEO MODEL' : 'STORYBOARD MODEL';
 
-    // Theme Colors
     const theme = isVideoMode ? {
-        accent: '#a855f7', // purple-500
-        bg: '#581c87', // purple-900
+        accent: '#a855f7',
+        bg: '#581c87',
         border: 'rgba(168, 85, 247, 0.3)',
-        hover: '#7e22ce', // purple-700
     } : {
-        accent: '#14b8a6', // teal-500
-        bg: '#0f766e', // teal-700
+        accent: '#14b8a6',
+        bg: '#0f766e',
         border: 'rgba(20, 184, 166, 0.3)',
-        hover: '#0d9488', // teal-600
     };
 
     useEffect(() => {
         if (isOpen) {
-            resetState();
+            setResult(null);
+            setError(null);
+            setCopied(false);
+            setLoading(true);
+            setShowGaps(false);
+            setFieldValues({});
+            setSavedFields(new Set());
             fetchData();
         }
     }, [isOpen, modelType, shot?.id]);
 
-    const resetState = () => {
-        setResult(null);
-        setError(null);
-        setCopied(false);
-        setLoading(true);
-    };
-
     const fetchData = async () => {
         try {
-            // Models
             const models = await getAvailableModels();
-            const filtered = models.filter(m => m.type === modelType);
+            const filtered = models.filter((m: AIModel) => m.type === modelType);
             setAvailableModels(filtered);
 
-            // Default selection
             if (filtered.length > 0) {
                 const defaultName = isVideoMode ? 'veo-3.1' : 'higgsfield';
-                const hasDefault = filtered.find(m => m.name === defaultName);
+                const hasDefault = filtered.find((m: AIModel) => m.name === defaultName);
                 setModel(hasDefault ? defaultName : filtered[0].name);
             } else {
                 setModel('');
             }
 
-            // Prompt Readiness Score
             if (shot?.id) {
-                const rs = await checkShotReadiness(shot.id).catch(e => {
-                    console.warn('Failed to load readiness score', e);
-                    return null;
-                });
-                if (rs) setReadinessScore(rs);
+                const rs = await checkShotReadiness(shot.id).catch(() => null);
+                if (rs) setReadiness(rs);
             }
-
         } catch (err) {
             console.error('Failed to load modal data:', err);
             setError('Failed to load available models.');
@@ -118,15 +137,45 @@ export function GeneratePromptModal({
         }
     };
 
+    const refreshReadiness = useCallback(async () => {
+        if (!shot?.id) return;
+        const rs = await checkShotReadiness(shot.id).catch(() => null);
+        if (rs) setReadiness(rs);
+    }, [shot?.id]);
+
+    const handleSaveField = async (field: string, value: string) => {
+        if (!value.trim()) return;
+        const apiField = FIELD_TO_API[field];
+        if (!apiField) return;
+
+        setSavingField(field);
+        try {
+            const missing = readiness?.allMissing?.find(m => m.field === field);
+            const source = missing?.source || 'shot';
+
+            if (source === 'shot') {
+                await updateShot(shot.id, { [apiField]: value } as any);
+            } else if (source === 'scene' && scene?.id) {
+                await updateScene(scene.id, { [apiField]: value } as any);
+            } else if (source === 'project' && project?.id) {
+                await updateProject(project.id, { [apiField]: value } as any);
+            }
+
+            setSavedFields(prev => new Set(prev).add(field));
+            await refreshReadiness();
+        } catch (err) {
+            console.error('Failed to save field:', field, err);
+        } finally {
+            setSavingField(null);
+        }
+    };
+
     const handleGenerate = async () => {
         if (!model) return;
         setGenerating(true);
         setError(null);
-
         try {
-            // Use shot.id from props
             const res = await generatePrompt(shot.id, model);
-
             const modelObj = availableModels.find(m => m.name === model);
             setResult({
                 prompt: res.generated_prompt || '',
@@ -135,7 +184,6 @@ export function GeneratePromptModal({
                 qualityTier: res.quality_tier || 'draft',
                 creditsRemaining: res.credits_remaining || 0,
             });
-
             if (onGenerated) onGenerated();
         } catch (err: any) {
             console.error('Generation Error:', err);
@@ -155,6 +203,16 @@ export function GeneratePromptModal({
 
     if (!isOpen) return null;
 
+    const missingFields = readiness?.allMissing?.filter(f => !savedFields.has(f.field)) || [];
+    const score = readiness?.score ?? readiness?.percentage ?? 0;
+    const tier = readiness?.tier || 'draft';
+    const scoreColor = tier === 'production' ? '#10b981' : '#fbbf24';
+    const hasMissing = missingFields.length > 0;
+
+    // Split missing fields into shot vs context
+    const missingShotFields = missingFields.filter(f => f.source === 'shot');
+    const missingContextFields = missingFields.filter(f => f.source === 'scene' || f.source === 'project');
+
     return (
         <div style={styles.overlay}>
             <div style={styles.modal}>
@@ -169,83 +227,134 @@ export function GeneratePromptModal({
 
                 <div style={styles.divider} />
 
-                {/* Body */}
                 <div style={styles.body}>
                     {!result ? (
-                        /* Configuration View */
                         <>
-                            {/* Context Summary */}
+                            {/* Context */}
                             <div style={styles.contextBox}>
                                 <div style={styles.contextLabel}>CONTEXT</div>
                                 <div style={styles.contextRow}>
-                                    <span style={{ color: '#6b7280' }}>Shot:</span> <span style={{ color: 'white', fontWeight: 600 }}>{shot.shot_number}</span>
+                                    <span style={{ color: '#6b7280' }}>Shot:</span>{' '}
+                                    <span style={{ color: 'white', fontWeight: 600 }}>{shot.shot_number}</span>
                                 </div>
                                 <div style={styles.contextRow}>
-                                    <span style={{ color: '#6b7280' }}>Scene:</span> <span style={{ color: 'white' }}>{scene?.name || 'Unknown'}</span>
+                                    <span style={{ color: '#6b7280' }}>Scene:</span>{' '}
+                                    <span style={{ color: 'white' }}>{scene?.name || 'Unknown'}</span>
                                 </div>
-                                {readinessScore && (
-                                    <div style={{ marginTop: '8px' }}>
-                                        <div style={{ ...styles.contextRow, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <span style={{ color: '#6b7280' }}>Prompt Readiness:</span>
-                                            <span style={{
-                                                color: readinessScore.tier === 'production' ? '#10b981' : '#fbbf24',
-                                                fontWeight: 700
-                                            }}>
-                                                {readinessScore.score} / 100 ({readinessScore.tier === 'production' ? 'READY' : 'DRAFT'})
+
+                                {/* Readiness Score */}
+                                {readiness && (
+                                    <div style={{ marginTop: '10px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                            <span style={{ color: '#6b7280', fontSize: '13px' }}>Prompt Readiness</span>
+                                            <span style={{ color: scoreColor, fontWeight: 700, fontSize: '13px' }}>
+                                                {score} / 100
                                             </span>
-                                            <button
-                                                onClick={() => setShowReadinessInfo(!showReadinessInfo)}
-                                                style={{
-                                                    background: 'none',
-                                                    border: 'none',
-                                                    cursor: 'pointer',
-                                                    padding: '2px',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    color: showReadinessInfo ? '#60a5fa' : '#6b7280',
-                                                }}
-                                                title="What is this score?"
-                                            >
-                                                <Info size={14} />
-                                            </button>
                                         </div>
-                                        {showReadinessInfo && (
+                                        {/* Progress bar */}
+                                        <div style={{
+                                            height: '6px',
+                                            backgroundColor: '#3f3f46',
+                                            borderRadius: '3px',
+                                            overflow: 'hidden',
+                                        }}>
                                             <div style={{
-                                                marginTop: '8px',
-                                                padding: '10px 12px',
-                                                backgroundColor: '#1e1e22',
-                                                borderRadius: '6px',
-                                                border: '1px solid #3f3f46',
-                                                fontSize: '11px',
-                                                lineHeight: '1.6',
-                                                color: '#a1a1aa',
-                                            }}>
-                                                <div style={{ color: '#d1d5db', fontWeight: 600, marginBottom: '6px' }}>
-                                                    Prompt Readiness Score
-                                                </div>
-                                                <div style={{ marginBottom: '6px' }}>
-                                                    Measures how completely this shot is defined for prompt generation. Higher = better prompts.
-                                                </div>
-                                                <div style={{ marginBottom: '4px', color: '#9ca3af', fontWeight: 600 }}>
-                                                    Shot Specifics (80%)
-                                                </div>
-                                                <div style={{ paddingLeft: '8px', marginBottom: '6px' }}>
-                                                    Description (25), Shot Type (20), Camera Angle (15), Camera Movement (10), Focal Length (5), Blocking (5), Lens (5)
-                                                </div>
-                                                <div style={{ marginBottom: '4px', color: '#9ca3af', fontWeight: 600 }}>
-                                                    Scene Context (20%)
-                                                </div>
-                                                <div style={{ paddingLeft: '8px', marginBottom: '6px' }}>
-                                                    Lighting (5), Mood/Tone (5), Style (5), Location (5), Time of Day (5)
-                                                </div>
-                                                <div style={{ color: '#6b7280', fontStyle: 'italic' }}>
-                                                    70+ = Ready for generation &middot; Below 70 = Draft (AI fills gaps)
-                                                </div>
-                                            </div>
-                                        )}
+                                                height: '100%',
+                                                width: `${score}%`,
+                                                backgroundColor: scoreColor,
+                                                borderRadius: '3px',
+                                                transition: 'width 0.4s ease',
+                                            }} />
+                                        </div>
+                                        <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>
+                                            {tier === 'production'
+                                                ? 'Ready for generation'
+                                                : `${missingFields.length} field${missingFields.length !== 1 ? 's' : ''} can improve your prompt`
+                                            }
+                                        </div>
                                     </div>
                                 )}
                             </div>
+
+                            {/* Fill gaps section */}
+                            {hasMissing && (
+                                <div style={{
+                                    marginBottom: '16px',
+                                    border: '1px solid #3f3f46',
+                                    borderRadius: '8px',
+                                    overflow: 'hidden',
+                                }}>
+                                    <button
+                                        onClick={() => setShowGaps(!showGaps)}
+                                        style={{
+                                            width: '100%',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            padding: '10px 12px',
+                                            backgroundColor: '#1e1e22',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            color: '#fbbf24',
+                                            fontSize: '12px',
+                                            fontWeight: 600,
+                                        }}
+                                    >
+                                        <span>Fill gaps to improve score ({missingFields.length} remaining)</span>
+                                        {showGaps ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                    </button>
+
+                                    {showGaps && (
+                                        <div style={{
+                                            padding: '12px',
+                                            backgroundColor: '#18181b',
+                                            maxHeight: '280px',
+                                            overflowY: 'auto',
+                                        }}>
+                                            {/* Shot fields */}
+                                            {missingShotFields.length > 0 && (
+                                                <>
+                                                    <div style={{ fontSize: '10px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+                                                        Shot Fields
+                                                    </div>
+                                                    {missingShotFields.map(f => (
+                                                        <FieldEditor
+                                                            key={f.field}
+                                                            field={f}
+                                                            value={fieldValues[f.field] || ''}
+                                                            onChange={(v) => setFieldValues(prev => ({ ...prev, [f.field]: v }))}
+                                                            onSave={(v) => handleSaveField(f.field, v)}
+                                                            saving={savingField === f.field}
+                                                        />
+                                                    ))}
+                                                </>
+                                            )}
+
+                                            {/* Context fields */}
+                                            {missingContextFields.length > 0 && (
+                                                <>
+                                                    <div style={{
+                                                        fontSize: '10px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em',
+                                                        marginBottom: '8px', marginTop: missingShotFields.length > 0 ? '12px' : '0',
+                                                    }}>
+                                                        Scene / Project
+                                                    </div>
+                                                    {missingContextFields.map(f => (
+                                                        <FieldEditor
+                                                            key={f.field}
+                                                            field={f}
+                                                            value={fieldValues[f.field] || ''}
+                                                            onChange={(v) => setFieldValues(prev => ({ ...prev, [f.field]: v }))}
+                                                            onSave={(v) => handleSaveField(f.field, v)}
+                                                            saving={savingField === f.field}
+                                                        />
+                                                    ))}
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Model Selection */}
                             <div style={styles.formGroup}>
@@ -270,7 +379,6 @@ export function GeneratePromptModal({
                                             ))}
                                         </select>
 
-                                        {/* Capabilities */}
                                         {model && (
                                             <div style={{
                                                 marginTop: '8px',
@@ -278,19 +386,17 @@ export function GeneratePromptModal({
                                                 color: '#9ca3af',
                                                 background: 'rgba(255,255,255,0.03)',
                                                 padding: '8px',
-                                                borderRadius: '4px'
+                                                borderRadius: '4px',
                                             }}>
-                                                💡 {availableModels.find(m => m.name === model)?.capabilities || availableModels.find(m => m.name === model)?.description}
+                                                {availableModels.find(m => m.name === model)?.capabilities || availableModels.find(m => m.name === model)?.description}
                                             </div>
                                         )}
                                     </>
                                 )}
                             </div>
 
-                            {/* Error */}
                             {error && <div style={styles.error}>{error}</div>}
 
-                            {/* Action Buttons */}
                             <div style={styles.footer}>
                                 <button onClick={onClose} style={styles.cancelBtn}>Cancel</button>
                                 <button
@@ -299,7 +405,7 @@ export function GeneratePromptModal({
                                     style={{
                                         ...styles.generateBtn,
                                         backgroundColor: loading || generating || !model ? '#4b5563' : theme.bg,
-                                        cursor: loading || generating || !model ? 'not-allowed' : 'pointer'
+                                        cursor: loading || generating || !model ? 'not-allowed' : 'pointer',
                                     }}
                                 >
                                     {generating ? (
@@ -341,6 +447,90 @@ export function GeneratePromptModal({
     );
 }
 
+// Inline field editor component
+function FieldEditor({ field, value, onChange, onSave, saving }: {
+    field: MissingField;
+    value: string;
+    onChange: (v: string) => void;
+    onSave: (v: string) => void;
+    saving: boolean;
+}) {
+    const options = DROPDOWN_OPTIONS[field.field];
+    const isDropdown = !!options;
+
+    const handleDropdownChange = (v: string) => {
+        onChange(v);
+        if (v) onSave(v);
+    };
+
+    return (
+        <div style={{ marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <label style={{ fontSize: '12px', color: '#d1d5db', fontWeight: 600 }}>
+                    {field.label}
+                    <span style={{ color: '#6b7280', fontWeight: 400, fontSize: '10px', marginLeft: '6px' }}>+{field.weight}pts</span>
+                </label>
+                {saving && <Loader2 size={12} className="spin" style={{ color: '#6b7280' }} />}
+            </div>
+            {isDropdown ? (
+                <select
+                    value={value}
+                    onChange={(e) => handleDropdownChange(e.target.value)}
+                    style={{
+                        width: '100%',
+                        backgroundColor: '#09090b',
+                        border: '1px solid #3f3f46',
+                        padding: '7px 8px',
+                        color: 'white',
+                        borderRadius: '4px',
+                        fontSize: '13px',
+                        outline: 'none',
+                    }}
+                >
+                    <option value="">-- {field.description || 'Select'} --</option>
+                    {options.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+            ) : (
+                <div style={{ display: 'flex', gap: '6px' }}>
+                    <input
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        placeholder={field.description || `Enter ${field.label.toLowerCase()}`}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && value.trim()) onSave(value); }}
+                        style={{
+                            flex: 1,
+                            backgroundColor: '#09090b',
+                            border: '1px solid #3f3f46',
+                            padding: '7px 8px',
+                            color: 'white',
+                            borderRadius: '4px',
+                            fontSize: '13px',
+                            outline: 'none',
+                        }}
+                    />
+                    <button
+                        onClick={() => { if (value.trim()) onSave(value); }}
+                        disabled={!value.trim() || saving}
+                        style={{
+                            backgroundColor: value.trim() ? '#0f766e' : '#3f3f46',
+                            border: 'none',
+                            borderRadius: '4px',
+                            padding: '0 10px',
+                            cursor: value.trim() ? 'pointer' : 'default',
+                            display: 'flex',
+                            alignItems: 'center',
+                            color: 'white',
+                        }}
+                        title="Save"
+                    >
+                        <Save size={14} />
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+}
+
 const styles: Record<string, React.CSSProperties> = {
     overlay: {
         position: 'fixed',
@@ -350,16 +540,19 @@ const styles: Record<string, React.CSSProperties> = {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backdropFilter: 'blur(4px)'
+        backdropFilter: 'blur(4px)',
     },
     modal: {
         backgroundColor: '#18181b',
         borderRadius: '12px',
         width: '90%',
         maxWidth: '550px',
+        maxHeight: '90vh',
         border: '1px solid #27272a',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
         overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
     },
     header: {
         display: 'flex',
@@ -391,12 +584,14 @@ const styles: Record<string, React.CSSProperties> = {
     },
     body: {
         padding: '20px',
+        overflowY: 'auto',
+        flex: 1,
     },
     contextBox: {
         backgroundColor: '#27272a',
         borderRadius: '8px',
         padding: '12px',
-        marginBottom: '20px',
+        marginBottom: '16px',
     },
     contextLabel: {
         color: '#9ca3af',
@@ -478,7 +673,7 @@ const styles: Record<string, React.CSSProperties> = {
         lineHeight: '1.6',
         whiteSpace: 'pre-wrap',
         maxHeight: '200px',
-        overflowY: 'auto'
+        overflowY: 'auto',
     },
     copyBtn: {
         marginTop: '8px',
@@ -499,5 +694,5 @@ const styles: Record<string, React.CSSProperties> = {
         fontSize: '12px',
         color: '#a1a1aa',
         marginBottom: '16px',
-    }
+    },
 };

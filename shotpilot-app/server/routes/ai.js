@@ -60,6 +60,8 @@ export default function createAIRoutes({
                     res.json({
                         ...basicReadiness,
                         ...kbReadiness,
+                        // Always use basic check's allMissing — it has accurate weights and source info
+                        allMissing: basicReadiness.allMissing,
                         basicPercentage: basicReadiness.percentage,
                     });
                     return;

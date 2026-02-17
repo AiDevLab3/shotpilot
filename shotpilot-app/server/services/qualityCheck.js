@@ -59,13 +59,13 @@ function calculateCompleteness(project, scene, shot) {
         const value = fieldMap[field];
         if (value && value.trim() !== '') {
             shotScore += weight;
-        } else if (weight >= 10) {
-            // Track missing critical/important fields
+        } else {
             missing.push({
                 field,
                 weight,
                 label: getFieldLabel(field),
-                description: getFieldDescription(field)
+                description: getFieldDescription(field),
+                source: 'shot',
             });
         }
     }
@@ -77,15 +77,13 @@ function calculateCompleteness(project, scene, shot) {
         if (value && value.trim() !== '') {
             contextScore += weight;
         } else {
-            // Context usually missing at scene/project level, but track if needed
-            if (weight >= 5) {
-                missing.push({
-                    field,
-                    weight,
-                    label: getFieldLabel(field),
-                    description: getFieldDescription(field)
-                });
-            }
+            missing.push({
+                field,
+                weight,
+                label: getFieldLabel(field),
+                description: getFieldDescription(field),
+                source: field === 'style_aesthetic' ? 'project' : 'scene',
+            });
         }
     }
 
@@ -219,13 +217,18 @@ function getFieldLabel(field) {
 
 function getFieldDescription(field) {
     const descriptions = {
-        camera_angle: 'Defines the viewer\'s perspective and emotional relationship to the subject',
-        camera_movement: 'Adds energy, tension, or stillness to the shot',
-        scene_lighting_notes: 'Sets mood and atmosphere - lighting is 50% of cinematography',
-        focal_length: 'Affects field of view and perspective distortion',
-        scene_mood_tone: 'The emotional feeling that guides all creative decisions',
-        camera_lens: 'Specific lens characteristics affect image quality and aesthetic',
-        blocking: 'How subjects move through the space - choreography of the shot'
+        shot_description: 'What is happening in the shot — action, subjects, key details',
+        shot_type: 'Wide, Medium, Close-up, etc.',
+        camera_angle: 'Eye Level, Low Angle, High Angle, etc.',
+        camera_movement: 'Static, Pan, Tilt, Dolly, Handheld, etc.',
+        focal_length: 'e.g. 50mm, 85mm, 24-70mm',
+        camera_lens: 'e.g. ARRI Signature Prime, Cooke S4/i',
+        blocking: 'How subjects are positioned and move through the space',
+        scene_lighting_notes: 'e.g. Golden hour backlight, harsh overhead fluorescents',
+        scene_mood_tone: 'e.g. Tense, melancholic, euphoric',
+        style_aesthetic: 'e.g. Film noir, documentary realism, dreamy',
+        scene_location_setting: 'e.g. Dimly lit alley, open field, rooftop',
+        scene_time_of_day: 'e.g. Dawn, midday, dusk, night',
     };
     return descriptions[field] || '';
 }
