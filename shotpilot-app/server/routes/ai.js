@@ -664,6 +664,30 @@ export default function createAIRoutes({
                 targetModel, modelKBContent,
             });
 
+            // Helper: attach a reference image to an entity (character or object)
+            const attachReferenceImage = (entityType, entityId, imageUrl, prompt) => {
+                if (!imageUrl) return;
+                try {
+                    const existing = db.prepare(
+                        'SELECT id FROM entity_reference_images WHERE entity_type = ? AND entity_id = ? AND image_type = ?'
+                    ).get(entityType, entityId, 'reference');
+                    if (existing) {
+                        db.prepare(
+                            'UPDATE entity_reference_images SET image_url = ?, label = ?, prompt = ?, analysis_json = NULL WHERE id = ?'
+                        ).run(imageUrl, 'Reference Image (from Creative Director)', prompt || null, existing.id);
+                    } else {
+                        db.prepare(
+                            'INSERT INTO entity_reference_images (entity_type, entity_id, image_type, image_url, label, prompt) VALUES (?, ?, ?, ?, ?, ?)'
+                        ).run(entityType, entityId, 'reference', imageUrl, 'Reference Image (from Creative Director)', prompt || null);
+                    }
+                    // Also set on the entity record so it shows on the grid card
+                    const table = entityType === 'character' ? 'characters' : 'objects';
+                    db.prepare(`UPDATE ${table} SET reference_image_url = ? WHERE id = ?`).run(imageUrl, entityId);
+                } catch (err) {
+                    console.warn(`[creative-director] Could not attach image to ${entityType}:`, err.message);
+                }
+            };
+
             // Auto-create characters discussed in conversation
             const createdCharacters = [];
             if (result.characterCreations && Array.isArray(result.characterCreations)) {
@@ -680,8 +704,10 @@ export default function createAIRoutes({
                                 description: sanitize(char.description || ''),
                                 personality: sanitize(char.personality || ''),
                             });
-                            createdCharacters.push({ id: info.lastInsertRowid, name: char.name });
+                            const newId = info.lastInsertRowid;
+                            createdCharacters.push({ id: newId, name: char.name });
                             existingNames.push(char.name.toLowerCase());
+                            if (char.referenceImageUrl) attachReferenceImage('character', newId, char.referenceImageUrl, null);
                         } catch (err) {
                             console.warn(`[creative-director] Could not create character "${char.name}":`, err.message);
                         }
@@ -704,8 +730,10 @@ export default function createAIRoutes({
                                 name: sanitize(obj.name),
                                 description: sanitize(obj.description || ''),
                             });
-                            createdObjects.push({ id: info.lastInsertRowid, name: obj.name });
+                            const newId = info.lastInsertRowid;
+                            createdObjects.push({ id: newId, name: obj.name });
                             existingObjNames.push(obj.name.toLowerCase());
+                            if (obj.referenceImageUrl) attachReferenceImage('object', newId, obj.referenceImageUrl, obj.referenceImagePrompt || null);
                         } catch (err) {
                             console.warn(`[creative-director] Could not create object "${obj.name}":`, err.message);
                         }
@@ -735,6 +763,7 @@ export default function createAIRoutes({
                             db.prepare(`UPDATE characters SET ${sets.join(', ')} WHERE id = @id`).run(params);
                             updatedCharacters.push({ id: existing.id, name: existing.name });
                         }
+                        if (update.referenceImageUrl) attachReferenceImage('character', existing.id, update.referenceImageUrl, null);
                     } catch (err) {
                         console.warn(`[creative-director] Could not update character "${update.name}":`, err.message);
                     }
@@ -754,6 +783,7 @@ export default function createAIRoutes({
                                 .run({ id: existing.id, description: sanitize(update.description) });
                             updatedObjects.push({ id: existing.id, name: existing.name });
                         }
+                        if (update.referenceImageUrl) attachReferenceImage('object', existing.id, update.referenceImageUrl, update.referenceImagePrompt || null);
                     } catch (err) {
                         console.warn(`[creative-director] Could not update object "${update.name}":`, err.message);
                     }

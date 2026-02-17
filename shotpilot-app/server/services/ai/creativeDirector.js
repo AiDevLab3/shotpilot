@@ -168,7 +168,16 @@ IMAGE ANALYSIS (CRITICAL):
   - Does the lighting match the project's lighting direction?
   - Does the color/tonality match the established aesthetic?
 - Report what aligns and what diverges. Do NOT update projectUpdates based on the image unless the user explicitly says they want to use this image to SET or LOCK the project style (e.g. "use this as our look", "match this style", "lock this aesthetic").
-- If the image is a character reference, note how it fits the character's established description. Update the character description if the user asks you to.`;
+- If the image is a character reference, note how it fits the character's established description. Update the character description if the user asks you to.
+
+IMAGE-TO-ENTITY WORKFLOW (CRITICAL):
+- When the user shares an image and says it's for a specific character or object (e.g. "here's the image I have for the vehicle", "this is what Marcus looks like"), you should:
+  1. Create or update the entity with a detailed, production-ready description based on what you see in the image AND what the user tells you about it.
+  2. Set "referenceImageUrl" to the EXACT URL of the image the user shared (it will be in the image context above). This attaches the image to the entity as its reference image.
+  3. Ask the user if they have the prompt they used to generate the image — if they provide it, include it as "referenceImagePrompt". This helps with iteration and turnarounds later.
+  4. In your response, naturally confirm what you've done: mention you've created/updated the entity with their image and details, and that they can audit the image quality on the entity's page for any recommended refinements.
+- The image URLs you receive look like "/uploads/filename.ext" — use this exact URL in referenceImageUrl, do NOT modify it.
+- This workflow lets the user stay in the conversation instead of having to navigate to the Characters/Objects page to upload images manually.`;
 
     // Format history — handle compacted summary messages specially
     const recentHistory = (history || []).slice(-14);
@@ -192,10 +201,10 @@ OUTPUT VALID JSON ONLY:
   "response": "Your creative director response (markdown supported)",
   "projectUpdates": null or { "field_name": "suggested value", ... },
   "scriptUpdates": null or "THE COMPLETE FULL SCRIPT with changes integrated — NEVER a partial fragment. If you modify one scene, you MUST return the entire script including ALL unchanged scenes. If the script is too long to return in full, set scriptUpdates to null and describe the changes in your response instead so the user can make the edit manually.",
-  "characterCreations": null or [{ "name": "Character Name", "description": "Physical/visual description", "personality": "Personality traits" }],
-  "characterUpdates": null or [{ "name": "Existing Character Name (must match exactly)", "description": "Updated full description (replaces existing)", "personality": "Updated personality (replaces existing)" }],
-  "objectCreations": null or [{ "name": "Object Name", "description": "Physical description: material, color, texture, condition, scale, distinctive features" }],
-  "objectUpdates": null or [{ "name": "Existing Object Name (must match exactly)", "description": "Updated full description (replaces existing)" }],
+  "characterCreations": null or [{ "name": "Character Name", "description": "Physical/visual description", "personality": "Personality traits", "referenceImageUrl": "URL of the user's uploaded image to attach as reference (from the images shared in this message), or null" }],
+  "characterUpdates": null or [{ "name": "Existing Character Name (must match exactly)", "description": "Updated full description (replaces existing)", "personality": "Updated personality (replaces existing)", "referenceImageUrl": "URL of user's uploaded image to attach, or null" }],
+  "objectCreations": null or [{ "name": "Object Name", "description": "Physical description: material, color, texture, condition, scale, distinctive features", "referenceImageUrl": "URL of user's uploaded image to attach as reference, or null", "referenceImagePrompt": "The prompt the user said they used to generate this image, or null" }],
+  "objectUpdates": null or [{ "name": "Existing Object Name (must match exactly)", "description": "Updated full description (replaces existing)", "referenceImageUrl": "URL of user's uploaded image to attach, or null", "referenceImagePrompt": "The prompt the user said they used to generate this image, or null" }],
   "sceneCreations": null or [{ "name": "Scene name", "description": "Scene description", "location_setting": "Where", "time_of_day": "Day/Night/Dawn/Dusk", "mood_tone": "Emotional tone", "suggestedShots": [{ "shot_type": "Wide Shot", "camera_angle": "Eye Level", "description": "What this shot captures", "purpose": "Why needed" }] }]
 }`;
 
@@ -236,7 +245,8 @@ OUTPUT VALID JSON ONLY:
         const imageLabel = loadedImageCount === 1
             ? '↑ User shared this reference image.'
             : `↑ User shared ${loadedImageCount} reference images.`;
-        parts.push({ text: imageLabel + '\n\n' + userPrompt });
+        const imageUrlList = resolvedImages.map((url, i) => `  Image ${i + 1} URL: ${url}`).join('\n');
+        parts.push({ text: `${imageLabel}\nImage URLs (use these exact URLs in referenceImageUrl if attaching to an entity):\n${imageUrlList}\n\n${userPrompt}` });
     } else {
         parts.push({ text: userPrompt });
     }
