@@ -4,6 +4,7 @@ import { ImageAuditReport } from './ImageAuditReport';
 import { uploadVariantImage, auditVariantImage, getVariantAudit, refineVariantPrompt, lockVariant, unlockVariant } from '../services/api';
 import { Copy, Check, Trash2, ChevronDown, ChevronUp, Upload, Shield, Loader2, Wand2, ImageIcon, Type } from 'lucide-react';
 import type { ImageAuditResult } from '../types/schema';
+import { ImageLightbox } from './ImageLightbox';
 
 interface Variant {
     id: number;
@@ -80,6 +81,7 @@ export const VariantCard: React.FC<VariantCardProps> = ({ variant, onDelete }) =
     const [showOriginal, setShowOriginal] = useState(false);
     const [variantStatus, setVariantStatus] = useState(variant.status || 'unaudited');
     const [modelPivotSuggestion, setModelPivotSuggestion] = useState<string | null>(null);
+    const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const modelName = variant.model_name || variant.model_used || 'Unknown';
@@ -255,7 +257,8 @@ export const VariantCard: React.FC<VariantCardProps> = ({ variant, onDelete }) =
                     <img
                         src={imageUrl}
                         alt="Generated result"
-                        style={{ width: '100%', height: 'auto', display: 'block' }}
+                        style={{ width: '100%', height: 'auto', display: 'block', cursor: 'zoom-in' }}
+                        onClick={() => setLightboxSrc(imageUrl)}
                     />
                 </div>
             )}
@@ -490,6 +493,7 @@ export const VariantCard: React.FC<VariantCardProps> = ({ variant, onDelete }) =
                     <Trash2 size={12} /> Delete
                 </button>
             </div>
+            {lightboxSrc && <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
         </div>
     );
 };

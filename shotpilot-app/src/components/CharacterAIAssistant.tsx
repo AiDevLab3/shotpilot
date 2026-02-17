@@ -449,18 +449,17 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
         'Regenerate completely',
     ];
 
-    // Not yet loaded -- show trigger button
+    // Not yet loaded -- show dual-path trigger: Upload Image or Generate Prompt
     if (!hasLoaded && !loading) {
+        const hasRefImage = entityImages['reference'];
+
         return (
             <div style={styles.triggerContainer}>
+                {/* Target Model selector — applies to analysis and generation */}
                 {availableModels.length > 0 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                        <label style={{ fontSize: '11px', color: '#9ca3af' }}>Target Model:</label>
-                        <select
-                            value={selectedModel}
-                            onChange={(e) => setSelectedModel(e.target.value)}
-                            style={styles.modelSelect}
-                        >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px', width: '100%' }}>
+                        <label style={{ fontSize: '11px', color: '#9ca3af', whiteSpace: 'nowrap' }}>Target Model:</label>
+                        <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} style={{ ...styles.modelSelect, flex: 1 }}>
                             <option value="">Auto (let AI decide)</option>
                             {availableModels.map((m) => (
                                 <option key={m.name} value={m.name}>{m.displayName || m.name}</option>
@@ -468,23 +467,145 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
                         </select>
                     </div>
                 )}
-                <button
-                    onClick={() => loadFullSuggestions()}
-                    disabled={nameIsEmpty}
-                    style={{
-                        ...styles.triggerBtn,
-                        opacity: nameIsEmpty ? 0.5 : 1,
-                        cursor: nameIsEmpty ? 'not-allowed' : 'pointer',
-                    }}
-                >
-                    <Sparkles size={14} />
-                    Generate Prompt
-                </button>
-                <span style={styles.triggerHint}>
-                    {nameIsEmpty
-                        ? 'Enter a name first'
-                        : 'AI will generate a reference image prompt based on your description'}
-                </span>
+                {!hasRefImage ? (
+                    <>
+                        {/* Path A: Upload existing image */}
+                        {characterId ? (
+                            <div style={{ width: '100%', marginBottom: '10px' }}>
+                                <label style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                    padding: '12px 16px', backgroundColor: '#1a2a2a', border: '2px dashed #2dd4bf',
+                                    borderRadius: '8px', color: '#2dd4bf', fontSize: '13px', fontWeight: 600,
+                                    cursor: uploadingSlot === 'initial-upload' ? 'wait' : 'pointer', transition: 'all 0.2s',
+                                }}>
+                                    {uploadingSlot === 'initial-upload' ? (
+                                        <><Loader2 size={16} className="spin" /> Uploading...</>
+                                    ) : (
+                                        <><Upload size={16} /> I have a reference image</>
+                                    )}
+                                    <input
+                                        type="file" accept="image/*"
+                                        ref={el => { fileInputRefs.current['initial-upload'] = el; }}
+                                        onChange={() => handleImageUpload('reference', 'Reference Image (user-provided)', '', 'initial-upload')}
+                                        style={{ display: 'none' }}
+                                    />
+                                </label>
+                                <span style={{ fontSize: '10px', color: '#6b7280', textAlign: 'center', display: 'block', marginTop: '4px' }}>
+                                    Upload an image you've already generated or sourced
+                                </span>
+                            </div>
+                        ) : (
+                            <div style={{ width: '100%', marginBottom: '10px', padding: '10px 16px', backgroundColor: '#1a1a1e', border: '1px dashed #3f3f46', borderRadius: '8px', textAlign: 'center' }}>
+                                <span style={{ fontSize: '11px', color: '#6b7280' }}>
+                                    Save the character first to upload a reference image
+                                </span>
+                            </div>
+                        )}
+
+                        <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                            <div style={{ flex: 1, height: '1px', backgroundColor: '#3f3f46' }} />
+                            <span style={{ fontSize: '11px', color: '#6b7280' }}>or</span>
+                            <div style={{ flex: 1, height: '1px', backgroundColor: '#3f3f46' }} />
+                        </div>
+
+                        {/* Path B: Generate AI prompt */}
+                        <button
+                            onClick={() => loadFullSuggestions()}
+                            disabled={nameIsEmpty}
+                            style={{ ...styles.triggerBtn, opacity: nameIsEmpty ? 0.5 : 1, cursor: nameIsEmpty ? 'not-allowed' : 'pointer' }}
+                        >
+                            <Sparkles size={14} />
+                            Generate Prompt
+                        </button>
+                        <span style={styles.triggerHint}>
+                            {nameIsEmpty ? 'Enter a name first' : 'AI will generate a reference image prompt based on your description'}
+                        </span>
+                    </>
+                ) : (
+                    /* Reference image already uploaded — show it with tools */
+                    <div style={{ width: '100%' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '10px' }}>
+                            <div style={styles.uploadPreview}>
+                                <img src={hasRefImage.image_url} alt="Reference" style={{ ...styles.uploadImg, cursor: 'zoom-in' }} onClick={() => setLightboxSrc(hasRefImage.image_url)} />
+                                <button onClick={() => handleRemoveImage('reference')} style={styles.uploadRemoveBtn}><X size={10} /></button>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#2dd4bf' }}>Reference image uploaded</span>
+                                <button
+                                    onClick={() => handleAnalyzeImage('reference')}
+                                    disabled={analyzingSlot === 'reference'}
+                                    style={{ ...styles.analyzeBtn, opacity: analyzingSlot === 'reference' ? 0.5 : 1, cursor: analyzingSlot === 'reference' ? 'not-allowed' : 'pointer' }}
+                                >
+                                    {analyzingSlot === 'reference' ? (
+                                        <><Loader2 size={11} className="spin" /> Analyzing...</>
+                                    ) : analysisResults['reference'] && !analysisResults['reference'].error ? (
+                                        <><Search size={11} /> Re-analyze</>
+                                    ) : (
+                                        <><Search size={11} /> Analyze Quality</>
+                                    )}
+                                </button>
+                                {!hasRefImage.prompt && !analysisResults['reference'] && (
+                                    <span style={{ fontSize: '9px', color: '#6b7280', lineHeight: '1.3' }}>
+                                        Add your prompt first for best results, or analyze without it — AI will reverse-engineer one
+                                    </span>
+                                )}
+                                <button
+                                    onClick={() => { setRefPromptDraft(hasRefImage.prompt || ''); setEditingRefPrompt(prev => !prev); }}
+                                    style={{ ...styles.copyBtn, fontSize: '10px', padding: '3px 8px', color: hasRefImage.prompt ? '#10b981' : '#f59e0b' }}
+                                >
+                                    {hasRefImage.prompt ? '\u2713 Prompt stored' : 'Add prompt used'}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Prompt input field */}
+                        {editingRefPrompt && (
+                            <div style={{ marginBottom: '10px', padding: '8px', backgroundColor: '#18181b', borderRadius: '6px', border: '1px solid #3f3f46' }}>
+                                <label style={{ fontSize: '10px', color: '#9ca3af', display: 'block', marginBottom: '4px' }}>
+                                    Paste the prompt you used to create this image — helps with iteration and turnarounds
+                                </label>
+                                <textarea
+                                    value={refPromptDraft}
+                                    onChange={(e) => setRefPromptDraft(e.target.value)}
+                                    placeholder="e.g. Cinematic still frame, front portrait of a detective..."
+                                    rows={3}
+                                    style={{ width: '100%', padding: '6px 8px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '4px', color: '#e5e7eb', fontSize: '11px', fontFamily: 'monospace', resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
+                                />
+                                <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                                    <button onClick={handleSaveRefPrompt} disabled={savingRefPrompt}
+                                        style={{ ...styles.triggerBtn, fontSize: '10px', padding: '4px 10px', backgroundColor: '#059669' }}>
+                                        {savingRefPrompt ? <Loader2 size={10} className="spin" /> : <Check size={10} />} Save
+                                    </button>
+                                    <button onClick={() => setEditingRefPrompt(false)}
+                                        style={{ ...styles.copyBtn, fontSize: '10px', padding: '4px 10px' }}>Cancel</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Analysis results */}
+                        {renderAnalysisResults('reference')}
+
+                        {/* Divider + Generate Prompt option */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '12px 0 8px' }}>
+                            <div style={{ flex: 1, height: '1px', backgroundColor: '#3f3f46' }} />
+                            <span style={{ fontSize: '10px', color: '#6b7280' }}>or start fresh</span>
+                            <div style={{ flex: 1, height: '1px', backgroundColor: '#3f3f46' }} />
+                        </div>
+
+                        <button
+                            onClick={() => loadFullSuggestions()}
+                            disabled={nameIsEmpty}
+                            style={{ ...styles.triggerBtn, opacity: nameIsEmpty ? 0.5 : 1, cursor: nameIsEmpty ? 'not-allowed' : 'pointer' }}
+                        >
+                            <Sparkles size={14} />
+                            Generate AI Prompt & Turnaround
+                        </button>
+                        <span style={styles.triggerHint}>
+                            Generate a new prompt from your description + multi-angle turnarounds
+                        </span>
+                    </div>
+                )}
+                {lightboxSrc && <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
             </div>
         );
     }

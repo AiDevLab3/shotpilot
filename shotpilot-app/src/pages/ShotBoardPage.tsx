@@ -11,6 +11,7 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { ReadinessBadge } from '../components/ReadinessBadge';
 import { ShotPlanningPanel } from '../components/ShotPlanningPanel';
 import { ReadinessDialogue } from '../components/ReadinessDialogue';
+import { ImageLightbox } from '../components/ImageLightbox';
 import { MentionTextarea, MentionEntity } from '../components/MentionTextarea';
 
 // Specialized Dropdown Option Component
@@ -119,6 +120,9 @@ const ShotBoardPage: React.FC = () => {
     const [isShotPlanOpen, setIsShotPlanOpen] = useState(false);
     const [shotPlanSceneId, setShotPlanSceneId] = useState<number | null>(null);
     const [shotPlanSceneName, setShotPlanSceneName] = useState('');
+
+    // Image lightbox
+    const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
     // Phase 3.4: Readiness Dialogue
     const [isReadinessDialogueOpen, setIsReadinessDialogueOpen] = useState(false);
@@ -811,7 +815,7 @@ const ShotBoardPage: React.FC = () => {
                                                                         <div style={{ ...styles.cardImage, aspectRatio: frameAspectRatio }}>
                                                                             {mainImage ? (
                                                                                 <>
-                                                                                    <img src={imageUrl || ''} alt="" style={{ width: '100%', height: 'auto' }} />
+                                                                                    <img src={imageUrl || ''} alt="" style={{ width: '100%', height: 'auto', cursor: 'zoom-in' }} onClick={(e) => { e.stopPropagation(); if (imageUrl) setLightboxSrc(imageUrl); }} />
                                                                                     <button onClick={(e) => handleDeleteImage(mainImage.id, shot.id, e)} style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', padding: '4px', borderRadius: '4px', color: 'white', border: 'none', cursor: 'pointer' }}>
                                                                                         <Trash2 size={12} />
                                                                                     </button>
@@ -1121,6 +1125,8 @@ const ShotBoardPage: React.FC = () => {
                         onGenerated={handleVariantGenerated}
                     />
                 )}
+
+                {lightboxSrc && <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
 
                 {/* Phase 3.3: Shot Planning Modal */}
                 {shotPlanSceneId && (
