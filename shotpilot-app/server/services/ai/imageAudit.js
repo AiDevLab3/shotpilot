@@ -312,6 +312,7 @@ Then provide:
 - What specifically works well
 - Suggested prompt adjustments to fix identified issues (if a prompt was provided, reference specific parts to change; if not, write suggestions from scratch)
 - A complete revised prompt that addresses all identified issues (if a prompt was provided, start from it and show what changed; if not, write one from scratch based on the image). Format this prompt for ${targetModel || 'the target model'}.
+- A reference strategy recommendation: should the user attach the current image as a reference image when re-generating with the revised prompt, or start completely fresh? Consider: if the image has the right subject/composition but wrong style/lighting/details, reference + revised prompt is best. If the image has fundamental issues (wrong subject, wrong composition, wrong everything), fresh start is better.
 
 OUTPUT VALID JSON ONLY:
 {
@@ -361,6 +362,10 @@ OUTPUT VALID JSON ONLY:
   "what_works": ["Specific element that matches well"],
   "prompt_adjustments": ["Specific change: add/remove/modify X in the prompt"],
   "revised_prompt": "Complete revised prompt with all fixes applied, formatted for ${targetModel || 'generic use'}, ready to copy and paste",
+  "reference_strategy": {
+    "action": "use_reference" | "fresh_start" | "ref_optional",
+    "reason": "Brief explanation of why — e.g., 'The subject and composition are solid, so using this image as a reference will help preserve the good parts while the revised prompt fixes the lighting issues' or 'Fundamental composition and subject issues mean starting fresh will give better results than trying to iterate'"
+  },
   "summary": "2-3 sentence assessment"
 }`;
 
@@ -435,6 +440,9 @@ OUTPUT VALID JSON ONLY:
             what_works: Array.isArray(parsed.what_works) ? parsed.what_works : [],
             prompt_adjustments: Array.isArray(parsed.prompt_adjustments) ? parsed.prompt_adjustments : [],
             revised_prompt: parsed.revised_prompt || originalPrompt,
+            reference_strategy: parsed.reference_strategy && parsed.reference_strategy.action
+                ? { action: parsed.reference_strategy.action, reason: parsed.reference_strategy.reason || '' }
+                : null,
             summary: parsed.summary || '',
         };
     } catch (error) {

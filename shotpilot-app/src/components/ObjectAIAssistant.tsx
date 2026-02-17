@@ -421,6 +421,34 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                                         )}
                                     </button>
                                 </div>
+                                {analysis.reference_strategy && (
+                                    <div style={{
+                                        padding: '6px 8px', marginBottom: '6px', borderRadius: '4px',
+                                        backgroundColor: analysis.reference_strategy.action === 'use_reference'
+                                            ? 'rgba(96,165,250,0.08)' : analysis.reference_strategy.action === 'fresh_start'
+                                                ? 'rgba(139,92,246,0.08)' : 'rgba(245,158,11,0.08)',
+                                        border: `1px solid ${analysis.reference_strategy.action === 'use_reference'
+                                            ? 'rgba(96,165,250,0.2)' : analysis.reference_strategy.action === 'fresh_start'
+                                                ? 'rgba(139,92,246,0.2)' : 'rgba(245,158,11,0.2)'}`,
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '2px' }}>
+                                            <ImageIcon size={10} style={{
+                                                color: analysis.reference_strategy.action === 'use_reference' ? '#60a5fa'
+                                                    : analysis.reference_strategy.action === 'fresh_start' ? '#8b5cf6' : '#f59e0b'
+                                            }} />
+                                            <span style={{
+                                                fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em',
+                                                color: analysis.reference_strategy.action === 'use_reference' ? '#60a5fa'
+                                                    : analysis.reference_strategy.action === 'fresh_start' ? '#8b5cf6' : '#f59e0b'
+                                            }}>
+                                                {analysis.reference_strategy.action === 'use_reference' ? 'Attach this image as reference'
+                                                    : analysis.reference_strategy.action === 'fresh_start' ? 'Start fresh — no reference needed'
+                                                        : 'Reference optional'}
+                                            </span>
+                                        </div>
+                                        <span style={{ fontSize: '10px', color: '#a1a1aa', lineHeight: '1.4' }}>{analysis.reference_strategy.reason}</span>
+                                    </div>
+                                )}
                                 <p style={{ ...styles.promptText, margin: 0, fontSize: '10px', lineHeight: '1.5' }}>{analysis.revised_prompt}</p>
                             </div>
                         )}
