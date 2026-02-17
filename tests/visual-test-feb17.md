@@ -52,7 +52,7 @@
 - [ ] Paste any prompt text and click **Save**
 - [ ] **Expected:** Button changes to green "✓ Prompt stored"
 - [ ] Click **Analyze Quality** again (Re-analyze)
-- [ ] **Expected:** Analysis now evaluates how well the image matches the prompt you provided
+- [ ] **Expected:** Same 6-dimension quality audit as before, but now the "Revised prompt" shows targeted edits based on YOUR prompt (e.g., "change X to fix Y") instead of a from-scratch reverse-engineered prompt
 
 ---
 

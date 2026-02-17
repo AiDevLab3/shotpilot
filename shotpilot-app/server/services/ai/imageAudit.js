@@ -284,14 +284,14 @@ For each pattern detected, classify severity as "severe" (dominates the image), 
 
     const hasPrompt = originalPrompt && originalPrompt.trim().length > 0;
     const promptSection = hasPrompt
-        ? `ORIGINAL PROMPT USED TO GENERATE THIS IMAGE:\n${originalPrompt}`
-        : `NO ORIGINAL PROMPT PROVIDED — The user uploaded this image without including the prompt they used to generate it. You cannot evaluate prompt-to-image fidelity, but you CAN and SHOULD still:\n- Evaluate all 6 quality dimensions based on the image itself\n- Reverse-engineer a complete prompt from what you observe in the image (put this in revised_prompt)\n- The revised_prompt is especially important here — it gives the user a starting point for iteration`;
+        ? `PROMPT USED TO GENERATE THIS IMAGE (for iteration context — NOT an evaluation rubric):\n${originalPrompt}\nUse this prompt to understand what the user was going for and to write targeted revisions in your revised_prompt. If something needs fixing, show exactly what to change in the prompt to fix it.`
+        : `NO ORIGINAL PROMPT PROVIDED — The user uploaded this image without including the prompt they used. Reverse-engineer a complete prompt from what you observe in the image (put this in revised_prompt) so the user has a starting point for iteration.`;
 
     const userPrompt = `${kbContent ? `KNOWLEDGE BASE (use for evaluation criteria):\n${kbContent}\n\n` : ''}${projectBlock}
 ${contextLines.length > 0 ? `\n${entityLabel.toUpperCase()} DETAILS:\n${contextLines.join('\n')}\n` : ''}
 ${promptSection}
 
-Analyze the uploaded ${entityLabel.toLowerCase()} reference image across ALL 6 dimensions. Compare against the project DNA and ${entityLabel.toLowerCase()} description.${hasPrompt ? ' Also evaluate how well the image matches the original prompt.' : ''}
+Analyze the uploaded ${entityLabel.toLowerCase()} reference image across ALL 6 dimensions. Compare against the project DNA and ${entityLabel.toLowerCase()} description. Score the IMAGE QUALITY itself — not how well it matches a prompt.
 
 For each dimension, provide:
 1. A score (0-10)
@@ -302,8 +302,8 @@ Then provide:
 - Verdict (STRONG MATCH / NEEDS TWEAKS / SIGNIFICANT MISMATCH)
 - List of specific issues found
 - What specifically works well
-- Suggested prompt adjustments to fix identified issues
-- A complete revised prompt with all fixes applied
+- Suggested prompt adjustments to fix identified issues (if a prompt was provided, reference specific parts to change; if not, write suggestions from scratch)
+- A complete revised prompt that addresses all identified issues (if a prompt was provided, start from it and show what changed; if not, write one from scratch based on the image)
 
 OUTPUT VALID JSON ONLY:
 {
