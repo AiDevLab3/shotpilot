@@ -153,7 +153,8 @@ export interface CharacterSuggestions {
     description: string;
     personality: string;
     referencePrompt: string;
-    turnaroundPrompts?: string[];
+    turnaroundPrompt?: string;
+    turnaroundPrompts?: string[]; // legacy — old generations may still have this
     consistencyTips: string[];
     recommendedModel?: string | null;
     recommendedModelReason?: string | null;
@@ -212,7 +213,8 @@ export interface ProjectImage {
 export interface ObjectSuggestions {
     description: string;
     referencePrompt: string;
-    turnaroundPrompts?: string[];
+    turnaroundPrompt?: string;
+    turnaroundPrompts?: string[]; // legacy — old generations may still have this
     consistencyTips: string[];
     recommendedModel?: string | null;
     recommendedModelReason?: string | null;

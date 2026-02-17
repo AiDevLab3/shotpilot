@@ -220,13 +220,23 @@ OUTPUT VALID JSON ONLY:
  * will integrate seamlessly when used in shot generation — same quality bar,
  * same visual language, same realism standards.
  */
-async function analyzeEntityImage({ imageBuffer, mimeType, originalPrompt, entityType, entityName, entityDescription, project, kbContent }) {
+async function analyzeEntityImage({ imageBuffer, mimeType, originalPrompt, entityType, entityName, entityDescription, project, kbContent, referenceImageBuffer, referenceImageMimeType, isTurnaround }) {
     const projectBlock = project ? buildContextBlock('PROJECT', project) : '';
     const entityLabel = entityType === 'character' ? 'Character' : 'Object';
 
-    const systemInstruction = `You are an expert Holistic Image Auditor for AI-generated cinematography, specifically evaluating ${entityLabel.toLowerCase()} reference images. You analyze images with the eye of a seasoned Director of Photography, evaluating them across 6 critical dimensions for professional production quality.
+    const isTurnaroundSheet = !!isTurnaround;
+    const imageTypeLabel = isTurnaroundSheet ? 'turnaround sheet' : 'reference image';
 
-CRITICAL CONTEXT: This is a ${entityLabel.toLowerCase()} reference image that will be used as a visual anchor for shots in the production. The quality, style, and realism standards you evaluate here MUST be the same standards applied to final shot images. If this reference passes your audit but has hidden quality issues (AI plastic look, wrong lighting style, etc.), those issues will propagate into every shot featuring this ${entityLabel.toLowerCase()}.
+    const turnaroundExtra = isTurnaroundSheet ? `
+TURNAROUND SHEET EVALUATION — This is a character/object turnaround sheet (typically a 2x2 or 4-panel grid showing multiple angles). In addition to standard quality evaluation:
+- CHECK CROSS-ANGLE CONSISTENCY: Do all angles show the same character/object? Look for drifting features (different eye color, hair style, clothing, proportions) between panels.
+- COMPARE AGAINST REFERENCE IMAGE: A reference image has been provided. Score how well the turnaround sheet matches the reference — same face, same clothing, same colors, same style.
+- EVALUATE LAYOUT: Is it a clean grid with distinct angles? Are the angles useful (front, 3/4, side, back)?
+- The ${entityType === 'character' ? 'character_identity' : 'object_accuracy'} dimension is ESPECIALLY important here — it should evaluate consistency ACROSS all panels AND against the reference image.` : '';
+
+    const systemInstruction = `You are an expert Holistic Image Auditor for AI-generated cinematography, specifically evaluating ${entityLabel.toLowerCase()} ${imageTypeLabel}s. You analyze images with the eye of a seasoned Director of Photography, evaluating them across 6 critical dimensions for professional production quality.
+${turnaroundExtra}
+CRITICAL CONTEXT: This is a ${entityLabel.toLowerCase()} ${imageTypeLabel} that will be used as a visual anchor for shots in the production. The quality, style, and realism standards you evaluate here MUST be the same standards applied to final shot images. If this ${imageTypeLabel} passes your audit but has hidden quality issues (AI plastic look, wrong lighting style, etc.), those issues will propagate into every shot featuring this ${entityLabel.toLowerCase()}.
 
 Your analysis must be precise, actionable, and grounded in real cinematography principles. Score honestly — a mediocre AI-generated image should NOT score 90+. Reserve high scores for genuinely production-quality results.
 
@@ -342,15 +352,27 @@ OUTPUT VALID JSON ONLY:
   "summary": "2-3 sentence assessment"
 }`;
 
-    const parts = [
-        {
+    const parts = [];
+
+    // If we have a reference image for comparison (turnaround sheets), include it first
+    if (referenceImageBuffer) {
+        parts.push({
             inlineData: {
-                mimeType: mimeType || 'image/jpeg',
-                data: imageBuffer.toString('base64'),
+                mimeType: referenceImageMimeType || 'image/jpeg',
+                data: referenceImageBuffer.toString('base64'),
             }
-        },
-        { text: `↑ Analyze this ${entityLabel.toLowerCase()} reference image using the Holistic Image Audit framework.\n\n` + userPrompt }
-    ];
+        });
+        parts.push({ text: `↑ This is the REFERENCE IMAGE — the master visual anchor for this ${entityLabel.toLowerCase()}. The turnaround sheet below must match this reference.` });
+    }
+
+    // The image being analyzed
+    parts.push({
+        inlineData: {
+            mimeType: mimeType || 'image/jpeg',
+            data: imageBuffer.toString('base64'),
+        }
+    });
+    parts.push({ text: `↑ Analyze this ${entityLabel.toLowerCase()} ${imageTypeLabel} using the Holistic Image Audit framework.${referenceImageBuffer ? ' Compare against the reference image above.' : ''}\n\n` + userPrompt });
 
     try {
         const text = await callGemini({

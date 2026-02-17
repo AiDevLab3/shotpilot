@@ -30,7 +30,7 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
     const [refining, setRefining] = useState(false);
     const [availableModels, setAvailableModels] = useState<AIModel[]>([]);
     const [selectedModel, setSelectedModel] = useState<string>('');
-    const [turnaroundCopied, setTurnaroundCopied] = useState<number | null>(null);
+    const [turnaroundCopied, setTurnaroundCopied] = useState<boolean>(false);
     const [workflowExpanded, setWorkflowExpanded] = useState(false);
 
     // Generation history + entity images
@@ -221,7 +221,7 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
         }
     };
 
-    const handleCopyTurnaround = async (prompt: string, index: number) => {
+    const handleCopyTurnaround = async (prompt: string) => {
         try {
             await navigator.clipboard.writeText(prompt);
         } catch {
@@ -232,8 +232,8 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
             document.execCommand('copy');
             document.body.removeChild(textarea);
         }
-        setTurnaroundCopied(index);
-        setTimeout(() => setTurnaroundCopied(null), 2000);
+        setTurnaroundCopied(true);
+        setTimeout(() => setTurnaroundCopied(false), 2000);
     };
 
     const handleRefine = async (msg?: string) => {
@@ -633,91 +633,84 @@ export const CharacterAIAssistant: React.FC<CharacterAIAssistantProps> = ({
                         )}
                     </div>
 
-                    {/* Turnaround Prompts */}
-                    {suggestions.turnaroundPrompts && suggestions.turnaroundPrompts.length > 0 && (
-                        <div style={{ backgroundColor: '#1f1f23', padding: '12px', borderLeft: '3px solid #f59e0b' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                                <RotateCw size={13} color="#f59e0b" />
-                                <span style={styles.fieldLabel}>Turnaround Shots</span>
-                                <span style={{ fontSize: '10px', color: '#fbbf24', fontWeight: 400 }}>Step 2</span>
-                            </div>
-                            <span style={{ fontSize: '10px', color: '#6b7280', fontStyle: 'italic', display: 'block', marginBottom: '8px' }}>
-                                After creating your reference image, use these prompts to generate multi-angle views for character consistency across shots
-                            </span>
-                            {suggestions.turnaroundPrompts.map((prompt, index) => {
-                                const turnaroundLabel = index === 0 ? 'Front Portrait' : index === 1 ? '3/4 Profile' : index === 2 ? 'Full Body' : `Angle ${index + 1}`;
-                                const slotKey = `turnaround_${index}`;
-                                return (
-                                    <div key={index} style={{ marginBottom: index < suggestions.turnaroundPrompts!.length - 1 ? '10px' : '0' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                            <span style={{ fontSize: '11px', color: '#fbbf24', fontWeight: 600 }}>
-                                                {turnaroundLabel}
-                                            </span>
-                                            <button
-                                                onClick={() => handleCopyTurnaround(prompt, index)}
-                                                style={styles.copyBtn}
-                                            >
-                                                {turnaroundCopied === index ? (
-                                                    <><Check size={12} color="#10b981" /> Copied</>
-                                                ) : (
-                                                    <><Copy size={12} /> Copy</>
-                                                )}
-                                            </button>
-                                        </div>
-                                        <p style={{ ...styles.promptText, margin: '0', fontSize: '11px' }}>{prompt}</p>
-                                        {/* Turnaround image upload slot */}
-                                        {characterId && (
-                                            <div style={{ ...styles.uploadSlot, marginTop: '4px' }}>
-                                                {entityImages[slotKey] ? (
-                                                    <div>
-                                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                                                            <div style={styles.uploadPreview}>
-                                                                <img src={entityImages[slotKey].image_url} alt={turnaroundLabel} style={styles.uploadImg} />
-                                                                <button onClick={() => handleRemoveImage(slotKey)} style={styles.uploadRemoveBtn}><X size={10} /></button>
-                                                            </div>
-                                                            <button
-                                                                onClick={() => handleAnalyzeImage(slotKey)}
-                                                                disabled={analyzingSlot === slotKey}
-                                                                style={{
-                                                                    ...styles.analyzeBtn,
-                                                                    opacity: analyzingSlot === slotKey ? 0.5 : 1,
-                                                                    cursor: analyzingSlot === slotKey ? 'not-allowed' : 'pointer',
-                                                                }}
-                                                            >
-                                                                {analyzingSlot === slotKey ? (
-                                                                    <><Loader2 size={11} className="spin" /> Analyzing...</>
-                                                                ) : analysisResults[slotKey] && !analysisResults[slotKey].error ? (
-                                                                    <><Search size={11} /> Re-analyze</>
-                                                                ) : (
-                                                                    <><Search size={11} /> Analyze</>
-                                                                )}
-                                                            </button>
-                                                        </div>
-                                                        {renderAnalysisResults(slotKey)}
+                    {/* Turnaround Sheet */}
+                    {(() => {
+                        const turnaroundPrompt = suggestions.turnaroundPrompt || (suggestions.turnaroundPrompts && suggestions.turnaroundPrompts.length > 0 ? suggestions.turnaroundPrompts.join('\n\n') : null);
+                        if (!turnaroundPrompt) return null;
+                        const slotKey = 'turnaround';
+                        return (
+                            <div style={{ backgroundColor: '#1f1f23', padding: '12px', borderLeft: '3px solid #f59e0b' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                    <RotateCw size={13} color="#f59e0b" />
+                                    <span style={styles.fieldLabel}>Character Turnaround Sheet</span>
+                                    <span style={{ fontSize: '10px', color: '#fbbf24', fontWeight: 400 }}>Step 2</span>
+                                </div>
+                                <span style={{ fontSize: '10px', color: '#6b7280', fontStyle: 'italic', display: 'block', marginBottom: '8px' }}>
+                                    Generate a single image showing your character from 4 angles (front, 3/4, side, back) for consistency across shots
+                                </span>
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '4px' }}>
+                                    <button
+                                        onClick={() => handleCopyTurnaround(turnaroundPrompt)}
+                                        style={styles.copyBtn}
+                                    >
+                                        {turnaroundCopied ? (
+                                            <><Check size={12} color="#10b981" /> Copied</>
+                                        ) : (
+                                            <><Copy size={12} /> Copy</>
+                                        )}
+                                    </button>
+                                </div>
+                                <p style={{ ...styles.promptText, margin: '0', fontSize: '11px' }}>{turnaroundPrompt}</p>
+                                {characterId && (
+                                    <div style={{ ...styles.uploadSlot, marginTop: '6px' }}>
+                                        {entityImages[slotKey] ? (
+                                            <div>
+                                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                                                    <div style={styles.uploadPreview}>
+                                                        <img src={entityImages[slotKey].image_url} alt="Turnaround Sheet" style={styles.uploadImg} />
+                                                        <button onClick={() => handleRemoveImage(slotKey)} style={styles.uploadRemoveBtn}><X size={10} /></button>
                                                     </div>
-                                                ) : (
-                                                    <label style={styles.uploadSlotLabel}>
-                                                        {uploadingSlot === slotKey ? (
-                                                            <Loader2 size={14} className="spin" color="#f59e0b" />
+                                                    <button
+                                                        onClick={() => handleAnalyzeImage(slotKey)}
+                                                        disabled={analyzingSlot === slotKey}
+                                                        style={{
+                                                            ...styles.analyzeBtn,
+                                                            opacity: analyzingSlot === slotKey ? 0.5 : 1,
+                                                            cursor: analyzingSlot === slotKey ? 'not-allowed' : 'pointer',
+                                                        }}
+                                                    >
+                                                        {analyzingSlot === slotKey ? (
+                                                            <><Loader2 size={11} className="spin" /> Analyzing...</>
+                                                        ) : analysisResults[slotKey] && !analysisResults[slotKey].error ? (
+                                                            <><Search size={11} /> Re-analyze</>
                                                         ) : (
-                                                            <><Upload size={12} /> Upload {turnaroundLabel.toLowerCase()}</>
+                                                            <><Search size={11} /> Analyze</>
                                                         )}
-                                                        <input
-                                                            type="file"
-                                                            accept="image/*"
-                                                            ref={el => { fileInputRefs.current[slotKey] = el; }}
-                                                            onChange={() => handleImageUpload(slotKey, turnaroundLabel, prompt)}
-                                                            style={{ display: 'none' }}
-                                                        />
-                                                    </label>
-                                                )}
+                                                    </button>
+                                                </div>
+                                                {renderAnalysisResults(slotKey)}
                                             </div>
+                                        ) : (
+                                            <label style={styles.uploadSlotLabel}>
+                                                {uploadingSlot === slotKey ? (
+                                                    <Loader2 size={14} className="spin" color="#f59e0b" />
+                                                ) : (
+                                                    <><Upload size={12} /> Upload turnaround sheet</>
+                                                )}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    ref={el => { fileInputRefs.current[slotKey] = el; }}
+                                                    onChange={() => handleImageUpload(slotKey, 'Turnaround Sheet', turnaroundPrompt)}
+                                                    style={{ display: 'none' }}
+                                                />
+                                            </label>
                                         )}
                                     </div>
-                                );
-                            })}
-                        </div>
-                    )}
+                                )}
+                            </div>
+                        );
+                    })()}
 
                     {/* Consistency Tips */}
                     {suggestions.consistencyTips && suggestions.consistencyTips.length > 0 && (

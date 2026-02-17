@@ -177,6 +177,30 @@ export default function createGenerationRoutes({ db, sanitize, analyzeEntityImag
                 console.warn('[entity-analyze] Could not load KB:', err.message);
             }
 
+            // For turnaround sheets, load the reference image for comparison
+            let referenceImageBuffer = null;
+            let referenceImageMimeType = null;
+            if (entityImg.image_type === 'turnaround') {
+                const refImg = db.prepare(
+                    'SELECT image_url FROM entity_reference_images WHERE entity_type = ? AND entity_id = ? AND image_type = ?'
+                ).get(entityImg.entity_type, entityImg.entity_id, 'reference');
+                if (refImg && refImg.image_url) {
+                    try {
+                        const refPath = refImg.image_url.startsWith('/')
+                            ? path.join(__dirname, '../..', refImg.image_url)
+                            : refImg.image_url;
+                        if (fs.existsSync(refPath)) {
+                            referenceImageBuffer = fs.readFileSync(refPath);
+                            const refExt = path.extname(refPath).toLowerCase();
+                            const refMimeMap = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp' };
+                            referenceImageMimeType = refMimeMap[refExt] || 'image/jpeg';
+                        }
+                    } catch (e) {
+                        console.warn('[entity-analyze] Could not load reference image for comparison:', e.message);
+                    }
+                }
+            }
+
             const analysis = await analyzeEntityImage({
                 imageBuffer,
                 mimeType,
@@ -186,6 +210,9 @@ export default function createGenerationRoutes({ db, sanitize, analyzeEntityImag
                 entityDescription,
                 project,
                 kbContent,
+                referenceImageBuffer,
+                referenceImageMimeType,
+                isTurnaround: entityImg.image_type === 'turnaround',
             });
 
             // Store analysis results on the entity image record
