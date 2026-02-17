@@ -16,7 +16,10 @@
       "Bash(timeout:*)",
       "mcp__ide__getDiagnostics",
       "Bash(ls:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npx vite:*)",
+      "Bash(reference image\" as the visual source instead of relying on character\n  name alone\n- AI generates turnaroundUsesRef flag based on whether the model supports\n  reference image attachment \\(e.g. Midjourney --oref\\)\n- UI shows clear instruction: \"Copy this prompt and attach your reference)",
+      "Bash(image from Step 1\" when ref is needed, or \"no reference image needed\"\n  when the prompt is standalone\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }
