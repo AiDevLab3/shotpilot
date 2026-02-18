@@ -1,6 +1,6 @@
 # ShotPilot — Context Handoff Summary
 
-**Date:** February 17, 2026
+**Date:** February 18, 2026
 **Creator:** Caleb (self-described "visionary, not developer" — surface-level code understanding, defers technical decisions)
 **Repository:** `cramsey28/cine-ai-knowledge-base`
 **Active Branch:** `main`
@@ -141,6 +141,36 @@ All 15 functions are re-exported from `geminiService.js` so existing imports wor
 ---
 
 ## 5. What Was Done in Recent Sessions
+
+### Session: Feb 18 — Image Iteration Workflow, Stagnation Detection, Turnaround Restructure
+
+#### Iteration Workflow & Score Progression
+1. **Upload revised image inline** — After analyzing a reference/turnaround image and getting a revised prompt, users can now upload the improved image directly within the analysis results. The upload button auto-replaces the old image, stores the revised prompt, and auto-triggers re-analysis with iteration history tracking
+2. **Score progression timeline** — Analysis results now show iteration history as a visual roadmap: V1:74 → V2:78 → V3:82 → Next↓, with a numbered guide explaining the iterate-analyze-refine loop
+3. **Iteration history passed to backend** — `analyzeEntityImage()` now accepts optional `iterationHistory: Array<{ version, score }>` parameter, passed through frontend → API → imageAudit.js. AI receives context like "This is iteration 4. Previous scores: V1:74 → V2:78 → V3:78 → V4:82..."
+
+#### Stagnation Detection & Model Switch Recommendations
+4. **Plateau detection logic** — When iteration history shows 3+ iterations with <15 point improvement from V1, the AI flags a plateau and diagnoses why progress stalled (e.g., "Midjourney struggles with mechanical details at this level of realism")
+5. **Model switch recommendations** — Stagnation alert includes: diagnosis of why current model hit a wall, specific recommended alternative model (flux-pro, dall-e-3, ideogram, etc.), reasoning for the recommendation, and a ready-to-copy revised prompt formatted for the recommended model
+6. **Stagnation UI** — Red "Plateau Detected" warning box appears in analysis results, cyan "Try [Model]" recommendation with "Switch Model" button, copyable prompt block for seamless model transition
+
+#### Reference Strategy Guidance
+7. **Reference strategy in analysis** — Image analysis now includes `reference_strategy` field with three modes: `use_reference` (attach original image), `fresh_start` (no reference needed), or `ref_optional` (works either way). Displayed in both ObjectAIAssistant and CharacterAIAssistant with ImageIcon + explanation
+
+#### Turnaround Restructure
+8. **Turnaround is now primary output** — Moved turnaround sheet section above reference image in both Object and Character AI assistants. Removed "Step 1" / "Step 2" labeling (was misleading users into thinking both were mandatory)
+9. **Reference image is optional** — Collapsed into expandable "Optional: Single Reference Shot" section with gray border. Shows green "uploaded" badge when present but doesn't force users to create one
+10. **No reference required for turnarounds** — Backend `generateTurnaroundPrompt()` now works in two modes: with reference (uses original behavior), or from description only (writes fully standalone prompt with exhaustive physical details). Removed gate that prevented turnaround generation without reference
+11. **Workflow guide updated** — Instructions now say "Generate turnaround first, upload it, optionally expand reference section" instead of the old Step 1 → Step 2 flow
+
+#### Files Modified
+- `shotpilot-app/src/services/api.ts` — Added `iterationHistory` param to `analyzeEntityImage()`
+- `shotpilot-app/server/routes/generations.js` — Pass `iterationHistory` from request body to backend function
+- `shotpilot-app/server/services/ai/imageAudit.js` — Iteration context builder, stagnation detection logic, `stagnation_alert` schema field with diagnosis/recommended_model/revised_prompt
+- `shotpilot-app/src/components/ObjectAIAssistant.tsx` — `iterationHistory` state, `handleRevisionUpload()` function, iteration roadmap UI, stagnation alert UI, reference_strategy display, turnaround moved above reference, reference section made collapsible with `refSectionExpanded` state
+- `shotpilot-app/src/components/CharacterAIAssistant.tsx` — Same changes as ObjectAIAssistant (iteration workflow, stagnation detection, turnaround restructure)
+- `shotpilot-app/server/routes/ai.js` — Removed hard requirement for reference image in turnaround route, added `hasRefImage` flag, fallback to entity description
+- `shotpilot-app/server/services/ai/suggestions.js` — Two-mode `generateTurnaroundPrompt()`: with-reference vs from-description-only, different system instructions for each mode
 
 ### Session: Feb 17 — Creative Workflow Alignment, Objects Dual-Path, Director Entity Management
 
