@@ -32,6 +32,7 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
     const directorModel = useCreativeDirectorStore(s => s.sessions[projectId]?.targetModel || '');
     const [turnaroundCopied, setTurnaroundCopied] = useState<boolean>(false);
     const [workflowExpanded, setWorkflowExpanded] = useState(false);
+    const [refSectionExpanded, setRefSectionExpanded] = useState(false);
 
     // Separate turnaround state — independent from main suggestions
     const [turnaroundData, setTurnaroundData] = useState<{ turnaroundPrompt: string; turnaroundUsesRef: boolean } | null>(null);
@@ -904,173 +905,26 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                         </button>
                         {workflowExpanded && (
                             <ol style={{ margin: '0', padding: '0 12px 12px 28px', fontSize: '12px', color: '#d1d5db', lineHeight: '1.8' }}>
-                                <li><strong>Copy</strong> each prompt and paste it into your AI image tool to generate an image</li>
-                                <li><strong>Upload</strong> the generated images using the upload button below each prompt</li>
-                                <li>When creating shots in Scene Manager, your uploaded reference images will automatically be included for consistency</li>
+                                <li><strong>Generate</strong> a turnaround prompt, then copy it into your AI image tool</li>
+                                <li><strong>Upload</strong> the resulting turnaround sheet — this gives you multi-angle consistency</li>
+                                <li>Optionally, expand the reference section below to generate a single hero shot</li>
+                                <li>When creating shots in Scene Manager, your uploaded images will automatically be included for consistency</li>
                             </ol>
                         )}
                     </div>
 
-                    {/* Reference Prompt */}
-                    <div style={styles.promptCard}>
-                        <div style={styles.cardHeader}>
-                            <div>
-                                <span style={styles.fieldLabel}>Reference Image Prompt</span>
-                                <span style={{ fontSize: '10px', color: '#a78bfa', marginLeft: '6px', fontWeight: 400 }}>Step 1</span>
-                            </div>
-                            <button
-                                onClick={handleCopyPrompt}
-                                style={styles.copyBtn}
-                            >
-                                {promptCopied ? (
-                                    <><Check size={12} color="#10b981" /> Copied</>
-                                ) : (
-                                    <><Copy size={12} /> Copy</>
-                                )}
-                            </button>
-                        </div>
-                        <p style={styles.promptText}>{suggestions.referencePrompt}</p>
-                        <span style={styles.promptHint}>
-                            Copy this prompt into {selectedModel ? (availableModels.find(m => m.name === selectedModel)?.displayName || selectedModel) : 'your AI image tool'} to generate a master reference image, then upload the result below
-                        </span>
-                        {/* Reference image upload slot */}
-                        {objectId && (
-                            <div style={styles.uploadSlot}>
-                                {entityImages['reference'] ? (
-                                    <div>
-                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                                            <div style={styles.uploadPreview}>
-                                                <img src={entityImages['reference'].image_url} alt="Reference" style={{ ...styles.uploadImg, cursor: 'zoom-in' }} onClick={() => setLightboxSrc(entityImages['reference'].image_url)} />
-                                                <button onClick={() => handleRemoveImage('reference')} style={styles.uploadRemoveBtn}><X size={10} /></button>
-                                            </div>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                <button
-                                                    onClick={() => handleAnalyzeImage('reference')}
-                                                    disabled={analyzingSlot === 'reference'}
-                                                    style={{
-                                                        ...styles.analyzeBtn,
-                                                        opacity: analyzingSlot === 'reference' ? 0.5 : 1,
-                                                        cursor: analyzingSlot === 'reference' ? 'not-allowed' : 'pointer',
-                                                    }}
-                                                >
-                                                    {analyzingSlot === 'reference' ? (
-                                                        <><Loader2 size={11} className="spin" /> Analyzing...</>
-                                                    ) : analysisResults['reference'] && !analysisResults['reference'].error ? (
-                                                        <><Search size={11} /> Re-analyze</>
-                                                    ) : (
-                                                        <><Search size={11} /> Analyze</>
-                                                    )}
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        setRefPromptDraft(entityImages['reference'].prompt || '');
-                                                        setEditingRefPrompt(prev => !prev);
-                                                    }}
-                                                    style={{ ...styles.copyBtn, fontSize: '9px', padding: '2px 6px', color: entityImages['reference'].prompt ? '#10b981' : '#f59e0b' }}
-                                                >
-                                                    {entityImages['reference'].prompt ? 'Prompt stored' : 'Add prompt used'}
-                                                </button>
-                                            </div>
-                                        </div>
-                                        {editingRefPrompt && (
-                                            <div style={{ marginTop: '6px', padding: '8px', backgroundColor: '#18181b', borderRadius: '6px', border: '1px solid #3f3f46' }}>
-                                                <label style={{ fontSize: '10px', color: '#9ca3af', display: 'block', marginBottom: '4px' }}>
-                                                    Paste the prompt you used to create this image (optional — helps turnaround accuracy)
-                                                </label>
-                                                <textarea
-                                                    value={refPromptDraft}
-                                                    onChange={(e) => setRefPromptDraft(e.target.value)}
-                                                    placeholder="e.g. Detailed studio product shot of a vintage pocket watch..."
-                                                    rows={3}
-                                                    style={{
-                                                        width: '100%',
-                                                        padding: '6px 8px',
-                                                        backgroundColor: '#27272a',
-                                                        border: '1px solid #3f3f46',
-                                                        borderRadius: '4px',
-                                                        color: '#e5e7eb',
-                                                        fontSize: '11px',
-                                                        fontFamily: 'monospace',
-                                                        resize: 'vertical',
-                                                        outline: 'none',
-                                                        boxSizing: 'border-box',
-                                                    }}
-                                                />
-                                                <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
-                                                    <button
-                                                        onClick={handleSaveRefPrompt}
-                                                        disabled={savingRefPrompt}
-                                                        style={{ ...styles.triggerBtn, fontSize: '10px', padding: '4px 10px', backgroundColor: '#059669' }}
-                                                    >
-                                                        {savingRefPrompt ? <Loader2 size={10} className="spin" /> : <Check size={10} />}
-                                                        Save
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setEditingRefPrompt(false)}
-                                                        style={{ ...styles.copyBtn, fontSize: '10px', padding: '4px 10px' }}
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {renderAnalysisResults('reference')}
-                                    </div>
-                                ) : (
-                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                                        <label style={styles.uploadSlotLabel}>
-                                            {uploadingSlot === 'reference' ? (
-                                                <Loader2 size={14} className="spin" color="#8b5cf6" />
-                                            ) : (
-                                                <><Upload size={12} /> Upload generated image</>
-                                            )}
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                ref={el => { fileInputRefs.current['reference'] = el; }}
-                                                onChange={() => handleImageUpload('reference', 'Reference Image', suggestions?.referencePrompt || '')}
-                                                style={{ display: 'none' }}
-                                            />
-                                        </label>
-                                        <label style={{ ...styles.uploadSlotLabel, borderColor: '#4b5563' }}>
-                                            {uploadingSlot === 'reference-own' ? (
-                                                <Loader2 size={14} className="spin" color="#6b7280" />
-                                            ) : (
-                                                <><ImageIcon size={12} /> Upload your own image</>
-                                            )}
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                ref={el => { fileInputRefs.current['reference-own'] = el; }}
-                                                onChange={() => handleImageUpload('reference', 'Reference Image (user-provided)', '', 'reference-own')}
-                                                style={{ display: 'none' }}
-                                            />
-                                        </label>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Turnaround Sheet — separate generation, only after reference image uploaded */}
+                    {/* Turnaround Sheet — primary output */}
                     {objectId && (
                         <div style={{ backgroundColor: '#1f1f23', padding: '12px', borderLeft: '3px solid #f59e0b' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
                                 <RotateCw size={13} color="#f59e0b" />
                                 <span style={styles.fieldLabel}>Object Turnaround Sheet</span>
-                                <span style={{ fontSize: '10px', color: '#fbbf24', fontWeight: 400 }}>Step 2</span>
                             </div>
                             <span style={{ fontSize: '10px', color: '#6b7280', fontStyle: 'italic', display: 'block', marginBottom: '8px' }}>
                                 Generate a single image showing your object from 4 angles (front 3/4, side, back, detail) for consistency across shots
                             </span>
 
-                            {!entityImages['reference'] ? (
-                                <div style={{ padding: '10px', backgroundColor: '#18181b', borderRadius: '6px', border: '1px dashed #3f3f46', textAlign: 'center' }}>
-                                    <span style={{ fontSize: '11px', color: '#6b7280' }}>
-                                        Upload a reference image in Step 1 first — the turnaround prompt will be built from it
-                                    </span>
-                                </div>
-                            ) : !turnaroundData && !turnaroundLoading ? (
+                            {!turnaroundData && !turnaroundLoading ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
                                     <button
                                         onClick={handleGenerateTurnaround}
@@ -1086,7 +940,7 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                             ) : turnaroundLoading ? (
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px' }}>
                                     <Loader2 size={16} className="spin" color="#f59e0b" />
-                                    <span style={{ fontSize: '12px', color: '#9ca3af' }}>Generating turnaround prompt from your reference image...</span>
+                                    <span style={{ fontSize: '12px', color: '#9ca3af' }}>Generating turnaround prompt...</span>
                                 </div>
                             ) : turnaroundData ? (
                                 <>
@@ -1111,7 +965,7 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                                     <p style={{ ...styles.promptText, margin: '0', fontSize: '11px' }}>{turnaroundData.turnaroundPrompt}</p>
                                     <span style={styles.promptHint}>
                                         {turnaroundData.turnaroundUsesRef
-                                            ? `Copy this prompt and attach your reference image from Step 1 into ${selectedModel ? (availableModels.find(m => m.name === selectedModel)?.displayName || selectedModel) : 'your AI image tool'}, then upload the result below`
+                                            ? `Copy this prompt and attach your reference image into ${selectedModel ? (availableModels.find(m => m.name === selectedModel)?.displayName || selectedModel) : 'your AI image tool'}, then upload the result below`
                                             : `Copy this prompt into ${selectedModel ? (availableModels.find(m => m.name === selectedModel)?.displayName || selectedModel) : 'your AI image tool'} (no reference image needed — full description included), then upload the result below`
                                         }
                                     </span>
@@ -1170,6 +1024,158 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                             ) : null}
                         </div>
                     )}
+
+                    {/* Optional: Single Reference Image — collapsible */}
+                    <div style={{ backgroundColor: '#1f1f23', borderLeft: '3px solid #6b7280' }}>
+                        <button
+                            onClick={() => setRefSectionExpanded(prev => !prev)}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '10px 12px', backgroundColor: 'transparent', border: 'none', cursor: 'pointer', color: '#9ca3af' }}
+                        >
+                            <span style={{ fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <ImageIcon size={13} /> Optional: Single Reference Shot
+                                {entityImages['reference'] && <span style={{ fontSize: '9px', color: '#10b981', marginLeft: '4px' }}>uploaded</span>}
+                            </span>
+                            <ChevronDown size={14} style={{ transform: refSectionExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+                        </button>
+                        {refSectionExpanded && (
+                            <div style={{ padding: '0 12px 12px' }}>
+                                <span style={{ fontSize: '10px', color: '#6b7280', fontStyle: 'italic', display: 'block', marginBottom: '8px' }}>
+                                    A single hero shot of your object — useful for quick visual checks or as an attachment when generating turnarounds
+                                </span>
+                                <div style={styles.cardHeader}>
+                                    <span style={styles.fieldLabel}>Reference Image Prompt</span>
+                                    <button onClick={handleCopyPrompt} style={styles.copyBtn}>
+                                        {promptCopied ? (
+                                            <><Check size={12} color="#10b981" /> Copied</>
+                                        ) : (
+                                            <><Copy size={12} /> Copy</>
+                                        )}
+                                    </button>
+                                </div>
+                                <p style={styles.promptText}>{suggestions.referencePrompt}</p>
+                                <span style={styles.promptHint}>
+                                    Copy this prompt into {selectedModel ? (availableModels.find(m => m.name === selectedModel)?.displayName || selectedModel) : 'your AI image tool'} to generate a reference image
+                                </span>
+                                {/* Reference image upload slot */}
+                                {objectId && (
+                                    <div style={styles.uploadSlot}>
+                                        {entityImages['reference'] ? (
+                                            <div>
+                                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                                                    <div style={styles.uploadPreview}>
+                                                        <img src={entityImages['reference'].image_url} alt="Reference" style={{ ...styles.uploadImg, cursor: 'zoom-in' }} onClick={() => setLightboxSrc(entityImages['reference'].image_url)} />
+                                                        <button onClick={() => handleRemoveImage('reference')} style={styles.uploadRemoveBtn}><X size={10} /></button>
+                                                    </div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                        <button
+                                                            onClick={() => handleAnalyzeImage('reference')}
+                                                            disabled={analyzingSlot === 'reference'}
+                                                            style={{
+                                                                ...styles.analyzeBtn,
+                                                                opacity: analyzingSlot === 'reference' ? 0.5 : 1,
+                                                                cursor: analyzingSlot === 'reference' ? 'not-allowed' : 'pointer',
+                                                            }}
+                                                        >
+                                                            {analyzingSlot === 'reference' ? (
+                                                                <><Loader2 size={11} className="spin" /> Analyzing...</>
+                                                            ) : analysisResults['reference'] && !analysisResults['reference'].error ? (
+                                                                <><Search size={11} /> Re-analyze</>
+                                                            ) : (
+                                                                <><Search size={11} /> Analyze</>
+                                                            )}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                setRefPromptDraft(entityImages['reference'].prompt || '');
+                                                                setEditingRefPrompt(prev => !prev);
+                                                            }}
+                                                            style={{ ...styles.copyBtn, fontSize: '9px', padding: '2px 6px', color: entityImages['reference'].prompt ? '#10b981' : '#f59e0b' }}
+                                                        >
+                                                            {entityImages['reference'].prompt ? 'Prompt stored' : 'Add prompt used'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                {editingRefPrompt && (
+                                                    <div style={{ marginTop: '6px', padding: '8px', backgroundColor: '#18181b', borderRadius: '6px', border: '1px solid #3f3f46' }}>
+                                                        <label style={{ fontSize: '10px', color: '#9ca3af', display: 'block', marginBottom: '4px' }}>
+                                                            Paste the prompt you used to create this image (optional — helps turnaround accuracy)
+                                                        </label>
+                                                        <textarea
+                                                            value={refPromptDraft}
+                                                            onChange={(e) => setRefPromptDraft(e.target.value)}
+                                                            placeholder="e.g. Detailed studio product shot of a vintage pocket watch..."
+                                                            rows={3}
+                                                            style={{
+                                                                width: '100%',
+                                                                padding: '6px 8px',
+                                                                backgroundColor: '#27272a',
+                                                                border: '1px solid #3f3f46',
+                                                                borderRadius: '4px',
+                                                                color: '#e5e7eb',
+                                                                fontSize: '11px',
+                                                                fontFamily: 'monospace',
+                                                                resize: 'vertical',
+                                                                outline: 'none',
+                                                                boxSizing: 'border-box',
+                                                            }}
+                                                        />
+                                                        <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                                                            <button
+                                                                onClick={handleSaveRefPrompt}
+                                                                disabled={savingRefPrompt}
+                                                                style={{ ...styles.triggerBtn, fontSize: '10px', padding: '4px 10px', backgroundColor: '#059669' }}
+                                                            >
+                                                                {savingRefPrompt ? <Loader2 size={10} className="spin" /> : <Check size={10} />}
+                                                                Save
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setEditingRefPrompt(false)}
+                                                                style={{ ...styles.copyBtn, fontSize: '10px', padding: '4px 10px' }}
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {renderAnalysisResults('reference')}
+                                            </div>
+                                        ) : (
+                                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                                <label style={styles.uploadSlotLabel}>
+                                                    {uploadingSlot === 'reference' ? (
+                                                        <Loader2 size={14} className="spin" color="#8b5cf6" />
+                                                    ) : (
+                                                        <><Upload size={12} /> Upload generated image</>
+                                                    )}
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        ref={el => { fileInputRefs.current['reference'] = el; }}
+                                                        onChange={() => handleImageUpload('reference', 'Reference Image', suggestions?.referencePrompt || '')}
+                                                        style={{ display: 'none' }}
+                                                    />
+                                                </label>
+                                                <label style={{ ...styles.uploadSlotLabel, borderColor: '#4b5563' }}>
+                                                    {uploadingSlot === 'reference-own' ? (
+                                                        <Loader2 size={14} className="spin" color="#6b7280" />
+                                                    ) : (
+                                                        <><ImageIcon size={12} /> Upload your own image</>
+                                                    )}
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        ref={el => { fileInputRefs.current['reference-own'] = el; }}
+                                                        onChange={() => handleImageUpload('reference', 'Reference Image (user-provided)', '', 'reference-own')}
+                                                        style={{ display: 'none' }}
+                                                    />
+                                                </label>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
 
                     {/* Consistency Tips */}
                     {suggestions.consistencyTips && suggestions.consistencyTips.length > 0 && (
