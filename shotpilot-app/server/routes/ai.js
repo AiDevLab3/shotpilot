@@ -460,18 +460,16 @@ export default function createAIRoutes({
             const { entityType, entityId } = req.params;
             const { targetModel } = req.body;
 
-            // Look up the reference image's stored prompt
+            // Look up the reference image's stored prompt (if one exists)
             const refImg = db.prepare(
                 'SELECT prompt, image_url FROM entity_reference_images WHERE entity_type = ? AND entity_id = ? AND image_type = ?'
             ).get(entityType, entityId, 'reference');
-            if (!refImg) {
-                return res.status(400).json({ error: 'No reference image found. Upload a reference image first.' });
-            }
 
-            // If no stored prompt (user uploaded their own image), analyze the image
-            // with Gemini to generate a description to use as the reference prompt
-            let originalRefPrompt = refImg.prompt || '';
-            if (!originalRefPrompt.trim() && refImg.image_url) {
+            let originalRefPrompt = refImg?.prompt || '';
+            let hasRefImage = !!refImg;
+
+            // If reference exists but no stored prompt, analyze the image to get a description
+            if (!originalRefPrompt.trim() && refImg?.image_url) {
                 try {
                     const imgPath = refImg.image_url.startsWith('/')
                         ? path.join(__dirname, '../..', refImg.image_url)
@@ -499,10 +497,6 @@ export default function createAIRoutes({
                 } catch (err) {
                     console.warn('[turnaround-prompt] Could not analyze reference image:', err.message);
                 }
-            }
-
-            if (!originalRefPrompt.trim()) {
-                return res.status(400).json({ error: 'Could not determine what the reference image contains. Try re-uploading from the AI assistant.' });
             }
 
             // Look up entity details
@@ -556,11 +550,21 @@ export default function createAIRoutes({
                 try { modelKBContent = loadKBForModel(resolvedModel); } catch {}
             }
 
+            // If no reference prompt and no reference image, use entity description as the source
+            if (!originalRefPrompt.trim() && entityDescription) {
+                originalRefPrompt = entityDescription;
+            }
+
+            if (!originalRefPrompt.trim()) {
+                return res.status(400).json({ error: 'Add a description to the entity first, or upload a reference image.' });
+            }
+
             const result = await generateTurnaroundPrompt({
                 entityType,
                 entityName,
                 entityDescription,
                 originalRefPrompt,
+                hasRefImage: hasRefImage,
                 project,
                 kbContent,
                 modelKBContent,

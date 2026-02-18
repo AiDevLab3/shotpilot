@@ -361,7 +361,7 @@ OUTPUT VALID JSON ONLY:
  * that was used to create the uploaded reference image.
  */
 async function generateTurnaroundPrompt(context) {
-    const { entityType, entityName, entityDescription, originalRefPrompt, project, kbContent, modelKBContent, targetModel } = context;
+    const { entityType, entityName, entityDescription, originalRefPrompt, hasRefImage, project, kbContent, modelKBContent, targetModel } = context;
 
     const isCharacter = entityType === 'character';
     const entityLabel = isCharacter ? 'character' : 'object';
@@ -375,13 +375,38 @@ async function generateTurnaroundPrompt(context) {
         ? `Generate the turnaround prompt for ${targetModel}. Use the model-specific KB below for EXACT syntax and parameters.`
         : `No target model selected. Use Midjourney V7 syntax as default. ALWAYS --v 7, NEVER --v 6 or --v 6.1. Use --oref for reference images.`;
 
-    const systemInstruction = `You are an expert ${isCharacter ? 'character designer' : 'prop master'} for AI-generated cinematography. You are generating a turnaround sheet prompt that MUST be consistent with an existing reference image.
+    // Two modes: with reference image or from description only
+    const hasRef = hasRefImage && originalRefPrompt && originalRefPrompt.trim().length > 0;
+
+    const systemInstruction = hasRef
+        ? `You are an expert ${isCharacter ? 'character designer' : 'prop master'} for AI-generated cinematography. You are generating a turnaround sheet prompt that MUST be consistent with an existing reference image.
 
 CRITICAL: The user has already created a reference image using a specific prompt. Your turnaround prompt must build on that EXACT prompt — same physical details, same style, same model syntax. The model does NOT know this ${entityLabel} by name. The prompt must reference "the attached reference image" as the visual source.
 
 ${modelNote}
 
+CRITICAL RULE: Only use model syntax that appears in the KB content provided.`
+        : `You are an expert ${isCharacter ? 'character designer' : 'prop master'} for AI-generated cinematography. You are generating a turnaround sheet prompt from a ${entityLabel} description.
+
+The user does NOT have a reference image yet. Your turnaround prompt must be a COMPLETE standalone description — include every physical detail needed for the AI model to generate a consistent ${entityLabel} across all 4 angles. Be extremely specific about appearance since there's no visual reference to anchor from.
+
+${modelNote}
+
 CRITICAL RULE: Only use model syntax that appears in the KB content provided.`;
+
+    const refPromptSection = hasRef
+        ? `ORIGINAL REFERENCE PROMPT (the exact prompt used to create the reference image — your turnaround prompt must be consistent with this):
+${originalRefPrompt}`
+        : `NO REFERENCE IMAGE — Generate the turnaround from the description alone. Be exhaustively specific about every visual detail.`;
+
+    const refRequirements = hasRef
+        ? `- The prompt must say "turnaround sheet of the ${entityLabel} in the attached reference image" — the user will attach their reference image
+- Pull physical details, style, lighting language, and model syntax from the ORIGINAL REFERENCE PROMPT above
+- If the model supports reference image parameters (e.g. Midjourney --oref), include them and set turnaroundUsesRef to true
+- If the model does NOT support reference image attachment, write full standalone descriptions and set turnaroundUsesRef to false`
+        : `- Write a FULLY STANDALONE prompt — no reference to any attached image since there isn't one
+- Include exhaustive physical details: ${isCharacter ? 'face shape, eye color, hair style/color, skin tone, body type, exact clothing with materials/colors, accessories' : 'exact materials, colors, textures, dimensions, condition, distinctive features'}
+- Set turnaroundUsesRef to false (no reference image available)`;
 
     const userPrompt = `${kbContent ? `CORE KB PRINCIPLES:\n${kbContent}\n` : ''}
 ${modelKBContent ? `MODEL-SPECIFIC KB (${targetModel}):\n${modelKBContent}\n` : ''}
@@ -390,22 +415,18 @@ ${projectBlock}
 ${entityLabel.toUpperCase()} NAME: ${entityName || 'Unnamed'}
 ${entityDescription ? `${entityLabel.toUpperCase()} DESCRIPTION: ${entityDescription}` : ''}
 
-ORIGINAL REFERENCE PROMPT (the exact prompt used to create the reference image — your turnaround prompt must be consistent with this):
-${originalRefPrompt}
+${refPromptSection}
 
 Generate a single turnaround sheet prompt that produces a 2x2 grid showing this ${entityLabel} from 4 angles (${angles}).
 
 Requirements:
-- The prompt must say "turnaround sheet of the ${entityLabel} in the attached reference image" — the user will attach their reference image
-- Pull physical details, style, lighting language, and model syntax from the ORIGINAL REFERENCE PROMPT above
-- If the model supports reference image parameters (e.g. Midjourney --oref), include them and set turnaroundUsesRef to true
-- If the model does NOT support reference image attachment, write full standalone descriptions and set turnaroundUsesRef to false
+${refRequirements}
 - Request consistent even lighting, neutral pose, clean background across all 4 angles
 
 OUTPUT VALID JSON ONLY:
 {
   "turnaroundPrompt": "The complete turnaround sheet prompt ready to copy-paste",
-  "turnaroundUsesRef": true
+  "turnaroundUsesRef": ${hasRef ? 'true' : 'false'}
 }`;
 
     const text = await callGemini({
