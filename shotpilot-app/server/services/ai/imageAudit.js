@@ -220,7 +220,7 @@ OUTPUT VALID JSON ONLY:
  * will integrate seamlessly when used in shot generation — same quality bar,
  * same visual language, same realism standards.
  */
-async function analyzeEntityImage({ imageBuffer, mimeType, originalPrompt, entityType, entityName, entityDescription, project, kbContent, modelKBContent, targetModel, referenceImageBuffer, referenceImageMimeType, isTurnaround }) {
+async function analyzeEntityImage({ imageBuffer, mimeType, originalPrompt, entityType, entityName, entityDescription, project, kbContent, modelKBContent, targetModel, referenceImageBuffer, referenceImageMimeType, isTurnaround, iterationHistory }) {
     const projectBlock = project ? buildContextBlock('PROJECT', project) : '';
     const entityLabel = entityType === 'character' ? 'Character' : 'Object';
 
@@ -276,7 +276,36 @@ REALISM DIAGNOSIS — Check for these 4 common AI image failure patterns:
 
 4. "Lighting Drift" — Light direction and source inconsistent within image or doesn't match scene intent, shadows fall in wrong direction, multiple conflicting light sources without motivation. CAUSE: Light direction and source not locked. FIX: Define scene-level lighting lock (source + direction + quality + contrast ratio), treat lighting as canon.
 
-For each pattern detected, classify severity as "severe" (dominates the image), "moderate" (noticeable but not dominant), or "none" (not present). Only include patterns that are actually present (not "none").`;
+For each pattern detected, classify severity as "severe" (dominates the image), "moderate" (noticeable but not dominant), or "none" (not present). Only include patterns that are actually present (not "none").
+
+STAGNATION DETECTION — When iteration history is provided, you MUST analyze the score trajectory:
+- If 3+ iterations have been attempted and total improvement is less than 15 points from V1, this is STAGNATION.
+- When stagnation is detected: the current model/approach has likely hit its ceiling for this subject. Do NOT give another round of minor prompt tweaks that will yield +2 points.
+- Instead, you MUST:
+  1. Diagnose WHY the model is plateauing (e.g., "Midjourney V7 tends to over-stylize photorealistic portraits — the plastic skin and HDR glow are baked into the model's aesthetic")
+  2. Recommend a SPECIFIC different model and explain why it would do better (e.g., "Switch to Flux Pro for photorealistic work — it handles skin texture and natural lighting falloff significantly better than Midjourney for this type of subject")
+  3. Write the revised_prompt formatted for the RECOMMENDED model, not the current one
+  4. If the approach itself is flawed (e.g., trying to get photorealism from a stylized model), say so directly
+
+Model strengths you should know:
+- Midjourney: Strong aesthetic style, cinematic compositions, struggles with true photorealism and specific details
+- Flux (Pro/Dev): Excellent photorealism, natural skin textures, accurate text rendering, less "artistic" default look
+- DALL-E 3: Good at following complex instructions, decent realism, can be too clean/corporate
+- Stable Diffusion (SDXL/SD3): Highly controllable with LoRAs, great for specific styles, requires more prompt engineering
+- Ideogram: Strong at text in images, good compositions, newer model with improving quality`;
+
+
+
+    // Build iteration context for stagnation detection
+    let iterationContext = '';
+    if (Array.isArray(iterationHistory) && iterationHistory.length > 0) {
+        const scores = iterationHistory.map(h => `V${h.version}: ${h.score}`).join(' → ');
+        const firstScore = iterationHistory[0].score;
+        const lastScore = iterationHistory[iterationHistory.length - 1].score;
+        const totalImprovement = lastScore - firstScore;
+        const iterCount = iterationHistory.length;
+        iterationContext = `\nITERATION HISTORY — This is iteration ${iterCount + 1}. Previous scores: ${scores} (total improvement: ${totalImprovement > 0 ? '+' : ''}${totalImprovement} over ${iterCount} iteration${iterCount > 1 ? 's' : ''}).${iterCount >= 3 && totalImprovement < 15 ? `\n⚠️ STAGNATION DETECTED — ${iterCount} iterations with only ${totalImprovement} points of improvement. The current approach has hit a ceiling. You MUST recommend a different model or fundamentally different approach. Do NOT suggest minor prompt tweaks.` : iterCount >= 2 && totalImprovement < 5 ? '\n⚠️ SLOW PROGRESS — Score is barely improving. Consider whether a different model would be more effective.' : ''}\n`;
+    }
 
     const contextLines = [];
     if (entityName) contextLines.push(`${entityLabel} Name: ${entityName}`);
@@ -296,7 +325,7 @@ For each pattern detected, classify severity as "severe" (dominates the image), 
     const userPrompt = `${kbContent ? `KNOWLEDGE BASE (use for evaluation criteria):\n${kbContent}\n\n` : ''}${modelKBContent ? `MODEL GUIDE:\n${modelKBContent}\n\n` : ''}${projectBlock}
 ${contextLines.length > 0 ? `\n${entityLabel.toUpperCase()} DETAILS:\n${contextLines.join('\n')}\n` : ''}
 ${promptSection}
-
+${iterationContext}
 ${modelSection}
 
 Analyze the uploaded ${entityLabel.toLowerCase()} reference image across ALL 6 dimensions. Compare against the project DNA and ${entityLabel.toLowerCase()} description. Score the IMAGE QUALITY itself — not how well it matches a prompt.
@@ -365,6 +394,13 @@ OUTPUT VALID JSON ONLY:
   "reference_strategy": {
     "action": "use_reference" | "fresh_start" | "ref_optional",
     "reason": "Brief explanation of why — e.g., 'The subject and composition are solid, so using this image as a reference will help preserve the good parts while the revised prompt fixes the lighting issues' or 'Fundamental composition and subject issues mean starting fresh will give better results than trying to iterate'"
+  },
+  "stagnation_alert": null | {
+    "detected": true,
+    "diagnosis": "Why the current model/approach is plateauing — be specific about the model's limitations for this subject",
+    "recommended_model": "Name of the recommended model (e.g., 'flux-pro', 'midjourney', 'dall-e-3')",
+    "recommended_model_reason": "Why this model would do better — cite specific strengths relevant to the issues found",
+    "revised_prompt_for_recommended": "Complete revised prompt formatted for the RECOMMENDED model (not the current one)"
   },
   "summary": "2-3 sentence assessment"
 }`;
@@ -442,6 +478,15 @@ OUTPUT VALID JSON ONLY:
             revised_prompt: parsed.revised_prompt || originalPrompt,
             reference_strategy: parsed.reference_strategy && parsed.reference_strategy.action
                 ? { action: parsed.reference_strategy.action, reason: parsed.reference_strategy.reason || '' }
+                : null,
+            stagnation_alert: parsed.stagnation_alert && parsed.stagnation_alert.detected
+                ? {
+                    detected: true,
+                    diagnosis: parsed.stagnation_alert.diagnosis || '',
+                    recommended_model: parsed.stagnation_alert.recommended_model || '',
+                    recommended_model_reason: parsed.stagnation_alert.recommended_model_reason || '',
+                    revised_prompt_for_recommended: parsed.stagnation_alert.revised_prompt_for_recommended || '',
+                }
                 : null,
             summary: parsed.summary || '',
         };

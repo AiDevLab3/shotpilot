@@ -591,11 +591,11 @@ export const updateEntityImagePrompt = async (id: number, prompt: string): Promi
     });
 };
 
-export const analyzeEntityImage = async (imageId: number, targetModel?: string): Promise<any> => {
+export const analyzeEntityImage = async (imageId: number, targetModel?: string, iterationHistory?: Array<{ version: number; score: number }>): Promise<any> => {
     return apiCall(`/entity-images/${imageId}/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetModel }),
+        body: JSON.stringify({ targetModel, iterationHistory }),
     });
 };
 

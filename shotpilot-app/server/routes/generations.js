@@ -118,7 +118,7 @@ export default function createGenerationRoutes({ db, sanitize, analyzeEntityImag
     router.post('/api/entity-images/:id/analyze', async (req, res) => {
         try {
             const { id } = req.params;
-            const { targetModel } = req.body || {};
+            const { targetModel, iterationHistory } = req.body || {};
             const entityImg = db.prepare('SELECT * FROM entity_reference_images WHERE id = ?').get(id);
             if (!entityImg) return res.status(404).json({ error: 'Entity image not found' });
             if (!entityImg.image_url) return res.status(400).json({ error: 'No image uploaded' });
@@ -225,6 +225,7 @@ export default function createGenerationRoutes({ db, sanitize, analyzeEntityImag
                 referenceImageBuffer,
                 referenceImageMimeType,
                 isTurnaround: entityImg.image_type === 'turnaround',
+                iterationHistory,
             });
 
             // Stamp the target model onto the analysis so the UI can display it

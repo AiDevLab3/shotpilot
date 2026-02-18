@@ -146,7 +146,7 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
         try {
             // Model resolution chain: local selector → Director's model → let backend decide
             const resolvedModel = selectedModel || directorModel || undefined;
-            const result = await analyzeEntityImage(img.id, resolvedModel);
+            const result = await analyzeEntityImage(img.id, resolvedModel, iterationHistory.length > 0 ? iterationHistory : undefined);
             setAnalysisResults(prev => ({ ...prev, [slot]: result }));
             setAnalysisExpanded(prev => ({ ...prev, [slot]: true }));
         } catch (err: any) {
@@ -209,7 +209,12 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
             const newImg = images.find((img: any) => img.image_type === slot);
             if (newImg) {
                 const resolvedModel = selectedModel || directorModel || undefined;
-                const result = await analyzeEntityImage(newImg.id, resolvedModel);
+                // Use a snapshot of history — state may not have updated yet
+                const historySnapshot = [...iterationHistory];
+                if (historySnapshot.length === 0 && currentScore > 0) {
+                    historySnapshot.push({ version: 1, score: currentScore });
+                }
+                const result = await analyzeEntityImage(newImg.id, resolvedModel, historySnapshot.length > 0 ? historySnapshot : undefined);
                 setAnalysisResults(prev => ({ ...prev, [slot]: result }));
                 setAnalysisExpanded(prev => ({ ...prev, [slot]: true }));
 
@@ -392,6 +397,62 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                     <div style={{ padding: '8px', borderTop: '1px solid #27272a' }}>
                         {analysis.summary && (
                             <p style={{ margin: '0 0 8px 0', fontSize: '11px', color: '#d1d5db', lineHeight: '1.5' }}>{analysis.summary}</p>
+                        )}
+                        {/* Stagnation alert — model switch recommendation */}
+                        {analysis.stagnation_alert && (
+                            <div style={{ marginBottom: '10px', padding: '10px', backgroundColor: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '6px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '6px' }}>
+                                    <AlertTriangle size={13} color="#ef4444" />
+                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.03em' }}>Plateau Detected</span>
+                                </div>
+                                <p style={{ margin: '0 0 8px 0', fontSize: '11px', color: '#fca5a5', lineHeight: '1.5' }}>
+                                    {analysis.stagnation_alert.diagnosis}
+                                </p>
+                                {analysis.stagnation_alert.recommended_model && (
+                                    <div style={{ padding: '8px', backgroundColor: 'rgba(34,211,238,0.06)', border: '1px solid rgba(34,211,238,0.2)', borderRadius: '4px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                            <span style={{ fontSize: '10px', fontWeight: 700, color: '#22d3ee', textTransform: 'uppercase' }}>
+                                                Try {analysis.stagnation_alert.recommended_model}
+                                            </span>
+                                            <button
+                                                onClick={() => {
+                                                    const modelMatch = availableModels.find(m =>
+                                                        m.name.toLowerCase().includes(analysis.stagnation_alert.recommended_model.toLowerCase()) ||
+                                                        analysis.stagnation_alert.recommended_model.toLowerCase().includes(m.name.toLowerCase())
+                                                    );
+                                                    if (modelMatch) setSelectedModel(modelMatch.name);
+                                                }}
+                                                style={{ padding: '3px 10px', backgroundColor: '#164e63', border: '1px solid #0e7490', borderRadius: '4px', color: '#22d3ee', fontSize: '10px', fontWeight: 600, cursor: 'pointer' }}
+                                            >
+                                                Switch Model
+                                            </button>
+                                        </div>
+                                        <p style={{ margin: '0 0 6px 0', fontSize: '10px', color: '#a5b4fc', lineHeight: '1.4' }}>
+                                            {analysis.stagnation_alert.recommended_model_reason}
+                                        </p>
+                                        {analysis.stagnation_alert.revised_prompt_for_recommended && (
+                                            <div>
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
+                                                    <span style={{ fontSize: '9px', color: '#6b7280', fontWeight: 600 }}>Prompt for {analysis.stagnation_alert.recommended_model}:</span>
+                                                    <button
+                                                        onClick={() => handleCopyRevisedPrompt(`${slot}-alt`, analysis.stagnation_alert.revised_prompt_for_recommended)}
+                                                        style={styles.copyBtn}
+                                                    >
+                                                        {revisedPromptCopied === `${slot}-alt` ? (
+                                                            <><Check size={10} color="#10b981" /> Copied</>
+                                                        ) : (
+                                                            <><Copy size={10} /> Copy</>
+                                                        )}
+                                                    </button>
+                                                </div>
+                                                <p style={{ ...styles.promptText, margin: 0, fontSize: '10px', lineHeight: '1.5' }}>
+                                                    {analysis.stagnation_alert.revised_prompt_for_recommended}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         )}
                         {/* Dimension scores */}
                         {analysis.dimensions && (
