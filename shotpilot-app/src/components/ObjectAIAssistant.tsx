@@ -53,6 +53,7 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
     const [analysisExpanded, setAnalysisExpanded] = useState<Record<string, boolean>>({});
     const [revisedPromptCopied, setRevisedPromptCopied] = useState<string | null>(null);
     const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+    const [iterationHistory, setIterationHistory] = useState<Array<{ version: number; score: number }>>([]);
     const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
     const nameIsEmpty = !objectName || objectName.trim().length === 0;
@@ -170,6 +171,60 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
         }
         setRevisedPromptCopied(slot);
         setTimeout(() => setRevisedPromptCopied(null), 2000);
+    };
+
+    const handleRevisionUpload = async (slot: string) => {
+        const input = fileInputRefs.current[`${slot}-revision`];
+        if (!input?.files?.[0] || !objectId) return;
+        const file = input.files[0];
+        if (file.size > 20 * 1024 * 1024) {
+            alert('File is too large! Please choose an image under 20MB.');
+            return;
+        }
+
+        const currentAnalysis = analysisResults[slot];
+        const currentScore = currentAnalysis?.overall_score ?? currentAnalysis?.match_score ?? 0;
+
+        // Record V1 on first revision
+        setIterationHistory(prev => {
+            if (prev.length === 0 && currentScore > 0) {
+                return [{ version: 1, score: currentScore }];
+            }
+            return prev;
+        });
+
+        setUploadingSlot(`${slot}-revision`);
+        setAnalysisResults(prev => { const next = { ...prev }; delete next[slot]; return next; });
+
+        try {
+            const base64 = await fileToBase64(file);
+            const revisedPrompt = currentAnalysis?.revised_prompt || '';
+            await saveEntityImage('object', objectId, slot, base64, 'Reference (revised)', revisedPrompt);
+            await loadEntityImages();
+
+            // Auto-analyze the new image
+            setUploadingSlot(null);
+            setAnalyzingSlot(slot);
+            const images = await getEntityImages('object', objectId);
+            const newImg = images.find((img: any) => img.image_type === slot);
+            if (newImg) {
+                const resolvedModel = selectedModel || directorModel || undefined;
+                const result = await analyzeEntityImage(newImg.id, resolvedModel);
+                setAnalysisResults(prev => ({ ...prev, [slot]: result }));
+                setAnalysisExpanded(prev => ({ ...prev, [slot]: true }));
+
+                const newScore = result?.overall_score ?? result?.match_score ?? 0;
+                if (newScore > 0) {
+                    setIterationHistory(prev => [...prev, { version: prev.length + 1, score: newScore }]);
+                }
+            }
+        } catch (err) {
+            console.error('Failed to upload revision', err);
+        } finally {
+            setUploadingSlot(null);
+            setAnalyzingSlot(null);
+            if (input) input.value = '';
+        }
     };
 
     const handleSaveRefPrompt = async () => {
@@ -450,6 +505,56 @@ export const ObjectAIAssistant: React.FC<ObjectAIAssistantProps> = ({
                                     </div>
                                 )}
                                 <p style={{ ...styles.promptText, margin: 0, fontSize: '10px', lineHeight: '1.5' }}>{analysis.revised_prompt}</p>
+
+                                {/* Iteration roadmap — next steps + upload revised version */}
+                                <div style={{ marginTop: '10px', padding: '8px', backgroundColor: '#111113', borderRadius: '6px', border: '1px solid #27272a' }}>
+                                    {iterationHistory.length > 0 && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                                            <span style={{ fontSize: '9px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.03em' }}>Progress:</span>
+                                            {iterationHistory.map((iter, i) => (
+                                                <React.Fragment key={i}>
+                                                    {i > 0 && <span style={{ color: '#3f3f46', fontSize: '10px' }}>→</span>}
+                                                    <span style={{
+                                                        fontSize: '10px', fontWeight: 700, padding: '1px 5px', borderRadius: '3px',
+                                                        backgroundColor: iter.score >= 75 ? 'rgba(16,185,129,0.1)' : iter.score >= 50 ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)',
+                                                        color: iter.score >= 75 ? '#10b981' : iter.score >= 50 ? '#f59e0b' : '#ef4444',
+                                                    }}>V{iter.version}: {iter.score}</span>
+                                                </React.Fragment>
+                                            ))}
+                                            <span style={{ color: '#3f3f46', fontSize: '10px' }}>→</span>
+                                            <span style={{ fontSize: '9px', color: '#22d3ee', fontWeight: 600 }}>Next ↓</span>
+                                        </div>
+                                    )}
+                                    <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '8px', lineHeight: '1.6' }}>
+                                        <span style={{ color: '#9ca3af', fontWeight: 600 }}>1.</span> Copy the revised prompt above{' '}
+                                        <span style={{ color: '#9ca3af', fontWeight: 600 }}>2.</span> Generate in {selectedModel ? (availableModels.find(m => m.name === selectedModel)?.displayName || selectedModel) : 'your AI tool'}
+                                        {analysis.reference_strategy?.action === 'use_reference' && ' (attach current image as ref)'}{' '}
+                                        <span style={{ color: '#9ca3af', fontWeight: 600 }}>3.</span> Upload below
+                                    </div>
+                                    <label style={{
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                                        padding: '8px 12px', backgroundColor: '#1a2a2a', border: '2px dashed #2dd4bf',
+                                        borderRadius: '6px', color: '#2dd4bf', fontSize: '11px', fontWeight: 600,
+                                        cursor: uploadingSlot === `${slot}-revision` || analyzingSlot === slot ? 'wait' : 'pointer',
+                                        opacity: uploadingSlot === `${slot}-revision` || analyzingSlot === slot ? 0.6 : 1,
+                                        transition: 'all 0.2s',
+                                    }}>
+                                        {uploadingSlot === `${slot}-revision` ? (
+                                            <><Loader2 size={13} className="spin" /> Uploading...</>
+                                        ) : analyzingSlot === slot ? (
+                                            <><Loader2 size={13} className="spin" /> Analyzing new version...</>
+                                        ) : (
+                                            <><Upload size={13} /> Upload revised image</>
+                                        )}
+                                        <input
+                                            type="file" accept="image/*"
+                                            ref={el => { fileInputRefs.current[`${slot}-revision`] = el; }}
+                                            onChange={() => handleRevisionUpload(slot)}
+                                            style={{ display: 'none' }}
+                                            disabled={!!uploadingSlot || !!analyzingSlot}
+                                        />
+                                    </label>
+                                </div>
                             </div>
                         )}
                     </div>
