@@ -70,6 +70,66 @@ const MODEL_ALIASES = {
   'sora_2': 'sora_2',
   'reve': 'reve',
   'topaz': 'topaz',
+
+  // Flux Kontext
+  'flux-kontext': 'flux_kontext_pro',
+  'flux-kontext-pro': 'flux_kontext_pro',
+  'flux_kontext_pro': 'flux_kontext_pro',
+  'kontext': 'flux_kontext_pro',
+  'kontext-pro': 'flux_kontext_pro',
+  'flux-kontext-max': 'flux_kontext_max',
+  'flux_kontext_max': 'flux_kontext_max',
+  'kontext-max': 'flux_kontext_max',
+  'flux-kontext-t2i': 'flux_kontext_t2i',
+  'flux_kontext_t2i': 'flux_kontext_t2i',
+  'kontext-t2i': 'flux_kontext_t2i',
+
+  // Kling Image
+  'kling-image-v3': 'kling_image_v3',
+  'kling_image_v3': 'kling_image_v3',
+  'kling-image': 'kling_image_v3',
+  'kling-image-o3': 'kling_image_o3',
+  'kling_image_o3': 'kling_image_o3',
+
+  // Qwen Image Max
+  'qwen-image-max': 'qwen_image_max',
+  'qwen_image_max': 'qwen_image_max',
+  'qwen-image': 'qwen_image_max',
+  'qwen': 'qwen_image_max',
+
+  // Ideogram V3
+  'ideogram': 'ideogram_v3',
+  'ideogram-v3': 'ideogram_v3',
+  'ideogram_v3': 'ideogram_v3',
+
+  // Bria FIBO
+  'bria-fibo': 'bria_fibo',
+  'bria_fibo': 'bria_fibo',
+  'fibo': 'bria_fibo',
+
+  // PixVerse v5.6
+  'pixverse': 'pixverse_v56_t2v',
+  'pixverse-t2v': 'pixverse_v56_t2v',
+  'pixverse-v56-t2v': 'pixverse_v56_t2v',
+  'pixverse_v56_t2v': 'pixverse_v56_t2v',
+  'pixverse-i2v': 'pixverse_v56_i2v',
+  'pixverse-v56-i2v': 'pixverse_v56_i2v',
+  'pixverse_v56_i2v': 'pixverse_v56_i2v',
+
+  // Vidu Q3
+  'vidu': 'vidu_q3_t2v',
+  'vidu-t2v': 'vidu_q3_t2v',
+  'vidu-q3-t2v': 'vidu_q3_t2v',
+  'vidu_q3_t2v': 'vidu_q3_t2v',
+  'vidu-i2v': 'vidu_q3_i2v',
+  'vidu-q3-i2v': 'vidu_q3_i2v',
+  'vidu_q3_i2v': 'vidu_q3_i2v',
+
+  // LTX-2 19B
+  'ltx': 'ltx_2_19b',
+  'ltx-2': 'ltx_2_19b',
+  'ltx-2-19b': 'ltx_2_19b',
+  'ltx_2_19b': 'ltx_2_19b',
 };
 
 function resolveModelName(name) {

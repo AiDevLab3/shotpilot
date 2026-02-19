@@ -29,13 +29,27 @@
 | **Higgsfield DOP** | ✅ 10KB | ❌ | ❌ | ❌ | ❌ | Higgsfield API |
 | **Runway Gen4.5** | ✅ 8KB | ❌ | ❌ | ❌ | ❌ | Runway API |
 
+| **Flux Kontext Pro** | ❌ | ❌ | ✅ (flux-pro/kontext) | ❌ | ❌ | — |
+| **Flux Kontext Max** | ❌ | ❌ | ✅ (flux-pro/kontext/max) | ❌ | ❌ | — |
+| **Flux Kontext Pro T2I** | ❌ | ❌ | ✅ (flux-pro/kontext/text-to-image) | ❌ | ❌ | — |
+| **Kling Image V3** | ❌ | ❌ | ✅ (kling-image/v3/text-to-image) | ❌ | ❌ | Kling API |
+| **Kling Image O3** | ❌ | ❌ | ✅ (kling-image/o3/text-to-image) | ❌ | ❌ | Kling API |
+| **Qwen Image Max** | ❌ | ❌ | ✅ (qwen-image-max/text-to-image) | ❌ | ❌ | — |
+| **Ideogram V3** | ❌ | ❌ | ✅ (ideogram/v3) | ❌ | ❌ | Ideogram API |
+| **Bria FIBO** | ❌ | ❌ | ✅ (bria/fibo/generate) | ❌ | ❌ | Bria API |
+| **PixVerse v5.6 T2V** | ❌ | ❌ | ✅ (pixverse/v5.6/text-to-video) | ❌ | ❌ | — |
+| **PixVerse v5.6 I2V** | ❌ | ❌ | ✅ (pixverse/v5.6/image-to-video) | ❌ | ❌ | — |
+| **Vidu Q3 T2V** | ❌ | ❌ | ✅ (vidu/q3/text-to-video) | ❌ | ❌ | — |
+| **Vidu Q3 I2V** | ❌ | ❌ | ✅ (vidu/q3/image-to-video) | ❌ | ❌ | — |
+| **LTX-2 19B** | ❌ | ❌ | ✅ (ltx-2-19b/image-to-video) | ❌ | ❌ | — |
+
 ## Summary
 
-- **Total models in KB:** 24
-- **Full guides:** 24/24 ✅
-- **Condensed versions:** 17/24 (71%)
-- **Available on fal.ai:** 18/24 (75%)
-- **Missing condensed:** Kling 3.0, Kling O1 Image, Kling O1 Edit, Kling Motion Control, Kling Avatars 2.0, Higgsfield DOP, Runway Gen4.5
+- **Total models in KB:** 37 (24 original + 13 new)
+- **Full guides:** 24/37 (65%) — new models need KB guides
+- **Condensed versions:** 17/37 (46%)
+- **Available on fal.ai:** 31/37 (84%)
+- **Missing condensed:** Kling 3.0, Kling O1 Image, Kling O1 Edit, Kling Motion Control, Kling Avatars 2.0, Higgsfield DOP, Runway Gen4.5, + all 13 new models
 
 ## Notes
 - fal.ai has the broadest API coverage for AI generation models

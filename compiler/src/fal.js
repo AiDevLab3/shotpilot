@@ -219,6 +219,125 @@ const FAL_MODELS = {
     category: 'video-utility',
     defaultParams: {},
   },
+
+  // ── New Image Models ───────────────────────────────────────────────
+
+  'flux-kontext-pro': {
+    id: 'fal-ai/flux-pro/kontext',
+    displayName: 'Flux Kontext Pro',
+    type: 'image',
+    subtype: 'image-to-image',
+    defaultParams: {
+      output_format: 'jpeg',
+    },
+  },
+  'flux-kontext-max': {
+    id: 'fal-ai/flux-pro/kontext/max',
+    displayName: 'Flux Kontext Max',
+    type: 'image',
+    subtype: 'image-to-image',
+    defaultParams: {
+      output_format: 'jpeg',
+    },
+  },
+  'flux-kontext-t2i': {
+    id: 'fal-ai/flux-pro/kontext/text-to-image',
+    displayName: 'Flux Kontext Pro T2I',
+    type: 'image',
+    defaultParams: {
+      num_images: 1,
+      output_format: 'jpeg',
+    },
+  },
+  'kling-image-v3': {
+    id: 'fal-ai/kling-image/v3/text-to-image',
+    displayName: 'Kling Image V3',
+    type: 'image',
+    defaultParams: {
+      num_images: 1,
+      image_size: 'landscape_16_9',
+    },
+  },
+  'kling-image-o3': {
+    id: 'fal-ai/kling-image/o3/text-to-image',
+    displayName: 'Kling Image O3',
+    type: 'image',
+    defaultParams: {
+      num_images: 1,
+      image_size: 'landscape_16_9',
+    },
+  },
+  'qwen-image-max': {
+    id: 'fal-ai/qwen-image-max/text-to-image',
+    displayName: 'Qwen Image Max',
+    type: 'image',
+    defaultParams: {
+      num_images: 1,
+      output_format: 'jpeg',
+    },
+  },
+  'ideogram-v3': {
+    id: 'fal-ai/ideogram/v3',
+    displayName: 'Ideogram V3',
+    type: 'image',
+    defaultParams: {
+      num_images: 1,
+    },
+  },
+  'bria-fibo': {
+    id: 'bria/fibo/generate',
+    displayName: 'Bria FIBO',
+    type: 'image',
+    defaultParams: {
+      num_images: 1,
+    },
+  },
+
+  // ── New Video Models ───────────────────────────────────────────────
+
+  'pixverse-v56-t2v': {
+    id: 'fal-ai/pixverse/v5.6/text-to-video',
+    displayName: 'PixVerse v5.6 T2V',
+    type: 'video',
+    defaultParams: {
+      aspect_ratio: '16:9',
+    },
+  },
+  'pixverse-v56-i2v': {
+    id: 'fal-ai/pixverse/v5.6/image-to-video',
+    displayName: 'PixVerse v5.6 I2V',
+    type: 'video',
+    subtype: 'image-to-video',
+    defaultParams: {
+      aspect_ratio: '16:9',
+    },
+  },
+  'vidu-q3-t2v': {
+    id: 'fal-ai/vidu/q3/text-to-video',
+    displayName: 'Vidu Q3 T2V',
+    type: 'video',
+    defaultParams: {
+      aspect_ratio: '16:9',
+    },
+  },
+  'vidu-q3-i2v': {
+    id: 'fal-ai/vidu/q3/image-to-video',
+    displayName: 'Vidu Q3 I2V',
+    type: 'video',
+    subtype: 'image-to-video',
+    defaultParams: {
+      aspect_ratio: '16:9',
+    },
+  },
+  'ltx-2-19b': {
+    id: 'fal-ai/ltx-2-19b/image-to-video',
+    displayName: 'LTX-2 19B',
+    type: 'video',
+    subtype: 'image-to-video',
+    defaultParams: {
+      aspect_ratio: '16:9',
+    },
+  },
 };
 
 function getApiKey() {
