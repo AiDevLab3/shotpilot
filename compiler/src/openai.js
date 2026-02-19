@@ -36,7 +36,7 @@ function getApiKey() {
  * 
  * @param {string} prompt - The generation prompt
  * @param {object} options
- * @param {string} options.model - 'gpt-image-1' or 'gpt-image-1.5' (default: 'gpt-image-1')
+ * @param {string} options.model - 'gpt-image-1' or 'gpt-image-1.5' (default: 'gpt-image-1.5')
  * @param {string} options.size - Image size (default: '1536x1024' for landscape)
  * @param {string} options.quality - 'low'|'medium'|'high'|'auto' (default: 'high')
  * @param {string} options.output_format - 'png'|'jpeg'|'webp' (default: 'png')
@@ -44,7 +44,7 @@ function getApiKey() {
  */
 async function generateOpenAI(prompt, options = {}) {
   const apiKey = getApiKey();
-  const model = options.model || 'gpt-image-1';
+  const model = options.model || 'gpt-image-1.5';
   const size = options.size || '1536x1024';
   const quality = options.quality || 'high';
 

@@ -35,8 +35,20 @@ const MODEL_PROFILES = {
     worstFor: ['precise text rendering', 'exact technical specifications', 'photorealistic product shots'],
     apiAvailable: false,
   },
+  gpt_image_1_5: {
+    displayName: 'GPT Image 1.5',
+    type: 'image',
+    strengths: ['conversational editing', 'multi-image compositing', 'text rendering', 'identity preservation', 'precise instruction following', 'high-fidelity photorealism', 'world knowledge reasoning'],
+    weaknesses: ['can look too clean/corporate', 'safety filters aggressive', 'less cinematic default look'],
+    bestFor: ['iterative edits', 'text in images', 'multi-image scenes', 'precise composition control'],
+    worstFor: ['gritty/raw aesthetics', 'extreme stylization', 'dark/violent content'],
+    apiAvailable: true,
+    provider: 'openai',
+    apiModel: 'gpt-image-1.5',
+  },
+  // Legacy alias — routes to gpt-image-1.5
   gpt_image_1: {
-    displayName: 'GPT Image 1',
+    displayName: 'GPT Image 1 (Legacy → 1.5)',
     type: 'image',
     strengths: ['conversational editing', 'multi-image compositing', 'text rendering', 'identity preservation', 'precise instruction following'],
     weaknesses: ['can look too clean/corporate', 'safety filters aggressive', 'less cinematic default look'],
@@ -44,7 +56,7 @@ const MODEL_PROFILES = {
     worstFor: ['gritty/raw aesthetics', 'extreme stylization', 'dark/violent content'],
     apiAvailable: true,
     provider: 'openai',
-    apiModel: 'gpt-image-1',
+    apiModel: 'gpt-image-1.5',
   },
   higgsfield_cinema_studio_v1_5: {
     displayName: 'Higgsfield Cinema Studio',
