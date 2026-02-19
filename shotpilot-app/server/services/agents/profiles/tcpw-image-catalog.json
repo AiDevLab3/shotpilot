@@ -1,0 +1,217 @@
+{
+  "project": "tcpw-dark-knight",
+  "lastUpdated": "2026-02-19",
+  "tier1_approved": [
+    {
+      "file": "Exterior Final.png",
+      "realism": 10,
+      "description": "Astrodome exterior, real photograph. Wet asphalt, sodium vapor lights, brutalist architecture.",
+      "use": "PRIMARY style reference — exterior/environmental grounding",
+      "scene_relevance": ["scene-1", "scene-2", "scene-5"]
+    },
+    {
+      "file": "Image_202512280042.jpeg",
+      "realism": 9,
+      "description": "Silhouette at chain-link fence, SERVICE MAINTENANCE sign. Legible text, correct DOF.",
+      "use": "Style reference — silhouette/industrial framing",
+      "scene_relevance": ["scene-5", "scene-6"]
+    },
+    {
+      "file": "videoframe_63360.png",
+      "realism": 9,
+      "description": "Puddle/fire reflection insert. Wet asphalt caustics, bokeh droplets.",
+      "use": "Style reference — insert shots, wet surface textures",
+      "scene_relevance": ["scene-4", "scene-6"]
+    },
+    {
+      "file": "1b.jpeg",
+      "realism": 9,
+      "description": "Macro insert — brushed metal, anatomically correct hand, anamorphic streak, shallow DOF.",
+      "use": "Style reference — macro/insert shots",
+      "scene_relevance": ["scene-6"]
+    }
+  ],
+  "tier2_usable": [
+    {
+      "file": "1a.png",
+      "realism": 8.5,
+      "description": "Wide establishing, woman at glass door. Cool steel-blue grade, shallow focus.",
+      "use": "Style reference — interior/character scenes. Slight AI skin softness.",
+      "scene_relevance": ["scene-1"]
+    },
+    {
+      "file": "2.png",
+      "realism": 8.5,
+      "description": "Silhouette corridor walk. Excellent backlighting, atmospheric haze.",
+      "use": "Style reference — silhouette/corridor shots. Hides AI weaknesses.",
+      "scene_relevance": ["scene-3", "scene-7"]
+    },
+    {
+      "file": "856bded8.png",
+      "realism": 8.5,
+      "description": "Woman at dumpsters wide. Atmospheric haze, rust patina, sodium vs fluorescent.",
+      "use": "Production still quality. Strongest 'movie still' character-in-environment frame.",
+      "scene_relevance": ["scene-1", "scene-5"]
+    },
+    {
+      "file": "0bd71000.png",
+      "realism": 8.5,
+      "description": "Wet floor reflections, rust patina dumpsters, sodium/fluorescent interplay.",
+      "use": "Environment reference — back alley / service area.",
+      "scene_relevance": ["scene-5", "scene-6"]
+    },
+    {
+      "file": "1e.png",
+      "realism": 8.5,
+      "description": "Extreme close-up face through glass. Pores, capillaries, iris detail.",
+      "use": "Character close-up reference. Minor softness on nose bridge.",
+      "scene_relevance": ["scene-1", "scene-7"]
+    },
+    {
+      "file": "Alt Command Center.png",
+      "realism": 8,
+      "description": "Large-scale surveillance command center. Atmospheric haze, practical hardware.",
+      "use": "Style reference — Astrodome interior command post.",
+      "scene_relevance": ["scene-3"]
+    },
+    {
+      "file": "Combined.jpeg",
+      "realism": 8,
+      "description": "Abandoned dome / improvised HQ. Wet concrete, debris, scaffolding, mixed practicals.",
+      "use": "Style reference — Astrodome interior production design.",
+      "scene_relevance": ["scene-3"]
+    },
+    {
+      "file": "videoframe_19680.png",
+      "realism": 8,
+      "description": "Garage threshold silhouette. Fluorescent tube falloff, concrete texture, yellow bollard.",
+      "use": "Environment reference — garage entry.",
+      "scene_relevance": ["scene-5", "scene-6"]
+    },
+    {
+      "file": "Generated Image January 19.jpeg",
+      "realism": 8,
+      "description": "Underground parking garage. Fluorescent spill, tire marks, wet concrete.",
+      "use": "Environment reference — parking garage interior.",
+      "scene_relevance": ["scene-1", "scene-5", "scene-6"]
+    },
+    {
+      "file": "efe74a99.png",
+      "realism": 8,
+      "description": "Derelict dome interior. Volumetric light shafts through broken skylights.",
+      "use": "Mood reference — Astrodome atmosphere. Slightly too symmetrical trusses.",
+      "scene_relevance": ["scene-3"]
+    },
+    {
+      "file": "1c.jpeg",
+      "realism": 8,
+      "description": "Deadbolt macro, gorgeous bokeh. Slight melted chrome quality.",
+      "use": "Insert shot reference.",
+      "scene_relevance": ["scene-1"]
+    }
+  ],
+  "tier3_concept_only": [
+    {
+      "file": "1d.png",
+      "realism": 7.5,
+      "description": "Hand gripping lock. Mushy finger geometry, warped text on glass.",
+      "note": "Concept only — hand anatomy issues"
+    },
+    {
+      "file": "0d440e95.png",
+      "realism": 7.5,
+      "description": "Character in environment. Waxy face, painted catchlights.",
+      "note": "Concept only — uncanny valley face"
+    },
+    {
+      "file": "37d9ab60.png",
+      "realism": 7.5,
+      "description": "Woman close-up in warehouse. Good lighting, but pore detail falls to uncanny valley.",
+      "note": "Concept/mood only — face too smooth"
+    },
+    {
+      "file": "Full Zoom.png",
+      "realism": 7,
+      "description": "Batcave solo workstation. Holographic UI screens read as CG.",
+      "note": "Concept mood board only"
+    },
+    {
+      "file": "4.jpeg",
+      "realism": 7,
+      "description": "PARKING GARAGE sign approach. Good fog but reversed text, too-perfect diffusion.",
+      "note": "Concept only — text errors"
+    },
+    {
+      "file": "videoframe_38400.png",
+      "realism": 6.5,
+      "description": "Rooftop Texas DOJ Bat-Signal. Cleanly rasterized projection, inconsistent window logic.",
+      "note": "Signal concept only — needs redesign"
+    },
+    {
+      "file": "Wide.png",
+      "realism": 6,
+      "description": "Interior dome command post. Production design reference only — clearly digital rendering.",
+      "note": "Use for scene layout, NOT style ref"
+    },
+    {
+      "file": "3.jpeg",
+      "realism": 6,
+      "description": "Mall stride side profile. Waxy skin, melted mannequins, wrong hands.",
+      "note": "Concept only"
+    },
+    {
+      "file": "8alt.png",
+      "realism": 6,
+      "description": "Rooftop signal cityscape. Commercial overlay breaks immersion.",
+      "note": "Tone reference only"
+    }
+  ],
+  "tier4_rejected": [
+    {
+      "file": "9.png",
+      "realism": 5,
+      "description": "Dome exterior AI render. Painterly, overstyled. Will contaminate realism.",
+      "note": "DROP — do not use"
+    },
+    {
+      "file": "Generated Image January 05.jpeg",
+      "realism": 4,
+      "description": "TCPW Tactical suit turnaround. Waxy skin, video-game shader, concept art.",
+      "note": "REJECTED — character ref needs full regeneration"
+    },
+    {
+      "file": "Ref_Property Manager.png",
+      "realism": 5,
+      "qgScore": 5,
+      "note": "REJECTED by QG — waxy skin, hand errors, sterile fabric"
+    },
+    {
+      "file": "Ref_TCPW Truck.png",
+      "realism": 4,
+      "qgScore": 4,
+      "note": "REJECTED by QG — garbled text, impossible geometry, synthetic sheen"
+    },
+    {
+      "file": "Ref_Softwash Flatbed.png",
+      "realism": 4.5,
+      "qgScore": 4.5,
+      "note": "REJECTED by QG — synthetic sheen, garbled text, floating shadows"
+    },
+    {
+      "file": "Ref_TCPW PW Trailer.png",
+      "realism": 4,
+      "qgScore": 4,
+      "note": "REJECTED by QG — HDR glow, impossible geometry, waxy textures"
+    }
+  ],
+  "summary": {
+    "total_images": 36,
+    "tier1_approved": 4,
+    "tier2_usable": 12,
+    "tier3_concept_only": 9,
+    "tier4_rejected": 6,
+    "not_categorized": 5,
+    "key_finding": "Environments and silhouettes are production-ready (8-10). Character close-ups need work (6-8). All vehicle/equipment refs are rejected (4-5). The project excels when AI weaknesses are hidden through composition choices (silhouettes, distance, shadow).",
+    "biggest_gap": "Zero approved character or vehicle references. Hero tactical gear, interceptor motorcycle, and crew members all need to be created from scratch with QG pre-screening."
+  }
+}

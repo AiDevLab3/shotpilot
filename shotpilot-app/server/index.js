@@ -23,6 +23,7 @@ import createShotRoutes from './routes/shots.js';
 import createImageRoutes from './routes/images.js';
 import createConversationRoutes from './routes/conversations.js';
 import createGenerationRoutes from './routes/generations.js';
+import createAgentRoutes from './routes/agents.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -132,6 +133,7 @@ app.use(createImageRoutes({
 }));
 app.use(createConversationRoutes({ db, requireAuth }));
 app.use(createGenerationRoutes({ db, sanitize, analyzeEntityImage, loadKBForModel, readKBFile }));
+app.use(createAgentRoutes());
 
 // Only listen when run directly (not imported for testing)
 if (process.env.NODE_ENV !== 'test') {

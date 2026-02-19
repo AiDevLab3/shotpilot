@@ -389,9 +389,9 @@ async function generateFal(modelKey, prompt, overrides = {}) {
     return processFalResponse(submitData);
   }
 
-  // Step 2: Poll for completion
-  const statusUrl = `${baseUrl}/requests/${requestId}/status`;
-  const resultUrl = `${baseUrl}/requests/${requestId}`;
+  // Step 2: Poll for completion — use URLs from response if available (fal.ai shortens paths)
+  const statusUrl = submitData.status_url || `${baseUrl}/requests/${requestId}/status`;
+  const resultUrl = submitData.response_url || `${baseUrl}/requests/${requestId}`;
   const deadline = Date.now() + TIMEOUT_MS;
 
   while (Date.now() < deadline) {
