@@ -7,7 +7,12 @@
 import { loadKB, resolveModelName, getAvailableModels } from './kb-loader.js';
 import { callText } from './gemini.js';
 import { generateImage as generateGemini } from './gemini.js';
-import { generateFlux2, generateRecraftV4, generateKling3 } from './fal.js';
+import {
+  generateFlux2, generateRecraftV4, generateKling3,
+  generateGrokImagine, generateVeo31, generateWan26, generateSeedream45,
+  generateZImage, generateMinimaxHailuo, generateSeedance15Pro, generateSora2Fal,
+  generateReve, generateFal,
+} from './fal.js';
 import { generateOpenAI } from './openai.js';
 
 /**
@@ -67,15 +72,6 @@ const MODEL_PROFILES = {
     worstFor: ['highly abstract concepts', 'non-photorealistic styles'],
     apiAvailable: false, // Need to check
   },
-  veo_3_1: {
-    displayName: 'VEO 3.1',
-    type: 'video',
-    strengths: ['advanced camera movement', 'long-form video', 'audio generation', 'cinematographic language'],
-    weaknesses: ['video-only (no stills)', 'longer generation times'],
-    bestFor: ['dynamic scenes', 'camera movements', 'establishing shots with motion'],
-    worstFor: ['static hero stills', 'precise frame composition'],
-    apiAvailable: false,
-  },
   kling_2_6: {
     displayName: 'Kling 2.6',
     type: 'video',
@@ -127,6 +123,105 @@ const MODEL_PROFILES = {
     apiAvailable: true,
     provider: 'fal',
     apiModel: 'kling-3',
+  },
+  grok_imagine: {
+    displayName: 'Grok Imagine',
+    type: 'image',
+    strengths: ['fast generation', 'creative interpretation', 'cheap ($0.02/image)', 'good photorealism'],
+    weaknesses: ['newer model with less community knowledge', 'limited editing capabilities'],
+    bestFor: ['quick concept exploration', 'photorealistic scenes', 'creative imagery'],
+    worstFor: ['precise iterative editing', 'multi-reference compositing'],
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'grok-imagine',
+  },
+  veo_3_1: {
+    displayName: 'VEO 3.1',
+    type: 'video',
+    strengths: ['advanced camera movement', 'long-form video', 'audio generation', 'cinematographic language', 'reference-to-video'],
+    weaknesses: ['video-only (no stills)', 'longer generation times', 'expensive'],
+    bestFor: ['dynamic scenes', 'camera movements', 'establishing shots with motion', 'cinematic video'],
+    worstFor: ['static hero stills', 'precise frame composition'],
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'veo-3.1',
+  },
+  wan_2_6: {
+    displayName: 'Wan 2.6',
+    type: 'video',
+    strengths: ['high quality video generation', 'text-to-video', 'image-to-video', 'good motion dynamics'],
+    weaknesses: ['video only', 'can struggle with complex multi-character scenes'],
+    bestFor: ['dynamic video scenes', 'motion sequences', 'cinematic video generation'],
+    worstFor: ['static images', 'precise text rendering'],
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'wan-2.6',
+  },
+  seedream_4_5: {
+    displayName: 'Seedream 4.5',
+    type: 'image',
+    strengths: ['high aesthetic quality', 'strong text rendering', 'photorealistic output', 'ByteDance quality'],
+    weaknesses: ['newer model', 'limited community knowledge'],
+    bestFor: ['photorealistic scenes', 'text-heavy images', 'high-aesthetic stills'],
+    worstFor: ['highly stylized non-photorealistic art'],
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'seedream-4.5',
+  },
+  z_image: {
+    displayName: 'Z-Image',
+    type: 'image',
+    strengths: ['fast generation', 'turbo mode available', 'good quality-to-speed ratio'],
+    weaknesses: ['less refined than top-tier models', 'newer model'],
+    bestFor: ['rapid prototyping', 'quick iterations', 'draft generation'],
+    worstFor: ['final production shots', 'extreme detail work'],
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'z-image',
+  },
+  minimax_hailuo_02: {
+    displayName: 'Minimax Hailuo 02',
+    type: 'video',
+    strengths: ['high quality video generation', 'strong motion understanding', 'good character animation'],
+    weaknesses: ['video only', 'longer generation times'],
+    bestFor: ['character-driven video', 'dynamic scenes', 'cinematic motion'],
+    worstFor: ['static images', 'fast iteration'],
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'minimax-hailuo',
+  },
+  seedance_1_5_pro: {
+    displayName: 'Seedance 1.5 Pro',
+    type: 'video',
+    strengths: ['dance/motion generation', 'character animation', 'ByteDance quality', 'good temporal consistency'],
+    weaknesses: ['video only', 'specialized for motion'],
+    bestFor: ['character motion', 'dance sequences', 'action video'],
+    worstFor: ['static scenes', 'landscape-only shots'],
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'seedance-1.5-pro',
+  },
+  sora_2: {
+    displayName: 'Sora 2',
+    type: 'video',
+    strengths: ['cinematic video generation', 'strong narrative understanding', 'long-form video', 'OpenAI quality'],
+    weaknesses: ['video only', 'expensive', 'queue-based'],
+    bestFor: ['narrative video', 'cinematic scenes', 'story-driven video'],
+    worstFor: ['static images', 'quick iterations'],
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'sora-2',
+  },
+  reve: {
+    displayName: 'Reve',
+    type: 'image',
+    strengths: ['text-to-image', 'edit capabilities', 'remix mode', 'versatile generation'],
+    weaknesses: ['newer model', 'less community knowledge'],
+    bestFor: ['creative imagery', 'image editing', 'remix/variations'],
+    worstFor: ['extreme photorealism', 'precise technical specs'],
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'reve',
   },
 };
 
@@ -256,13 +351,9 @@ async function routeGeneration(modelId, prompt) {
       return await generateOpenAI(prompt, { model: profile.apiModel });
     
     case 'fal': {
-      const falKey = profile.apiModel; // e.g., 'flux-2-flex', 'recraft-v4', 'kling-3'
-      switch (falKey) {
-        case 'flux-2-flex': return await generateFlux2(prompt);
-        case 'recraft-v4': return await generateRecraftV4(prompt);
-        case 'kling-3': return await generateKling3(prompt);
-        default: throw new Error(`Unknown fal.ai model key: ${falKey}`);
-      }
+      const falKey = profile.apiModel;
+      // Generic fal.ai routing — any model in FAL_MODELS
+      return await generateFal(falKey, prompt);
     }
 
     default:

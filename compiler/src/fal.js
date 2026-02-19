@@ -43,6 +43,97 @@ const FAL_MODELS = {
       image_size: 'landscape_16_9',
     },
   },
+  'grok-imagine': {
+    id: 'xai/grok-imagine-image',
+    displayName: 'Grok Imagine',
+    type: 'image',
+    defaultParams: {
+      num_images: 1,
+      image_size: 'landscape_16_9',
+      output_format: 'jpeg',
+    },
+  },
+  'veo-3.1': {
+    id: 'fal-ai/veo3.1',
+    displayName: 'Veo 3.1',
+    type: 'video',
+    defaultParams: {
+      duration: '8s',
+      aspect_ratio: '16:9',
+    },
+  },
+  'wan-2.6': {
+    id: 'fal-ai/wan/v2.6/text-to-video',
+    displayName: 'Wan 2.6',
+    type: 'video',
+    defaultParams: {
+      duration: '5s',
+      aspect_ratio: '16:9',
+    },
+  },
+  'seedream-4.5': {
+    id: 'fal-ai/bytedance/seedream/v4.5',
+    displayName: 'Seedream 4.5',
+    type: 'image',
+    defaultParams: {
+      num_images: 1,
+      image_size: 'landscape_16_9',
+      output_format: 'jpeg',
+    },
+  },
+  'z-image': {
+    id: 'fal-ai/z-image',
+    displayName: 'Z-Image',
+    type: 'image',
+    defaultParams: {
+      num_images: 1,
+      image_size: 'landscape_16_9',
+      output_format: 'jpeg',
+    },
+  },
+  'minimax-hailuo': {
+    id: 'fal-ai/minimax/hailuo-02',
+    displayName: 'Minimax Hailuo 02',
+    type: 'video',
+    defaultParams: {
+      duration: '6s',
+      aspect_ratio: '16:9',
+    },
+  },
+  'seedance-1.5-pro': {
+    id: 'fal-ai/bytedance/seedance/v1.5/pro',
+    displayName: 'Seedance 1.5 Pro',
+    type: 'video',
+    defaultParams: {
+      duration: '5s',
+      aspect_ratio: '16:9',
+    },
+  },
+  'sora-2': {
+    id: 'fal-ai/sora-2/remix',
+    displayName: 'Sora 2',
+    type: 'video',
+    defaultParams: {
+      duration: '10s',
+      aspect_ratio: '16:9',
+    },
+  },
+  'reve': {
+    id: 'fal-ai/reve/text-to-image',
+    displayName: 'Reve',
+    type: 'image',
+    defaultParams: {
+      num_images: 1,
+      image_size: 'landscape_16_9',
+      output_format: 'jpeg',
+    },
+  },
+  'topaz-upscale': {
+    id: 'fal-ai/topaz/upscale/image',
+    displayName: 'Topaz Upscale',
+    type: 'upscale',
+    defaultParams: {},
+  },
 };
 
 function getApiKey() {
@@ -132,8 +223,18 @@ async function generateFal(modelKey, prompt, overrides = {}) {
  * Process fal.ai response into our standard format.
  */
 async function processFalResponse(data) {
+  // Handle video responses (video field instead of images)
+  if (data.video) {
+    const videoUrl = data.video.url || data.video;
+    const contentType = data.video.content_type || 'video/mp4';
+    const videoRes = await fetch(typeof videoUrl === 'string' ? videoUrl : videoUrl.url);
+    if (!videoRes.ok) throw new Error(`Failed to download fal.ai video: ${videoRes.status}`);
+    const buffer = Buffer.from(await videoRes.arrayBuffer());
+    return { buffer, mimeType: contentType, url: typeof videoUrl === 'string' ? videoUrl : videoUrl.url, textResponse: null };
+  }
+
   const images = data.images || [];
-  if (images.length === 0) throw new Error('No images returned from fal.ai');
+  if (images.length === 0) throw new Error('No images/video returned from fal.ai');
 
   const firstImage = images[0];
   const imageUrl = firstImage.url;
@@ -167,6 +268,47 @@ async function generateKling3(prompt, overrides = {}) {
   return generateFal('kling-3', prompt, overrides);
 }
 
+async function generateGrokImagine(prompt, overrides = {}) {
+  return generateFal('grok-imagine', prompt, overrides);
+}
+
+async function generateVeo31(prompt, overrides = {}) {
+  return generateFal('veo-3.1', prompt, overrides);
+}
+
+async function generateWan26(prompt, overrides = {}) {
+  return generateFal('wan-2.6', prompt, overrides);
+}
+
+async function generateSeedream45(prompt, overrides = {}) {
+  return generateFal('seedream-4.5', prompt, overrides);
+}
+
+async function generateZImage(prompt, overrides = {}) {
+  return generateFal('z-image', prompt, overrides);
+}
+
+async function generateMinimaxHailuo(prompt, overrides = {}) {
+  return generateFal('minimax-hailuo', prompt, overrides);
+}
+
+async function generateSeedance15Pro(prompt, overrides = {}) {
+  return generateFal('seedance-1.5-pro', prompt, overrides);
+}
+
+async function generateSora2Fal(prompt, overrides = {}) {
+  return generateFal('sora-2', prompt, overrides);
+}
+
+async function generateReve(prompt, overrides = {}) {
+  return generateFal('reve', prompt, overrides);
+}
+
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-export { generateFal, generateFlux2, generateRecraftV4, generateKling3, FAL_MODELS };
+export {
+  generateFal, generateFlux2, generateRecraftV4, generateKling3,
+  generateGrokImagine, generateVeo31, generateWan26, generateSeedream45,
+  generateZImage, generateMinimaxHailuo, generateSeedance15Pro, generateSora2Fal,
+  generateReve, FAL_MODELS,
+};
