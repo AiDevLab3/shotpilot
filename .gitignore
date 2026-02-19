@@ -28,3 +28,7 @@ shotpilot-app/uploads/
 *.zip
 *.tar.gz
 *.rar
+
+# Environment files (API keys — NEVER commit)
+.env
+*.env.local
