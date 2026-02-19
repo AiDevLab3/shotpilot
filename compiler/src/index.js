@@ -15,7 +15,7 @@ import cors from 'cors';
 import { compile, compileMulti, refine } from './compiler.js';
 import { auditImage } from './audit.js';
 import { generateImage } from './gemini.js';
-import { recommendModel, listModels } from './model-router.js';
+import { recommendModel, listModels, routeGeneration, getAvailableApiModels } from './model-router.js';
 import { listStyles, getStyle, createStyle, updateStyle, deleteStyle } from './style-manager.js';
 
 const app = express();
@@ -27,13 +27,15 @@ app.use(express.json({ limit: '25mb' }));
 // ── Health ───────────────────────────────────────────────────────────
 
 app.get('/health', (req, res) => {
-  res.json({ ok: true, service: 'cine-ai-compiler', version: '0.2.0' });
+  res.json({ ok: true, service: 'cine-ai-compiler', version: '0.3.0' });
 });
 
 // ── Models ───────────────────────────────────────────────────────────
 
 app.get('/models', (req, res) => {
-  res.json(listModels());
+  const all = listModels();
+  const available = getAvailableApiModels();
+  res.json({ all, available });
 });
 
 app.post('/models/recommend', (req, res) => {
@@ -91,8 +93,8 @@ app.post('/generate', async (req, res) => {
     // Step 1: Compile
     const compiled = await compile(brief, model);
     
-    // Step 2: Generate
-    const image = await generateImage(compiled.prompt);
+    // Step 2: Generate — route to correct provider
+    const image = await routeGeneration(compiled.model, compiled.prompt);
     
     res.json({
       prompt: compiled.prompt,
@@ -182,8 +184,8 @@ app.post('/pipeline/auto', async (req, res) => {
         currentPrompt = compiled.prompt;
       }
 
-      // Generate
-      const image = await generateImage(currentPrompt);
+      // Generate — route to correct provider
+      const image = await routeGeneration(model, currentPrompt);
 
       // Audit
       const audit = await auditImage(image.buffer, image.mimeType, brief, model);
@@ -270,7 +272,7 @@ app.post('/pipeline', async (req, res) => {
     for (let i = 0; i < Math.min(maxIterations, 5); i++) {
       const compiled = await compile(brief, model);
       currentPrompt = compiled.prompt;
-      const image = await generateImage(currentPrompt);
+      const image = await routeGeneration(model, currentPrompt);
       const audit = await auditImage(image.buffer, image.mimeType, brief, model);
 
       iterations.push({
@@ -343,7 +345,7 @@ app.delete('/styles/:id', (req, res) => {
 // ── Start ────────────────────────────────────────────────────────────
 
 app.listen(PORT, () => {
-  console.log(`\n🎬 Cine-AI Prompt Compiler v0.2.0`);
+  console.log(`\n🎬 Cine-AI Prompt Compiler v0.3.0`);
   console.log(`📡 API running on http://localhost:${PORT}`);
   console.log(`\nEndpoints:`);
   console.log(`  POST /compile         — Brief → model-specific prompt`);

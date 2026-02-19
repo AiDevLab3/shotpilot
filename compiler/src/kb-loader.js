@@ -37,6 +37,16 @@ const MODEL_ALIASES = {
   'imagen-4': 'imagen_4',
   'sora': 'sora_2',
   'sora-2': 'sora_2',
+  'gpt-image-1': 'gpt_image_1',
+  'gpt_image_1': 'gpt_image_1',
+  'gpt-image': 'gpt_image_1',
+  'openai': 'gpt_image_1',
+  'recraft-v4': 'recraft_v4',
+  'recraft_v4': 'recraft_v4',
+  'recraft': 'recraft_v4',
+  'kling-3.0': 'kling_3_0',
+  'kling_3_0': 'kling_3_0',
+  'kling-3': 'kling_3_0',
 };
 
 function resolveModelName(name) {

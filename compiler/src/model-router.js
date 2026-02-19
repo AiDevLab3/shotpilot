@@ -6,6 +6,9 @@
  */
 import { loadKB, resolveModelName, getAvailableModels } from './kb-loader.js';
 import { callText } from './gemini.js';
+import { generateImage as generateGemini } from './gemini.js';
+import { generateFlux2, generateRecraftV4, generateKling3 } from './fal.js';
+import { generateOpenAI } from './openai.js';
 
 /**
  * Model capability profiles — what each model is best (and worst) at.
@@ -20,6 +23,7 @@ const MODEL_PROFILES = {
     bestFor: ['character portraits', 'object references', 'text-heavy shots', 'iterative refinement'],
     worstFor: ['extreme wide landscapes without subjects', 'highly stylized non-photorealistic'],
     apiAvailable: true,
+    provider: 'gemini',
     apiModel: 'nano-banana-pro-preview',
   },
   midjourney: {
@@ -31,14 +35,16 @@ const MODEL_PROFILES = {
     worstFor: ['precise text rendering', 'exact technical specifications', 'photorealistic product shots'],
     apiAvailable: false,
   },
-  gpt_image_1_5: {
-    displayName: 'GPT Image 1.5',
+  gpt_image_1: {
+    displayName: 'GPT Image 1',
     type: 'image',
     strengths: ['conversational editing', 'multi-image compositing', 'text rendering', 'identity preservation', 'precise instruction following'],
     weaknesses: ['can look too clean/corporate', 'safety filters aggressive', 'less cinematic default look'],
     bestFor: ['iterative edits', 'text in images', 'multi-image scenes', 'precise composition control'],
     worstFor: ['gritty/raw aesthetics', 'extreme stylization', 'dark/violent content'],
-    apiAvailable: false, // Need OpenAI key
+    apiAvailable: true,
+    provider: 'openai',
+    apiModel: 'gpt-image-1',
   },
   higgsfield_cinema_studio_v1_5: {
     displayName: 'Higgsfield Cinema Studio',
@@ -78,13 +84,37 @@ const MODEL_PROFILES = {
     apiModel: 'imagen-4.0-generate-001',
   },
   flux_2: {
-    displayName: 'Flux 2',
+    displayName: 'Flux 2 Flex',
     type: 'image',
-    strengths: ['photorealism', 'natural skin textures', 'accurate text rendering', 'LoRA support'],
+    strengths: ['photorealism', 'natural skin textures', 'accurate text rendering', 'LoRA support', 'configurable inference steps'],
     weaknesses: ['less artistic default aesthetic', 'requires more prompt engineering'],
     bestFor: ['photorealistic work', 'natural skin/textures', 'technical accuracy'],
     worstFor: ['highly stylized looks without LoRAs', 'abstract concepts'],
-    apiAvailable: false, // Need Replicate key
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'flux-2-flex',
+  },
+  recraft_v4: {
+    displayName: 'Recraft V4 Pro',
+    type: 'image',
+    strengths: ['design quality', 'typography', 'brand assets', 'vector-like outputs'],
+    weaknesses: ['less photorealistic for portraits', 'newer model'],
+    bestFor: ['design assets', 'illustrations', 'brand materials', 'typography'],
+    worstFor: ['photorealistic portraits', 'cinematic scenes'],
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'recraft-v4',
+  },
+  kling_3_0: {
+    displayName: 'Kling 3.0 Pro',
+    type: 'video',
+    strengths: ['high quality video generation', 'cinematic motion', 'multi-character scenes'],
+    weaknesses: ['video only', 'longer generation times', 'queue-based'],
+    bestFor: ['dynamic scenes', 'cinematic video', 'character animation'],
+    worstFor: ['static hero stills', 'fast iteration'],
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'kling-3',
   },
 };
 
@@ -191,4 +221,62 @@ function listModels() {
   }));
 }
 
-export { recommendModel, getModelProfile, listModels, MODEL_PROFILES };
+/**
+ * Route a generation request to the correct provider based on model ID.
+ * Returns the same { buffer, mimeType, textResponse } shape regardless of provider.
+ * 
+ * @param {string} modelId - Resolved model ID (e.g., 'nano_banana_pro', 'flux_2', 'gpt_image_1')
+ * @param {string} prompt - The compiled prompt
+ * @returns {{ buffer: Buffer, mimeType: string, textResponse: string|null }}
+ */
+async function routeGeneration(modelId, prompt) {
+  const profile = MODEL_PROFILES[modelId];
+  if (!profile) throw new Error(`Unknown model: ${modelId}`);
+  if (!profile.apiAvailable) throw new Error(`Model ${modelId} has no API access (missing API key?)`);
+
+  const provider = profile.provider || 'gemini';
+
+  switch (provider) {
+    case 'gemini':
+      return await generateGemini(prompt);
+    
+    case 'openai':
+      return await generateOpenAI(prompt, { model: profile.apiModel });
+    
+    case 'fal': {
+      const falKey = profile.apiModel; // e.g., 'flux-2-flex', 'recraft-v4', 'kling-3'
+      switch (falKey) {
+        case 'flux-2-flex': return await generateFlux2(prompt);
+        case 'recraft-v4': return await generateRecraftV4(prompt);
+        case 'kling-3': return await generateKling3(prompt);
+        default: throw new Error(`Unknown fal.ai model key: ${falKey}`);
+      }
+    }
+
+    default:
+      throw new Error(`Unknown provider: ${provider}`);
+  }
+}
+
+/**
+ * Get list of models that currently have API access (keys present in env).
+ */
+function getAvailableApiModels() {
+  return Object.entries(MODEL_PROFILES)
+    .filter(([, p]) => {
+      if (!p.apiAvailable) return false;
+      const provider = p.provider || 'gemini';
+      if (provider === 'openai') return !!process.env.OPENAI_API_KEY;
+      if (provider === 'fal') return !!process.env.FALAI_API_KEY;
+      if (provider === 'gemini') return !!process.env.GEMINI_API_KEY;
+      return false;
+    })
+    .map(([id, p]) => ({
+      id,
+      displayName: p.displayName,
+      type: p.type,
+      provider: p.provider || 'gemini',
+    }));
+}
+
+export { recommendModel, getModelProfile, listModels, routeGeneration, getAvailableApiModels, MODEL_PROFILES };
