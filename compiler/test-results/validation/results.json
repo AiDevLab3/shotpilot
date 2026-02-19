@@ -1,0 +1,692 @@
+{
+  "nano-banana-pro": {
+    "kb": {
+      "prompt": "Cinematic film still of a lone figure in a long dark coat standing at the precipice of a rain-soaked rooftop at night. Extreme wide shot in 21:9 aspect ratio overlooking a sprawling neo-noir metropolis. The figure faces away from the camera, looking out over a city filled with glowing neon signs, dense architecture, and rising smog. Raw photographed realism captured through a physical lens. Shot on ARRI Alexa 35 with Panavision C-Series Anamorphic 35mm lens at f/2.8. High contrast lighting with cyan and magenta neon hues reflecting in puddles on the weathered concrete rooftop. Volumetric rain catching the light. Natural filmic grain, realistic highlight rolloff, and micro-imperfections in the fabric of the coat. No CGI sheen, no plastic textures, no HDR glow.",
+      "audit": {
+        "results": {
+          "gemini_flash": {
+            "overall_score": 92,
+            "dimensions": {
+              "composition": 9,
+              "lighting": 9,
+              "color": 10,
+              "realism": 8,
+              "mood": 10,
+              "brief_adherence": 10
+            },
+            "strengths": [
+              "Perfect execution of the neo-noir color palette with vibrant cyans and magentas against deep blacks.",
+              "Exceptional atmospheric depth created through the use of rain, steam, and light diffusion.",
+              "Strong adherence to the requested 21:9 cinematic aspect ratio and thematic inspiration."
+            ],
+            "weaknesses": [
+              "Repetitive neon signage (multiple 'ARCADE' and 'HOTEL' signs) breaks the immersion of a unique cityscape.",
+              "The texture of the puddles on the rooftop looks slightly repetitive/procedural upon close inspection.",
+              "Some perspective inconsistencies with the alignment of the floating neon signs relative to the buildings."
+            ],
+            "summary": "This is a visually stunning piece that perfectly captures the 'Blade Runner' aesthetic requested in the brief. While there is some minor repetition in the background assets, the lighting and mood are masterfully executed to create a truly cinematic atmosphere."
+          },
+          "gpt": {
+            "overall_score": 92,
+            "dimensions": {
+              "composition": 9,
+              "lighting": 9,
+              "color": 9,
+              "realism": 8,
+              "mood": 10,
+              "brief_adherence": 10
+            },
+            "strengths": [
+              "Excellent mood and atmosphere",
+              "Strong adherence to brief",
+              "Effective use of neon lighting"
+            ],
+            "weaknesses": [
+              "Minor realism issues with texture detail",
+              "Slightly uniform color grading"
+            ],
+            "summary": "The image captures the neo-noir aesthetic effectively, with strong composition and mood. While it excels in atmosphere and brief adherence, minor texture details could enhance realism."
+          },
+          "gemini_pro": {
+            "overall_score": 92,
+            "dimensions": {
+              "composition": 9,
+              "lighting": 9,
+              "color": 9,
+              "realism": 8,
+              "mood": 10,
+              "brief_adherence": 10
+            },
+            "strengths": [
+              "Exceptional atmospheric rendering with volumetric lighting and rain effects that perfectly nail the neo-noir vibe.",
+              "High-quality texturing on the wet rooftop surface, creating convincing reflections.",
+              "Flawless adherence to all specific elements of the brief (21:9 ratio, outfit, setting, neon elements)."
+            ],
+            "weaknesses": [
+              "Neon signage text is generic and repetitive (e.g., 'ARCADE' and 'HOTEL' appear multiple times), making the city feel slightly like a game level.",
+              "Some background building geometry appears slightly blocky, leaning more towards high-end CGI than photorealism."
+            ],
+            "summary": "A visually stunning interpretation that captures the requested Blade Runner aesthetic with precision, delivering a moody and atmospheric shot that hits every requirement of the prompt."
+          }
+        },
+        "consensus": {
+          "avg_score": 92,
+          "agreement_level": "strong",
+          "spread": 0,
+          "divergence_notes": [],
+          "dim_averages": {
+            "composition": 9,
+            "lighting": 9,
+            "color": 9.3,
+            "realism": 8,
+            "mood": 10,
+            "brief_adherence": 10
+          }
+        }
+      }
+    },
+    "raw": {
+      "prompt": "A cinematic 21:9 wide shot of a lone figure standing at the edge of a rain-soaked rooftop at night. The city sprawls below, neon signs reflecting in puddles. The figure wears a long dark coat, facing away from camera. Moody, atmospheric, neo-noir aesthetic. Think Blade Runner meets Se7en.",
+      "audit": {
+        "results": {
+          "gemini_flash": {
+            "overall_score": 92,
+            "dimensions": {
+              "composition": 9,
+              "lighting": 9,
+              "color": 10,
+              "realism": 8,
+              "mood": 10,
+              "brief_adherence": 10
+            },
+            "strengths": [
+              "Perfect execution of the neo-noir color palette with high-contrast teals and oranges.",
+              "Excellent sense of scale and depth, utilizing atmospheric haze and overlapping structures effectively.",
+              "Strong adherence to the 'Blade Runner' aesthetic, including iconic brand placement and architecture."
+            ],
+            "weaknesses": [
+              "Minor AI artifacts in the text rendering of 'OFF-WORLD SOLUTIONS' on the far right building.",
+              "The rain texture is slightly uniform across the depth planes, losing some physical plausibility in the mid-ground."
+            ],
+            "summary": "An exceptional realization of the prompt that perfectly captures the moody, rain-slicked atmosphere of a cyberpunk dystopia. The composition and lighting create a powerful sense of isolation and scale consistent with the neo-noir brief."
+          },
+          "gpt": {
+            "overall_score": 92,
+            "dimensions": {
+              "composition": 9,
+              "lighting": 9,
+              "color": 9,
+              "realism": 8,
+              "mood": 10,
+              "brief_adherence": 9
+            },
+            "strengths": [
+              "Atmospheric mood",
+              "Effective use of lighting and neon reflections",
+              "Strong composition and framing"
+            ],
+            "weaknesses": [
+              "Slightly lacking in texture detail",
+              "Minor realism issues with rain effects"
+            ],
+            "summary": "The image effectively captures a neo-noir aesthetic with its atmospheric mood, strong composition, and effective use of lighting. While the realism could be slightly improved, it adheres closely to the brief."
+          },
+          "gemini_pro": {
+            "overall_score": 95,
+            "dimensions": {
+              "composition": 9,
+              "lighting": 9,
+              "color": 9,
+              "realism": 8,
+              "mood": 10,
+              "brief_adherence": 10
+            },
+            "strengths": [
+              "Perfectly captures the Blade Runner aesthetic with accurate styling and atmosphere",
+              "Excellent rendering of wet surfaces and neon reflections on the rooftop",
+              "Strong use of the 21:9 aspect ratio to balance the figure against the sprawling city"
+            ],
+            "weaknesses": [
+              "Repetitive signage (Nissin logo appears prominently in two places)",
+              "Minor AI artifacts in background building details upon close inspection"
+            ],
+            "summary": "A stunning execution that nails the neo-noir brief, combining evocative lighting, perfect atmospheric perspective, and iconic genre elements into a cohesive cinematic shot."
+          }
+        },
+        "consensus": {
+          "avg_score": 93,
+          "agreement_level": "strong",
+          "spread": 3,
+          "divergence_notes": [],
+          "dim_averages": {
+            "composition": 9,
+            "lighting": 9,
+            "color": 9.3,
+            "realism": 8,
+            "mood": 10,
+            "brief_adherence": 9.7
+          }
+        }
+      }
+    }
+  },
+  "gpt-image-1.5": {
+    "kb": {
+      "prompt": "Cinematic film still, a scene from a feature film. Extreme wide shot from a high-angle perspective on a rain-slicked concrete rooftop at night. In the immediate foreground, a lone figure stands at the precipice, seen from behind, wearing a heavy, textured dark trench coat with visible wet fabric weave. Below the rooftop, a vast, sprawling metropolitan city extends to the horizon, a dense grid of skyscrapers glowing with neon amber, cyan, and magenta. The rooftop surface is covered in uneven puddles reflecting the vibrant neon glow of holographic advertisements and street-level lights. Atmospheric heavy rain and mist catch the light, creating a thick, moody haze. Captured on 35mm film with a 24mm wide-angle lens, f/8 aperture to maintain deep focus from the figure to the distant city lights. Natural highlight rolloff on wet surfaces, physically plausible high-contrast chiaroscuro lighting motivated by city glow. Filmic entropy with natural grain, micro-imperfections on the concrete, and authentic lens flares. No CGI sheen, no plastic skin, no sterile symmetry, no HDR glow.",
+      "audit": {
+        "results": {
+          "gemini_flash": {
+            "overall_score": 88,
+            "dimensions": {
+              "composition": 9,
+              "lighting": 8,
+              "color": 8,
+              "realism": 7,
+              "mood": 10,
+              "brief_adherence": 10
+            },
+            "strengths": [
+              "Masterful evocation of the neo-noir atmosphere with high-contrast textures and heavy rain effects.",
+              "Excellent composition using the rooftop edge as a leading line to create depth against the urban sprawl.",
+              "Perfect adherence to the brief's character styling and environmental requirements."
+            ],
+            "weaknesses": [
+              "The rain streaks appear somewhat uniform and overlaid, lacking interaction with the city light sources in the background.",
+              "Some architectural details in the mid-ground city suffer from AI-typical 'melting' and inconsistent perspective.",
+              "The aspect ratio is closer to 3:2 than the requested 21:9 cinematic wide."
+            ],
+            "summary": "An incredibly atmospheric piece that captures the 'Blade Runner' aesthetic perfectly through its moody lighting and texture work. While it fails the specific 21:9 aspect ratio request, the visual storytelling and emotional weight of the image are top-tier."
+          },
+          "gpt": {
+            "overall_score": 92,
+            "dimensions": {
+              "composition": 9,
+              "lighting": 9,
+              "color": 9,
+              "realism": 8,
+              "mood": 10,
+              "brief_adherence": 10
+            },
+            "strengths": [
+              "Atmospheric mood",
+              "Effective use of lighting and reflections",
+              "Strong composition"
+            ],
+            "weaknesses": [
+              "Slight lack of texture detail in the rain",
+              "Minor realism issues with cityscape depth"
+            ],
+            "summary": "The image successfully captures a moody, neo-noir aesthetic with strong composition and lighting. While the atmosphere is compelling, minor details in texture and depth could be improved."
+          },
+          "gemini_pro": {
+            "overall_score": 88,
+            "dimensions": {
+              "composition": 8,
+              "lighting": 9,
+              "color": 9,
+              "realism": 9,
+              "mood": 10,
+              "brief_adherence": 7
+            },
+            "strengths": [
+              "Exceptional rendering of wet textures on the trench coat and rooftop surface",
+              "Perfectly captures the moody, neo-noir atmosphere with heavy rain simulation",
+              "Strong visual contrast between the dark foreground and the glowing city background"
+            ],
+            "weaknesses": [
+              "Failed to generate the requested 21:9 cinematic aspect ratio (image is 3:2)",
+              "City lights are generic warm tones rather than distinct colorful neon signs"
+            ],
+            "summary": "A visually stunning image that nails the 'Blade Runner meets Se7en' aesthetic with incredible texture work, though it ignores the technical request for a specific cinematic aspect ratio."
+          }
+        },
+        "consensus": {
+          "avg_score": 89.3,
+          "agreement_level": "strong",
+          "spread": 4,
+          "divergence_notes": [],
+          "dim_averages": {
+            "composition": 8.7,
+            "lighting": 8.7,
+            "color": 8.7,
+            "realism": 8,
+            "mood": 10,
+            "brief_adherence": 9
+          }
+        }
+      }
+    },
+    "raw": {
+      "prompt": "A cinematic 21:9 wide shot of a lone figure standing at the edge of a rain-soaked rooftop at night. The city sprawls below, neon signs reflecting in puddles. The figure wears a long dark coat, facing away from camera. Moody, atmospheric, neo-noir aesthetic. Think Blade Runner meets Se7en.",
+      "audit": {
+        "results": {
+          "gemini_flash": {
+            "overall_score": 92,
+            "dimensions": {
+              "composition": 9,
+              "lighting": 9,
+              "color": 10,
+              "realism": 8,
+              "mood": 10,
+              "brief_adherence": 10
+            },
+            "strengths": [
+              "Perfect atmospheric execution of the neo-noir aesthetic, capturing the 'Blade Runner' vibe flawlessly.",
+              "Excellent use of reflections on the wet rooftop to create depth and visual interest in the foreground.",
+              "Masterful color grading that balances the cold blues of the night with the warm, punchy neon reds."
+            ],
+            "weaknesses": [
+              "Slight anatomical stiffness in the figure's silhouette and coat drape.",
+              "Minor AI artifacts in the text of the background signs and some repetitive rain patterns."
+            ],
+            "summary": "An exceptional realization of the brief that captures the quintessential neo-noir mood through expert lighting and color. The composition provides a great sense of scale and isolation, making it a highly cinematic piece."
+          },
+          "gpt": {
+            "overall_score": 92,
+            "dimensions": {
+              "composition": 9,
+              "lighting": 9,
+              "color": 9,
+              "realism": 8,
+              "mood": 10,
+              "brief_adherence": 10
+            },
+            "strengths": [
+              "Atmospheric mood",
+              "Excellent use of neon reflections",
+              "Strong composition"
+            ],
+            "weaknesses": [
+              "Slightly lacking in texture detail",
+              "Minor realism issues"
+            ],
+            "summary": "The image excellently captures the neo-noir aesthetic with a strong atmospheric mood and effective use of neon lighting. While the composition and adherence to the brief are outstanding, minor texture and realism issues slightly detract from the overall impact."
+          },
+          "gemini_pro": {
+            "overall_score": 93,
+            "dimensions": {
+              "composition": 9,
+              "lighting": 9,
+              "color": 9,
+              "realism": 8,
+              "mood": 10,
+              "brief_adherence": 10
+            },
+            "strengths": [
+              "Perfect capture of the requested neo-noir, moody atmosphere with excellent rain effects.",
+              "Strong use of color contrast between cool city ambiance and warm neon reflections.",
+              "Composition effectively balances the figure against the sprawling cityscape."
+            ],
+            "weaknesses": [
+              "Rain streaks are slightly uniform, appearing somewhat more illustrative than photorealistic.",
+              "Background building textures become a bit indistinct, though this fits the atmospheric depth."
+            ],
+            "summary": "A highly successful generation that perfectly embodies the 'Blade Runner meets Se7en' aesthetic requested. The mood, lighting, and attention to specific prompt details like the wet rooftop reflections are exceptional."
+          }
+        },
+        "consensus": {
+          "avg_score": 92.3,
+          "agreement_level": "strong",
+          "spread": 1,
+          "divergence_notes": [],
+          "dim_averages": {
+            "composition": 9,
+            "lighting": 9,
+            "color": 9.3,
+            "realism": 8,
+            "mood": 10,
+            "brief_adherence": 10
+          }
+        }
+      }
+    }
+  },
+  "grok-imagine": {
+    "kb": {
+      "prompt": "Cinematic film still of an extreme wide shot from a neo-noir feature. A lone figure in a long dark trench coat with visible fabric texture stands at the precipice of a rain-slicked concrete rooftop, back turned toward the lens. The sprawling city below is a dense labyrinth of skyscrapers with glowing neon advertisements in cyan and magenta, their light reflecting vividly in deep puddles on the rooftop surface",
+      "audit": {
+        "results": {
+          "gemini_flash": {
+            "overall_score": 78,
+            "dimensions": {
+              "composition": 9,
+              "lighting": 8,
+              "color": 8,
+              "realism": 6,
+              "mood": 9,
+              "brief_adherence": 7
+            },
+            "strengths": [
+              "Excellent use of reflections and leading lines to create depth and focus.",
+              "Strong atmosphere that captures the 'Blade Runner' neo-noir aesthetic perfectly.",
+              "Effective lighting contrast between the dark foreground figure and the vibrant city background."
+            ],
+            "weaknesses": [
+              "Failed the aspect ratio requirement; provided 1:1 square instead of 21:9 wide shot.",
+              "Repetitive AI-generated text elements ('Cyan Arcade', 'Magenta Lounge') break immersion.",
+              "Minor perspective inconsistencies in the puddle reflections compared to the actual neon signs."
+            ],
+            "summary": "While the image masterfully captures the intended mood and atmospheric depth of a neo-noir cityscape, it fails on technical brief requirements like the 21:9 aspect ratio and exhibits common AI artifacts like repetitive signage text."
+          },
+          "gpt": {
+            "overall_score": 92,
+            "dimensions": {
+              "composition": 9,
+              "lighting": 9,
+              "color": 9,
+              "realism": 8,
+              "mood": 10,
+              "brief_adherence": 10
+            },
+            "strengths": [
+              "Atmospheric mood",
+              "Excellent use of neon reflections",
+              "Strong composition"
+            ],
+            "weaknesses": [
+              "Slightly less texture detail on the rooftop",
+              "Minor realism issues in cityscape"
+            ],
+            "summary": "The image captures the neo-noir aesthetic beautifully with its atmospheric mood and striking use of neon reflections. While the composition and lighting are strong, minor texture and realism details could be improved."
+          },
+          "gemini_pro": {
+            "overall_score": 70,
+            "dimensions": {
+              "composition": 5,
+              "lighting": 8,
+              "color": 9,
+              "realism": 6,
+              "mood": 9,
+              "brief_adherence": 5
+            },
+            "strengths": [
+              "Excellent atmospheric mood with convincing rain and wet surface textures",
+              "Strong neo-noir color palette using classic cyan and magenta contrast"
+            ],
+            "weaknesses": [
+              "Failed aspect ratio constraint; image is square (1:1) instead of the requested cinematic 21:9",
+              "Neon signage text is repetitive and uncreative (e.g., literally labeling a cyan sign 'CYAN ARCADE')",
+              "City view is more eye-level than 'sprawling below'"
+            ],
+            "summary": "While the image successfully captures the requested moody neo-noir aesthetic and lighting, it fails the technical aspect ratio instruction and features distracting, literal text generation on the background signage."
+          }
+        },
+        "consensus": {
+          "avg_score": 80,
+          "agreement_level": "weak",
+          "spread": 22,
+          "divergence_notes": [
+            "Highest: gpt (92), Lowest: gemini_pro (70)"
+          ],
+          "dim_averages": {
+            "composition": 7.7,
+            "lighting": 8.3,
+            "color": 8.7,
+            "realism": 6.7,
+            "mood": 9.3,
+            "brief_adherence": 7.3
+          }
+        }
+      }
+    },
+    "raw": {
+      "prompt": "A cinematic 21:9 wide shot of a lone figure standing at the edge of a rain-soaked rooftop at night. The city sprawls below, neon signs reflecting in puddles. The figure wears a long dark coat, facing away from camera. Moody, atmospheric, neo-noir aesthetic. Think Blade Runner meets Se7en.",
+      "audit": {
+        "results": {
+          "gemini_flash": {
+            "overall_score": 78,
+            "dimensions": {
+              "composition": 8,
+              "lighting": 9,
+              "color": 9,
+              "realism": 6,
+              "mood": 9,
+              "brief_adherence": 6
+            },
+            "strengths": [
+              "Exceptional use of reflections and volumetric lighting to create a dense, neo-noir atmosphere.",
+              "Strong color palette that perfectly balances cold blues with vibrant, warm neon highlights.",
+              "Effective use of depth and scale, making the city feel vast and overwhelming."
+            ],
+            "weaknesses": [
+              "Failed the aspect ratio requirement; the image is 1:1 square instead of the requested 21:9 wide shot.",
+              "Obvious AI artifacts, specifically the nonsensical vertical 'icicle' or glass-like strands hanging from the bottom of the figure's coat.",
+              "The 'NO EXIT' signs and some text on billboards exhibit typical AI garbled lettering and logical repetition."
+            ],
+            "summary": "While the image masterfully captures the moody, rain-soaked aesthetic of Blade Runner, it fails a primary technical requirement of the brief by providing a square format instead of a cinematic wide shot. The atmospheric lighting and reflections are top-tier, but physical glitches on the character's clothing detract from the realism."
+          },
+          "gpt": {
+            "overall_score": 92,
+            "dimensions": {
+              "composition": 9,
+              "lighting": 9,
+              "color": 9,
+              "realism": 8,
+              "mood": 10,
+              "brief_adherence": 10
+            },
+            "strengths": [
+              "Atmospheric lighting and mood",
+              "Excellent adherence to brief",
+              "Strong composition and depth"
+            ],
+            "weaknesses": [
+              "Slightly lacking in texture detail",
+              "Minor realism issues in reflections"
+            ],
+            "summary": "The image captures the neo-noir aesthetic beautifully with its atmospheric lighting and strong composition. It adheres closely to the brief, though minor texture details could enhance realism."
+          },
+          "gemini_pro": {
+            "overall_score": 78,
+            "dimensions": {
+              "composition": 7,
+              "lighting": 9,
+              "color": 9,
+              "realism": 7,
+              "mood": 9,
+              "brief_adherence": 6
+            },
+            "strengths": [
+              "Exceptional atmosphere and color grading that perfectly captures the neo-noir aesthetic",
+              "Striking lighting and reflections on the wet rooftop surface"
+            ],
+            "weaknesses": [
+              "Failed to deliver the requested 21:9 cinematic aspect ratio (image is square)",
+              "Strange, glitch-like digital artifacts on the hem of the trench coat"
+            ],
+            "summary": "A visually arresting image that nails the mood and lighting of the prompt, but it is held back by significant rendering artifacts on the clothing and a complete disregard for the requested wide aspect ratio."
+          }
+        },
+        "consensus": {
+          "avg_score": 82.7,
+          "agreement_level": "moderate",
+          "spread": 14,
+          "divergence_notes": [],
+          "dim_averages": {
+            "composition": 8,
+            "lighting": 9,
+            "color": 9,
+            "realism": 7,
+            "mood": 9.3,
+            "brief_adherence": 7.3
+          }
+        }
+      }
+    }
+  },
+  "ideogram": {
+    "kb": {
+      "prompt": "A cinematic film still of an extreme wide shot from a feature film. A lone figure in a long dark coat stands at the edge of a rain-soaked rooftop at night, facing away from the camera. The vast city sprawls below, with neon signs in cyan and magenta reflecting in the puddles on the roof. Moody neo-noir aesthetic. Raw photographed realism, captured through a physical lens, natural depth",
+      "audit": {
+        "results": {
+          "gemini_flash": {
+            "overall_score": 72,
+            "dimensions": {
+              "composition": 7,
+              "lighting": 9,
+              "color": 9,
+              "realism": 8,
+              "mood": 10,
+              "brief_adherence": 5
+            },
+            "strengths": [
+              "Masterful use of color and lighting to create a quintessential neo-noir atmosphere.",
+              "Excellent texture work on the wet rooftop and the wool of the coat.",
+              "Strong sense of depth created by the leading lines of the city street below."
+            ],
+            "weaknesses": [
+              "Failed to meet the technical requirement of a 21:9 aspect ratio (image is 1:1).",
+              "The figure is in profile rather than 'facing away from camera' as specified.",
+              "Minor AI artifacts in the distant city lights and the structural details of the rooftop edge."
+            ],
+            "summary": "The image is a moody, visually stunning interpretation of the 'Blade Runner' aesthetic with exceptional lighting and color grading. However, it fails significant technical and staging instructions from the brief, specifically the aspect ratio and the subject's orientation."
+          },
+          "gpt": {
+            "overall_score": 92,
+            "dimensions": {
+              "composition": 9,
+              "lighting": 9,
+              "color": 9,
+              "realism": 8,
+              "mood": 10,
+              "brief_adherence": 9
+            },
+            "strengths": [
+              "Excellent mood and atmosphere",
+              "Strong composition and framing",
+              "Effective use of neon colors"
+            ],
+            "weaknesses": [
+              "Slightly less realistic texture in some areas",
+              "Minor lighting inconsistencies"
+            ],
+            "summary": "The image successfully captures a neo-noir aesthetic with strong mood and composition, effectively using lighting and color to enhance the atmosphere. Minor realism issues do not detract significantly from the overall impact."
+          },
+          "gemini_pro": {
+            "overall_score": 72,
+            "dimensions": {
+              "composition": 6,
+              "lighting": 8,
+              "color": 9,
+              "realism": 7,
+              "mood": 9,
+              "brief_adherence": 5
+            },
+            "strengths": [
+              "Excellent neo-noir color grading with strong teal and magenta contrast",
+              "Atmospheric rendering of wet surface reflections and rain"
+            ],
+            "weaknesses": [
+              "Failed to match the requested 21:9 aspect ratio (image is square)",
+              "Subject is in profile rather than facing away from the camera"
+            ],
+            "summary": "While the image successfully captures the requested mood and aesthetic with beautiful lighting, it significantly deviates from the brief regarding aspect ratio and subject orientation."
+          }
+        },
+        "consensus": {
+          "avg_score": 78.7,
+          "agreement_level": "moderate",
+          "spread": 20,
+          "divergence_notes": [
+            "Highest: gpt (92), Lowest: gemini_pro (72)"
+          ],
+          "dim_averages": {
+            "composition": 7.3,
+            "lighting": 8.7,
+            "color": 9,
+            "realism": 7.7,
+            "mood": 9.7,
+            "brief_adherence": 6.3
+          }
+        }
+      }
+    },
+    "raw": {
+      "prompt": "A cinematic 21:9 wide shot of a lone figure standing at the edge of a rain-soaked rooftop at night. The city sprawls below, neon signs reflecting in puddles. The figure wears a long dark coat, facing away from camera. Moody, atmospheric, neo-noir aesthetic. Think Blade Runner meets Se7en.",
+      "audit": {
+        "results": {
+          "gemini_flash": {
+            "overall_score": 72,
+            "dimensions": {
+              "composition": 7,
+              "lighting": 8,
+              "color": 8,
+              "realism": 7,
+              "mood": 9,
+              "brief_adherence": 6
+            },
+            "strengths": [
+              "Excellent atmospheric depth and mood, capturing a strong neo-noir loneliness.",
+              "Effective use of reflections and texture on the rain-soaked rooftop surface."
+            ],
+            "weaknesses": [
+              "Failed the technical requirement for a 21:9 wide aspect ratio, providing a 1:1 square instead.",
+              "Lack of vibrant neon signs and colorful reflections as specified in the brief; the palette is overly monochromatic teal.",
+              "Visible AI artifacts in the feet and the way the character connects to the ground plane."
+            ],
+            "summary": "While the image captures the emotional tone and silhouette perfectly, it fails major technical aspects of the brief including the aspect ratio and the inclusion of neon lighting elements."
+          },
+          "gpt": {
+            "overall_score": 85,
+            "dimensions": {
+              "composition": 9,
+              "lighting": 8,
+              "color": 9,
+              "realism": 8,
+              "mood": 9,
+              "brief_adherence": 8
+            },
+            "strengths": [
+              "Strong composition with effective use of depth",
+              "Excellent color grading capturing neo-noir aesthetic",
+              "Moody atmosphere that matches the brief"
+            ],
+            "weaknesses": [
+              "Neon reflections could be more pronounced",
+              "Slight lack of detail in the rain texture"
+            ],
+            "summary": "The image effectively captures a neo-noir atmosphere with strong composition and color grading, though it could benefit from more pronounced neon reflections and rain detail."
+          },
+          "gemini_pro": {
+            "overall_score": 68,
+            "dimensions": {
+              "composition": 6,
+              "lighting": 8,
+              "color": 8,
+              "realism": 8,
+              "mood": 9,
+              "brief_adherence": 4
+            },
+            "strengths": [
+              "Strong atmospheric mood with cinematic teal color grading",
+              "Excellent rendering of wet textures and reflections on the rooftop",
+              "Figure integration and clothing folds are photorealistic"
+            ],
+            "weaknesses": [
+              "Failed aspect ratio constraint (square image provided instead of 21:9 wide shot)",
+              "Missing requested 'neon signs' and their specific colorful reflections",
+              "Background city feels generic and lacks the vibrancy of a Blade Runner aesthetic"
+            ],
+            "summary": "While the image succeeds in creating a moody, high-quality neo-noir atmosphere, it fails the technical brief significantly by ignoring the aspect ratio instruction and omitting the requested neon lighting elements."
+          }
+        },
+        "consensus": {
+          "avg_score": 75,
+          "agreement_level": "moderate",
+          "spread": 17,
+          "divergence_notes": [
+            "Highest: gpt (85), Lowest: gemini_pro (68)"
+          ],
+          "dim_averages": {
+            "composition": 7.3,
+            "lighting": 8,
+            "color": 8.3,
+            "realism": 7.7,
+            "mood": 9,
+            "brief_adherence": 6
+          }
+        }
+      }
+    }
+  }
+}

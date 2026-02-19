@@ -10,6 +10,7 @@
  *   GET  /health          — Health check
  */
 import 'dotenv/config';
+import fetch from 'node-fetch';
 import express from 'express';
 import cors from 'cors';
 import { compile, compileMulti, refine } from './compiler.js';
@@ -19,6 +20,7 @@ import { recommendModel, listModels, routeGeneration, getAvailableApiModels, sma
 import { analyzeBrief } from './brief-analyzer.js';
 import { listStyles, getStyle, createStyle, updateStyle, deleteStyle } from './style-manager.js';
 import { runUtility, listUtilities } from './fal.js';
+import { multiAudit, peerAudit } from './multi-audit.js';
 
 const app = express();
 const PORT = process.env.PORT || 3100;
@@ -183,6 +185,31 @@ app.post('/generate', async (req, res) => {
   }
 });
 
+// ── Generate Raw (skip KB compilation) ───────────────────────────────
+
+app.post('/generate/raw', async (req, res) => {
+  try {
+    const { prompt, targetModel } = req.body;
+    if (!prompt) return res.status(400).json({ error: 'prompt is required' });
+    if (!targetModel) return res.status(400).json({ error: 'targetModel is required' });
+
+    const image = await routeGeneration(targetModel, prompt);
+    
+    res.json({
+      prompt,
+      model: targetModel,
+      image: {
+        data: image.buffer.toString('base64'),
+        mimeType: image.mimeType,
+      },
+      textResponse: image.textResponse,
+    });
+  } catch (err) {
+    console.error('[generate/raw]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Audit ────────────────────────────────────────────────────────────
 
 app.post('/audit', async (req, res) => {
@@ -196,6 +223,63 @@ app.post('/audit', async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error('[audit]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Multi-Audit ──────────────────────────────────────────────────────
+
+app.post('/audit/multi', async (req, res) => {
+  try {
+    const { image_url, image, mimeType, brief, auditors } = req.body;
+    if (!brief) return res.status(400).json({ error: 'brief is required' });
+
+    let imageBase64 = image;
+    let mime = mimeType || 'image/png';
+
+    // If image_url provided, fetch it
+    if (image_url && !imageBase64) {
+      const imgRes = await fetch(image_url);
+      if (!imgRes.ok) return res.status(400).json({ error: `Failed to fetch image: ${imgRes.status}` });
+      const buf = Buffer.from(await imgRes.arrayBuffer());
+      imageBase64 = buf.toString('base64');
+      const ct = imgRes.headers.get('content-type');
+      if (ct) mime = ct.split(';')[0];
+    }
+
+    if (!imageBase64) return res.status(400).json({ error: 'image (base64) or image_url is required' });
+
+    const result = await multiAudit(imageBase64, mime, brief, auditors);
+    res.json(result);
+  } catch (err) {
+    console.error('[audit/multi]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/audit/peer', async (req, res) => {
+  try {
+    const { image_url, image, mimeType, brief } = req.body;
+    if (!brief) return res.status(400).json({ error: 'brief is required' });
+
+    let imageBase64 = image;
+    let mime = mimeType || 'image/png';
+
+    if (image_url && !imageBase64) {
+      const imgRes = await fetch(image_url);
+      if (!imgRes.ok) return res.status(400).json({ error: `Failed to fetch image: ${imgRes.status}` });
+      const buf = Buffer.from(await imgRes.arrayBuffer());
+      imageBase64 = buf.toString('base64');
+      const ct = imgRes.headers.get('content-type');
+      if (ct) mime = ct.split(';')[0];
+    }
+
+    if (!imageBase64) return res.status(400).json({ error: 'image (base64) or image_url is required' });
+
+    const result = await peerAudit(imageBase64, mime, brief);
+    res.json(result);
+  } catch (err) {
+    console.error('[audit/peer]', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -459,6 +543,8 @@ app.listen(PORT, () => {
   console.log(`  POST /compile/multi   — Brief → multiple model prompts`);
   console.log(`  POST /generate        — Brief → prompt + generated image`);
   console.log(`  POST /audit           — Image + brief → quality audit`);
+  console.log(`  POST /audit/multi    — Image + brief → multi-auditor scoring`);
+  console.log(`  POST /audit/peer     — Image + brief → all auditors comparative`);
   console.log(`  POST /refine          — Image + brief → audit + refined prompt`);
   console.log(`  POST /pipeline/auto   — Full auto: compile → generate → audit → refine loop`);
   console.log(`  POST /pipeline        — Legacy pipeline`);
