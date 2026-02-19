@@ -12,10 +12,11 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import { compile, compileMulti } from './compiler.js';
+import { compile, compileMulti, refine } from './compiler.js';
 import { auditImage } from './audit.js';
 import { generateImage } from './gemini.js';
 import { recommendModel, listModels } from './model-router.js';
+import { listStyles, getStyle, createStyle, updateStyle, deleteStyle } from './style-manager.js';
 
 const app = express();
 const PORT = process.env.PORT || 3100;
@@ -26,7 +27,7 @@ app.use(express.json({ limit: '25mb' }));
 // ── Health ───────────────────────────────────────────────────────────
 
 app.get('/health', (req, res) => {
-  res.json({ ok: true, service: 'cine-ai-compiler', version: '0.1.0' });
+  res.json({ ok: true, service: 'cine-ai-compiler', version: '0.2.0' });
 });
 
 // ── Models ───────────────────────────────────────────────────────────
@@ -126,7 +127,136 @@ app.post('/audit', async (req, res) => {
   }
 });
 
-// ── Full Pipeline (compile → generate → audit) ──────────────────────
+// ── Refine ───────────────────────────────────────────────────────────
+
+app.post('/refine', async (req, res) => {
+  try {
+    const { brief, image, mimeType, targetModel, currentPrompt } = req.body;
+    if (!brief?.description) return res.status(400).json({ error: 'brief.description is required' });
+    if (!image) return res.status(400).json({ error: 'image (base64) is required' });
+
+    const model = targetModel || recommendModel(brief).recommended;
+
+    // Step 1: Audit the image
+    const buffer = Buffer.from(image, 'base64');
+    const auditResult = await auditImage(buffer, mimeType || 'image/jpeg', brief, model);
+
+    // Step 2: Refine based on audit
+    const promptToRefine = currentPrompt || '(no previous prompt provided)';
+    const refined = await refine({
+      currentPrompt: promptToRefine,
+      auditResult,
+      brief,
+      targetModel: model,
+    });
+
+    res.json({
+      audit: auditResult,
+      refined: refined,
+      model,
+    });
+  } catch (err) {
+    console.error('[refine]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Auto Pipeline (compile → generate → audit → refine loop) ────────
+
+app.post('/pipeline/auto', async (req, res) => {
+  try {
+    const { brief, targetModel } = req.body;
+    if (!brief?.description) return res.status(400).json({ error: 'brief.description is required' });
+
+    const model = targetModel || recommendModel(brief).recommended;
+    const iterations = [];
+    let currentPrompt = null;
+    let previousScore = 0;
+
+    const MAX_ITERATIONS = 3;
+
+    for (let i = 0; i < MAX_ITERATIONS; i++) {
+      // Compile (first iteration) or use refined prompt (subsequent)
+      if (!currentPrompt) {
+        const compiled = await compile(brief, model);
+        currentPrompt = compiled.prompt;
+      }
+
+      // Generate
+      const image = await generateImage(currentPrompt);
+
+      // Audit
+      const audit = await auditImage(image.buffer, image.mimeType, brief, model);
+
+      const iteration = {
+        iteration: i + 1,
+        prompt: currentPrompt,
+        score: audit.overall_score,
+        recommendation: audit.recommendation,
+        dimensions: audit.dimensions,
+        issues: audit.issues,
+        prompt_fixes: audit.prompt_fixes,
+        routing: audit.routing,
+        summary: audit.summary,
+        image: { data: image.buffer.toString('base64'), mimeType: image.mimeType },
+      };
+      iterations.push(iteration);
+
+      // Exit condition 1: score >= 90
+      if (audit.overall_score >= 90) {
+        iteration.exitReason = 'score_threshold_met';
+        break;
+      }
+
+      // Exit condition 2: score didn't improve by >= 3 points
+      if (i > 0 && audit.overall_score - previousScore < 3) {
+        iteration.exitReason = 'insufficient_improvement';
+        break;
+      }
+
+      // Exit condition 3: model switch recommended
+      if (audit.recommendation === 'SWITCH_MODEL') {
+        iteration.exitReason = 'switch_model_recommended';
+        iteration.switchSuggestion = audit.routing;
+        break;
+      }
+
+      // Exit condition 4: last iteration
+      if (i === MAX_ITERATIONS - 1) {
+        iteration.exitReason = 'max_iterations_reached';
+        break;
+      }
+
+      previousScore = audit.overall_score;
+
+      // Refine for next iteration — anchored to original brief
+      const refined = await refine({
+        currentPrompt,
+        auditResult: audit,
+        brief,
+        targetModel: model,
+      });
+      currentPrompt = refined.prompt;
+      iteration.refinementChanges = refined.changes;
+    }
+
+    const scores = iterations.map(i => i.score);
+    res.json({
+      model,
+      totalIterations: iterations.length,
+      iterations,
+      bestScore: Math.max(...scores),
+      scoreProgression: scores,
+      finalRecommendation: iterations[iterations.length - 1].recommendation,
+      exitReason: iterations[iterations.length - 1].exitReason,
+    });
+  } catch (err) {
+    console.error('[pipeline/auto]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Legacy Pipeline (kept for backwards compatibility) ───────────────
 
 app.post('/pipeline', async (req, res) => {
   try {
@@ -138,14 +268,9 @@ app.post('/pipeline', async (req, res) => {
     let currentPrompt = null;
 
     for (let i = 0; i < Math.min(maxIterations, 5); i++) {
-      // Compile (or refine)
       const compiled = await compile(brief, model);
       currentPrompt = compiled.prompt;
-
-      // Generate
       const image = await generateImage(currentPrompt);
-
-      // Audit
       const audit = await auditImage(image.buffer, image.mimeType, brief, model);
 
       iterations.push({
@@ -156,20 +281,14 @@ app.post('/pipeline', async (req, res) => {
         dimensions: audit.dimensions,
         routing: audit.routing,
         summary: audit.summary,
-        image: {
-          data: image.buffer.toString('base64'),
-          mimeType: image.mimeType,
-        },
+        image: { data: image.buffer.toString('base64'), mimeType: image.mimeType },
       });
 
-      // Stop conditions
       if (audit.recommendation === 'ACCEPT') break;
       if (audit.recommendation === 'SWITCH_MODEL') {
         iterations[iterations.length - 1].switchSuggestion = audit.routing;
         break;
       }
-
-      // Feed audit back into brief for next iteration
       if (audit.prompt_fixes?.length) {
         brief.constraints = (brief.constraints || '') + '\n' + audit.prompt_fixes.join('\n');
       }
@@ -187,20 +306,61 @@ app.post('/pipeline', async (req, res) => {
   }
 });
 
+// ── Style Profiles ───────────────────────────────────────────────────
+
+app.get('/styles', (req, res) => {
+  res.json(listStyles());
+});
+
+app.get('/styles/:id', (req, res) => {
+  const style = getStyle(req.params.id);
+  if (!style) return res.status(404).json({ error: 'Style not found' });
+  res.json(style);
+});
+
+app.post('/styles', (req, res) => {
+  try {
+    if (!req.body.name) return res.status(400).json({ error: 'name is required' });
+    const style = createStyle(req.body);
+    res.status(201).json(style);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/styles/:id', (req, res) => {
+  const style = updateStyle(req.params.id, req.body);
+  if (!style) return res.status(404).json({ error: 'Style not found' });
+  res.json(style);
+});
+
+app.delete('/styles/:id', (req, res) => {
+  const deleted = deleteStyle(req.params.id);
+  if (!deleted) return res.status(404).json({ error: 'Style not found' });
+  res.json({ ok: true });
+});
+
 // ── Start ────────────────────────────────────────────────────────────
 
 app.listen(PORT, () => {
-  console.log(`\n🎬 Cine-AI Prompt Compiler v0.1.0`);
+  console.log(`\n🎬 Cine-AI Prompt Compiler v0.2.0`);
   console.log(`📡 API running on http://localhost:${PORT}`);
   console.log(`\nEndpoints:`);
-  console.log(`  POST /compile        — Brief → model-specific prompt`);
-  console.log(`  POST /compile/multi  — Brief → multiple model prompts`);
-  console.log(`  POST /generate       — Brief → prompt + generated image`);
-  console.log(`  POST /audit          — Image + brief → quality audit`);
-  console.log(`  POST /pipeline       — Full loop: compile → generate → audit`);
+  console.log(`  POST /compile         — Brief → model-specific prompt`);
+  console.log(`  POST /compile/multi   — Brief → multiple model prompts`);
+  console.log(`  POST /generate        — Brief → prompt + generated image`);
+  console.log(`  POST /audit           — Image + brief → quality audit`);
+  console.log(`  POST /refine          — Image + brief → audit + refined prompt`);
+  console.log(`  POST /pipeline/auto   — Full auto: compile → generate → audit → refine loop`);
+  console.log(`  POST /pipeline        — Legacy pipeline`);
   console.log(`  POST /models/recommend — Brief → best model recommendation`);
-  console.log(`  GET  /models         — List all models`);
-  console.log(`  GET  /health         — Health check\n`);
+  console.log(`  GET  /models          — List all models`);
+  console.log(`  GET  /styles          — List style profiles`);
+  console.log(`  GET  /styles/:id      — Get style profile`);
+  console.log(`  POST /styles          — Create style profile`);
+  console.log(`  PUT  /styles/:id      — Update style profile`);
+  console.log(`  DELETE /styles/:id    — Delete style profile`);
+  console.log(`  GET  /health          — Health check\n`);
 });
 
 export { app };

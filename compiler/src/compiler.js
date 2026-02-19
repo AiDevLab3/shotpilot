@@ -7,6 +7,7 @@
  */
 import { loadKB, resolveModelName } from './kb-loader.js';
 import { callText } from './gemini.js';
+import { getStyle, styleToDirectives } from './style-manager.js';
 
 /**
  * Compile a creative brief into a model-specific prompt.
@@ -42,7 +43,19 @@ async function compile(brief, targetModel) {
 
   // Build the context
   const briefText = buildBriefText(brief);
-  const styleText = brief.styleProfile ? buildStyleText(brief.styleProfile) : '';
+  
+  // Style profile: load from saved profile if styleProfileId provided, else use inline
+  let styleText = '';
+  if (brief.styleProfileId) {
+    const profile = getStyle(brief.styleProfileId);
+    if (profile) {
+      styleText = styleToDirectives(profile);
+    } else {
+      console.warn(`[compiler] Style profile '${brief.styleProfileId}' not found, skipping`);
+    }
+  } else if (brief.styleProfile) {
+    styleText = buildStyleText(brief.styleProfile);
+  }
 
   const systemInstruction = `You are the Cine-AI Prompt Compiler — an expert system that translates creative briefs into model-specific prompts. You have deep knowledge of how ${targetModel} interprets prompt language — its exact syntax, parameters, strengths, and failure modes.
 
@@ -158,4 +171,86 @@ function buildStyleText(style) {
   return lines.join('\n');
 }
 
-export { compile, compileMulti };
+/**
+ * Refine a prompt based on audit feedback while staying anchored to the original brief.
+ * 
+ * Key insight: passes BOTH the original brief AND audit feedback to prevent intent drift.
+ * Only surgically fixes weak dimensions — preserves what scored well.
+ * 
+ * @param {object} params
+ * @param {string} params.currentPrompt - The prompt that was used
+ * @param {object} params.auditResult - Full audit result from auditImage()
+ * @param {object} params.brief - The ORIGINAL creative brief (anchor)
+ * @param {string} params.targetModel - Target model
+ * @returns {{ prompt: string, changes: string[] }}
+ */
+async function refine({ currentPrompt, auditResult, brief, targetModel }) {
+  const kb = loadKB(targetModel, { tier: 'refine', shotType: brief.shotType });
+
+  // Identify weak vs strong dimensions
+  const dims = auditResult.dimensions || {};
+  const weak = [];
+  const strong = [];
+  for (const [key, val] of Object.entries(dims)) {
+    if (val.score <= 6) weak.push({ dimension: key, score: val.score, notes: val.notes });
+    else strong.push({ dimension: key, score: val.score });
+  }
+
+  const briefText = buildBriefText(brief);
+
+  const systemInstruction = `You are the Cine-AI Prompt Refiner. You receive a prompt that was used to generate an image, along with an audit of that image and the ORIGINAL creative brief.
+
+Your job: surgically fix the prompt to address the weak dimensions while PRESERVING everything that scored well.
+
+CRITICAL RULES:
+1. The ORIGINAL BRIEF is your north star. Every change must serve the brief's intent.
+2. Do NOT rewrite the whole prompt. Make targeted, minimal changes.
+3. Preserve high-scoring aspects — if lighting scored 9/10, don't touch lighting language.
+4. Output ONLY the refined prompt. No preamble, no explanation.
+5. After the prompt, on a new line starting with "// Changes:", list what you changed and why.`;
+
+  const prompt = `${kb.content}
+
+ORIGINAL CREATIVE BRIEF (this is the non-negotiable intent):
+${briefText}
+
+CURRENT PROMPT (this was used to generate the image):
+${currentPrompt}
+
+AUDIT RESULTS:
+Overall Score: ${auditResult.overall_score}/100
+Recommendation: ${auditResult.recommendation}
+Summary: ${auditResult.summary}
+
+WEAK DIMENSIONS (fix these):
+${weak.map(w => `- ${w.dimension}: ${w.score}/10 — ${w.notes}`).join('\n')}
+
+STRONG DIMENSIONS (preserve these):
+${strong.map(s => `- ${s.dimension}: ${s.score}/10`).join('\n')}
+
+SPECIFIC FIXES SUGGESTED BY AUDITOR:
+${(auditResult.prompt_fixes || []).map(f => `- ${f}`).join('\n') || 'None'}
+
+ISSUES IDENTIFIED:
+${(auditResult.issues || []).map(i => `- ${i}`).join('\n') || 'None'}
+
+Refine the prompt now. Targeted fixes only. Stay anchored to the original brief.`;
+
+  const result = await callText({
+    prompt,
+    systemInstruction,
+    thinkingLevel: 'high',
+    maxOutputTokens: 2048,
+  });
+
+  // Parse prompt and changes
+  const splitIdx = result.indexOf('// Changes:');
+  const refinedPrompt = splitIdx > -1 ? result.substring(0, splitIdx).trim() : result.trim();
+  const changes = splitIdx > -1
+    ? result.substring(splitIdx).split('\n').filter(l => l.trim().startsWith('//')).map(l => l.replace(/^\/\/\s*-?\s*/, '').trim()).filter(Boolean)
+    : [];
+
+  return { prompt: refinedPrompt, changes };
+}
+
+export { compile, compileMulti, refine };

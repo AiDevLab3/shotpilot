@@ -1,0 +1,21 @@
+{
+  "id": "warm_indie",
+  "name": "Warm Indie",
+  "description": "Soft, naturalistic A24 aesthetic. Golden hour warmth, 35mm texture.",
+  "created": "2026-02-19T00:00:00.000Z",
+  "updated": "2026-02-19T00:00:00.000Z",
+  "settings": {
+    "colorPalette": "Warm earth tones, muted pastels, golden yellows, soft greens. Lifted blacks with slight fade. Think Kodak Portra 400 color science.",
+    "lighting": "Soft natural light — window light, golden hour, overcast diffusion. Minimal artificial lighting. When practicals are used, warm tungsten only.",
+    "lensPreferences": "Spherical 35mm with visible film grain, 28mm-50mm range. Moderate depth of field — backgrounds soft but readable. Slight vignetting.",
+    "mood": "Intimate, melancholic beauty, quiet contemplation. Bittersweet. The beauty of ordinary moments.",
+    "referenceFilms": ["Moonlight", "Lady Bird", "Aftersun", "The Florida Project", "Nomadland"],
+    "customDirectives": [
+      "Visible film grain — not digital noise, organic 35mm texture",
+      "Natural skin tones — no beauty filter, show pores and imperfections",
+      "Practical locations over sets — the space should feel lived-in",
+      "Negative space in composition — let the frame breathe",
+      "Available light priority — if it looks 'lit', it's wrong"
+    ]
+  }
+}
