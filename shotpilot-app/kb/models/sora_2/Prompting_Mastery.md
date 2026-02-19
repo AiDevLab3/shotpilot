@@ -4,7 +4,7 @@
 **Developer:** OpenAI  
 **Specialty:** State-of-the-art video generation with synchronized audio  
 **Platform:** API (preview), iOS app "Sora"  
-**Last Updated:** January 2026
+**Last Updated:** February 2026
 
 ---
 
@@ -2291,6 +2291,6 @@ const video = await openai.videos.create({
 
 ---
 
-**Last Updated:** January 2026  
+**Last Updated:** February 2026  
 **Version:** 1.0  
 **Model:** Sora 2 / Sora 2 Pro (OpenAI)

@@ -4,7 +4,7 @@ Model: Wan 2.2 Text-to-Image Realism
 Developer: Alibaba / Wan AI
 Specialty: Photorealistic image generation with detailed human rendering
 Version: 2.2
-Last Updated: January 2026
+Last Updated: February 2026
 
 
 
@@ -913,7 +913,7 @@ Reve Edit: Refine Wan 2.2 outputs with natural language
 
 
 
-Last Updated: January 2026
+Last Updated: February 2026
 Version: 1.0
 Model Version: Wan 2.2 Text-to-Image Realism
 

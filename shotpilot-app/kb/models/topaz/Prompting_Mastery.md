@@ -4,7 +4,7 @@
 **Developer:** Topaz Labs  
 **Specialty:** AI-powered image upscaling and enhancement  
 **Version:** Gigapixel 8.x, Photo AI 3.x  
-**Last Updated:** January 2026
+**Last Updated:** February 2026
 
 ---
 
@@ -1127,6 +1127,6 @@ Result: Better detail preservation than single 6x Standard upscale
 
 ---
 
-**Last Updated:** January 2026  
+**Last Updated:** February 2026  
 **Version:** 1.0  
 **Software Versions:** Topaz Gigapixel AI 8.x, Topaz Photo AI 3.x

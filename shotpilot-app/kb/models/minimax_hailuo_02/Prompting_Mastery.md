@@ -1933,5 +1933,5 @@ Hailuo 02 rewards creativity and experimentation. With the techniques in this gu
 ---
 
 *Guide Version: 1.0*
-*Last Updated: January 2026*
+*Last Updated: February 2026*
 *Model Version: Hailuo 02 (Kangaroo)*

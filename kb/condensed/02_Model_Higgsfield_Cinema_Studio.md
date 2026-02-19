@@ -167,6 +167,19 @@ With rig built, describe scene using this order:
 
 ---
 
+## Known Limitations
+
+- **No text rendering** — cannot generate readable text. Route to Nano Banana Pro or GPT Image.
+- **No public API** — UI-only as of Feb 2026. Compiler generates rig settings/prompts; generation is manual.
+- **Single-subject focus** — 3+ character scenes are inconsistent. Best for 1-2 subjects.
+- **No reference image input** — consistency via locked rig settings only, not reference images.
+- **Photorealism only** — not suited for abstract, surreal, or highly stylized non-photorealistic work.
+- **Native resolution undocumented** — plan for Topaz upscaling to reach target resolution.
+
+**Don't route here for:** text/logos, reference-based consistency, abstract art, automated API pipelines.
+
+---
+
 ## Troubleshooting
 
 | Issue | Cause | Fix |

@@ -1,9 +1,12 @@
 # Nano Banana Pro: Complete Prompting Mastery Guide
 
 **Model:** Nano Banana Pro (Gemini 3 Pro Image)  
+**API Model ID:** `nano-banana-pro-preview` (accessed via Gemini API)  
 **Developer:** Google DeepMind  
 **Release:** November 2025  
-**Status:** Best 4K image model ever (as of January 2026)
+**Status:** Best 4K image model ever (as of February 2026)
+
+> **Naming Note:** "Nano Banana Pro" is the internal/community codename. The model is accessed via the Gemini API using the model ID `nano-banana-pro-preview`. In Google AI Studio and Vertex AI, use this exact identifier.
 
 ---
 
@@ -669,7 +672,7 @@ Edit: "Perfect! Now change the car color to matte black and add rain on the wind
 
 ---
 
-## Section 7: Current Limitations (As of January 2026)
+## Section 7: Current Limitations (As of February 2026)
 
 ### 1. Visual and Text Fidelity
 **Issue:** Small text, fine details, and complex spellings may not render perfectly.
@@ -754,9 +757,40 @@ Use **The Rosetta Stone** framework to translate Nano Banana Pro prompts to othe
 
 ---
 
+## Section 8.5: API Parameters Reference
+
+When using Nano Banana Pro via the Gemini API (`nano-banana-pro-preview`), the following parameters are available:
+
+| Parameter | Type | Description | Values |
+|-----------|------|-------------|--------|
+| `model` | string | Model identifier | `nano-banana-pro-preview` |
+| `prompt` | string | Natural language prompt | Free text (follow Golden Rules) |
+| `resolution` | string | Output resolution | `1024x1024`, `2048x2048`, `4096x4096` (1K/2K/4K) |
+| `aspect_ratio` | string | Output aspect ratio | `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `21:9` |
+| `seed` | integer | Seed for reproducibility | 0–2147483647 (lock for consistency across series) |
+| `number_of_images` | integer | Batch size | 1–4 |
+| `reference_images` | array | Reference image inputs | Up to 14 images (6 high-fidelity slots) |
+| `safety_filter_level` | string | Content filter strictness | `block_none`, `block_few`, `block_some`, `block_most` |
+| `person_generation` | string | People generation policy | `allow_adult`, `dont_allow` |
+
+### Seed Locking for Consistency
+
+To maintain visual consistency across a series:
+```
+// First generation — note the seed from response
+{ seed: 42, prompt: "..." }
+
+// Subsequent generations — lock the same seed
+{ seed: 42, prompt: "Same scene but change the lighting to golden hour" }
+```
+
+The seed preserves composition, character appearance, and spatial layout while allowing prompt-driven edits.
+
+---
+
 ## Section 9: Cost Optimization
 
-### Credit Usage (Higgsfield Platform)
+### Credit Usage (via Gemini API / Google AI Studio)
 
 **Nano Banana Pro Costs:**
 - **2K Generation:** Included in Pro plan (600 credits/month) - Unlimited
@@ -835,6 +869,6 @@ Master these principles, and Nano Banana Pro becomes an indispensable tool in yo
 
 ---
 
-**Last Updated:** January 28, 2026  
-**Model Version:** Nano Banana Pro (Gemini 3 Pro Image)  
-**Guide Version:** 1.0
+**Last Updated:** February 19, 2026  
+**Model Version:** Nano Banana Pro (Gemini 3 Pro Image) — API ID: `nano-banana-pro-preview`  
+**Guide Version:** 1.1

@@ -1,8 +1,8 @@
 # Nano Banana Pro
 
-> **Official Model Name:** Gemini 3 Pro Image | **ShotPilot Display Name:** Nano Banana Pro
-> These are the same model. All references to "Nano Banana Pro" in this knowledge base refer to Gemini 3 Pro Image.
-> Last Updated: 2026-02-08 | Source: nano_banana_pro_prompting_mastery_guide.md
+> **Official Model Name:** Gemini 3 Pro Image | **ShotPilot Display Name:** Nano Banana Pro | **API Model ID:** `nano-banana-pro-preview`
+> These are the same model. All references to "Nano Banana Pro" in this knowledge base refer to Gemini 3 Pro Image, accessed via the Gemini API as `nano-banana-pro-preview`.
+> Last Updated: 2026-02-19 | Source: nano_banana_pro_prompting_mastery_guide.md
 
 ## Model Overview
 - **Type:** IMAGE generation (still images only, no video)

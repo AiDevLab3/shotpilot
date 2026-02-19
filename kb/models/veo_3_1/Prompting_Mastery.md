@@ -4,7 +4,7 @@
 **Developer:** Google DeepMind  
 **Specialty:** High-fidelity cinematic video generation with native audio  
 **Platform:** Vertex AI, Google AI Studio  
-**Last Updated:** January 2026
+**Last Updated:** February 2026
 
 ---
 
@@ -1732,6 +1732,6 @@ Ambient noise: [background soundscape]
 
 ---
 
-**Last Updated:** January 2026  
+**Last Updated:** February 2026  
 **Version:** 1.0  
 **Model:** Veo 3.1 (Google DeepMind)

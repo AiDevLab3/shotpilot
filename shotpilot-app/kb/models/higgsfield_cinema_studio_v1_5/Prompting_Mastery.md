@@ -3,7 +3,7 @@
 **The Professional Image Generator with Real Optical Physics**
 
 **Version:** 1.5  
-**Date:** January 27, 2026  
+**Date:** February 19, 2026  
 **Category:** Image Generation | Camera Control | Upscaling
 
 ---
@@ -454,6 +454,30 @@ A lone figure standing on a windswept cliff overlooking a stormy ocean at dusk. 
 ```
 
 **Upscale:** Topaz 4x, Standard preset, Sharpness: 70, Denoise: 40
+
+---
+
+## Part V.5: Known Limitations
+
+Understanding what Cinema Studio **cannot** do is critical for the Prompt Compiler's routing decisions.
+
+### Hard Limitations
+1. **No text rendering** — Cinema Studio cannot reliably generate readable text in images. Route text-heavy shots to Nano Banana Pro or GPT Image 1.5.
+2. **No public API** — Cinema Studio is UI-only as of February 2026. The Prompt Compiler can generate optimized rig settings and prompts, but generation must happen manually in the Cinema Studio interface.
+3. **Single-subject focus** — Complex multi-character scenes (3+ characters interacting) often produce inconsistent results. Best for 1-2 subjects.
+4. **No reference image input for generation** — Unlike Nano Banana Pro (14 refs) or Midjourney (--oref), Cinema Studio does not accept reference images to guide image generation. Consistency comes from locking rig settings, not reference images.
+5. **Limited abstract/non-photorealistic styles** — The rig-based approach is optimized for photorealistic cinema. Highly stylized, painterly, or abstract requests should route to Midjourney.
+
+### Soft Limitations
+6. **Native resolution undocumented** — Output resolution before upscaling is not publicly specified. Always plan for Topaz upscaling to reach target resolution.
+7. **Lighting control is prompt-dependent** — Unlike the deterministic camera rig (sensor + lens + aperture), lighting is still described in natural language and can be inconsistent.
+8. **Newer model, smaller community** — Less community knowledge and fewer proven prompt patterns compared to Midjourney or Nano Banana Pro.
+
+### When NOT to Route to Cinema Studio
+- Shots requiring readable text or logos
+- Shots requiring reference image consistency (use Nano Banana Pro or Midjourney --oref)
+- Abstract, surreal, or highly stylized non-photorealistic imagery
+- Automated pipelines requiring API access
 
 ---
 

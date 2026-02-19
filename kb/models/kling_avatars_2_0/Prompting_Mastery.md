@@ -1979,5 +1979,5 @@ Kling Avatars 2.0 proves that AI-driven character generation can be deeply consi
 ---
 
 *Guide Version: 1.0*
-*Last Updated: January 2026*
+*Last Updated: February 2026*
 *Model Version: Kling Avatars 2.0*

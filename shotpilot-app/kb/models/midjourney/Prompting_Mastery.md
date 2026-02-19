@@ -268,6 +268,12 @@ A sleek, modern watch with a black leather strap sits on a polished wooden surfa
 
 ---
 
+### Video Capabilities (V7)
+
+Midjourney V7 does **not** offer dedicated video generation. While earlier versions had experimental video features, V7 focuses exclusively on still image generation. For video, export MJ hero frames to dedicated video models (Veo 3.1, Kling 2.6, Higgsfield Cinema Studio).
+
+---
+
 **Version History:**
 - v2.0 (February 13, 2026) - Major V7 update: --oref replaces --cref, new parameters (--tile, --weird, --sref, --sw, --oref, --ow, --iw), V7 Image Editing & Iteration section, parameter tips expanded
 - v1.0 (February 1, 2026) - Initial comprehensive guide

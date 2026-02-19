@@ -4,7 +4,7 @@ Model Family: FLUX.2 [max], FLUX.2 [pro], FLUX.2 [flex], FLUX.2 [klein]
 Developer: Black Forest Labs
 Primary Use: Production-grade AI image generation and editing with 4MP photorealistic output
 Key Strengths: JSON structured prompting, hex color precision, multi-reference editing, typography, photorealism
-Version: January 2026
+Version: February 2026
 
 
 
@@ -1737,7 +1737,7 @@ Community: https://discord.gg/blackforestlabs
 
 
 
-Last Updated: January 2026
+Last Updated: February 2026
 Model Version: FLUX.2 [max], [pro], [flex], [klein]
 
 

@@ -937,6 +937,6 @@ Output: Brand ambassador performing exact product demonstration
 
 ---
 
-**Last Updated:** January 2026  
+**Last Updated:** February 2026  
 **Version:** 1.0  
 **Model Version:** Kling 2.6 Motion Control

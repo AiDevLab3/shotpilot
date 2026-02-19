@@ -2,7 +2,7 @@
 
 Model: Seedream 4.5 by ByteDance
 Version: 4.5
-Last Updated: January 2026
+Last Updated: February 2026
 Author: Cine-AI Knowledge Base
 
 
@@ -2336,7 +2336,7 @@ Self-hosted requirements (Stable Diffusion XL for full control)
 
 
 Version: 1.0
-Last Updated: January 2026
+Last Updated: February 2026
 Model: Seedream 4.5 by ByteDance
 Platform: WaveSpeedAI Exclusive
 

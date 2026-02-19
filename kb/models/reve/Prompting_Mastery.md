@@ -4,7 +4,7 @@
 **Developer:** fal.ai  
 **Specialty:** Natural language image editing and transformation  
 **Variants:** Reve Edit, Reve Remix, Reve Fast Edit, Reve Fast Remix  
-**Last Updated:** January 2026
+**Last Updated:** February 2026
 
 ---
 
@@ -759,6 +759,6 @@ Advanced: Primary Change + Secondary Changes + Style/Mood + Preservation Notes
 
 ---
 
-**Last Updated:** January 2026  
+**Last Updated:** February 2026  
 **Version:** 1.0  
 **Model Variants:** Reve Edit, Reve Remix, Reve Fast Edit, Reve Fast Remix

@@ -4,7 +4,7 @@
 **Developer:** Kuaishou Technology (Kling AI)  
 **Specialty:** Unified multimodal video generation and editing  
 **Architecture:** MVL (Multimodal Visual Language)  
-**Last Updated:** January 2026
+**Last Updated:** February 2026
 
 ---
 
@@ -1592,6 +1592,6 @@ Prompt: "Keep everything else unchanged, apply the color grade and visual style 
 
 ---
 
-**Last Updated:** January 2026  
+**Last Updated:** February 2026  
 **Version:** 1.0  
 **Model:** Kling O1 (MVL Architecture)

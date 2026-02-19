@@ -1868,5 +1868,5 @@ Wan 2.6 is a powerful tool that rewards understanding and strategic prompting. W
 ---
 
 *Guide Version: 1.0*
-*Last Updated: January 2026*
+*Last Updated: February 2026*
 *Model Version: Wan 2.6*
