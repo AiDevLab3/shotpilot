@@ -1,3 +1,15 @@
+> **⚠️ VERSION NOTE (February 2026):** **Hailuo 2.3** is now available on fal.ai, superseding Hailuo 02.
+> New endpoints include:
+> - `minimax/hailuo-2.3/pro/image-to-video` (1080p)
+> - `minimax/hailuo-2.3/pro/text-to-video` (1080p)
+> - `minimax/hailuo-2.3/standard/image-to-video` (768p)
+> - `minimax/hailuo-2.3/standard/text-to-video` (768p)
+> - `minimax/hailuo-2.3-fast/pro/image-to-video` (1080p, fast)
+> - `minimax/hailuo-2.3-fast/standard/image-to-video` (768p, fast)
+>
+> Hailuo 02 remains available but **Hailuo 2.3 should be preferred for new projects**.
+> The prompting patterns in this guide carry over. A dedicated Hailuo 2.3 guide is needed.
+
 # Minimax Hailuo 02 Prompting Mastery Guide
 
 ## Executive Summary

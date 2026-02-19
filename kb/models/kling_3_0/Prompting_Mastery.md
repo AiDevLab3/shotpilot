@@ -1094,18 +1094,66 @@ Kling 2.6 prompts work in 3.0 but benefit from the 5-layer structure. Upgrade by
 
 ## Kling O3 Variant
 
-The O3 variant (`fal-ai/kling-video/o3/standard/image-to-video`) is a specialized endpoint optimized for **start-to-end frame interpolation**.
+The Kling O3 family is a comprehensive set of endpoints spanning image generation, video generation, video editing, and reference-based video-to-video. All O3 endpoints are marked as "new" on fal.ai as of February 2026.
 
-### O3 vs V3 Pro
+### O3 Endpoint Overview
+
+| Endpoint | Type | Description | Cost |
+|----------|------|-------------|------|
+| `kling-image/o3/text-to-image` | Image | Top-tier text-to-image with flawless consistency | $0.028/img (1K/2K) |
+| `kling-image/o3/image-to-image` | Image | Top-tier image-to-image with flawless consistency | $0.028/img (1K/2K) |
+| `kling-video/o3/standard/image-to-video` | Video | Start/end frame interpolation (standard) | $0.252/s |
+| `kling-video/o3/pro/image-to-video` | Video | Start/end frame interpolation (pro) | $0.336/s |
+| `kling-video/o3/standard/text-to-video` | Video | Text-to-video generation (standard) | $0.252/s |
+| `kling-video/o3/pro/text-to-video` | Video | Text-to-video generation (pro) | $0.336/s |
+| `kling-video/o3/standard/reference-to-video` | Video | Image reference → video with character/object consistency | $0.252/s |
+| `kling-video/o3/pro/reference-to-video` | Video | Image reference → video (pro quality) | $0.336/s |
+| `kling-video/o3/standard/video-to-video/edit` | Edit | Video editing with @Element references | $0.252/s |
+| `kling-video/o3/pro/video-to-video/edit` | Edit | Video editing (pro quality) | $0.336/s |
+| `kling-video/o3/standard/video-to-video/reference` | Omni | Reference video → new shots preserving cinematic language | $0.252/s |
+| `kling-video/o3/pro/video-to-video/reference` | Omni | Reference V2V (pro quality) | $0.336/s |
+
+### O3 Image Generation
+
+The O3 image endpoints (`kling-image/o3/*`) supersede the previous Kling O1 Image model. They support the same `@Element` and `@Image` reference syntax with improved consistency and quality. Cost doubles for 4K output.
+
+### O3 Video Edit
+
+The O3 Edit endpoints (`kling-video/o3/*/video-to-video/edit`) supersede the Kling O1 Edit model. They accept:
+- **Video input** — Source video to edit
+- **@Element references** — Character/object identity via frontal + reference images
+- **@Image references** — Style and scene references
+- **Text prompt** — Describes the desired edit (character swap, style change, lighting, etc.)
+
+Example prompt: `"change the main character to be @Element1, dark lighting and rain, 3d character style"`
+
+### O3 Omni — Reference Video-to-Video
+
+**Kling O3 Omni** is a new capability that generates fresh shots guided by an input reference video. It preserves:
+- **Motion patterns** — Movement dynamics from the reference video
+- **Camera style** — Angles, tracking, and cinematographic language
+- **Scene continuity** — Seamless extension of visual narrative
+
+This is ideal for:
+- **Generating B-roll** that matches existing footage style
+- **Extending scenes** with new content while preserving the original's cinematic feel
+- **Creating variations** of a shot with different subjects but identical camera work
+- **Multi-shot continuity** where each new shot inherits the visual language of the previous
+
+Input schema: Video URL (required) + prompt + optional @Element/@Image references.
+
+### O3 vs V3 Pro (Video Generation)
 
 | Feature | V3 Pro | O3 Standard |
 |---------|--------|-------------|
 | **Input** | Text or Image + optional end frame | Image required + optional end frame |
 | **Best For** | Full creative generation | Precise frame-to-frame interpolation |
-| **Elements** | ✅ Full support | ❌ Not available |
+| **Elements** | ✅ Full support | ✅ Full support |
 | **Voice Control** | ✅ | ❌ |
 | **Multi-Shot** | ✅ | ✅ |
-| **Use Case** | Narrative scenes, dialogue | Transformations, precise motion |
+| **Video Edit** | ❌ | ✅ (via edit endpoint) |
+| **Reference V2V (Omni)** | ❌ | ✅ (via reference endpoint) |
+| **Use Case** | Narrative scenes, dialogue | Transformations, editing, style transfer |
 
 ### When to Use O3
 
@@ -1113,6 +1161,8 @@ The O3 variant (`fal-ai/kling-video/o3/standard/image-to-video`) is a specialize
 - **Precise motion paths** — When you know exactly where a character starts and ends
 - **Morphing effects** — Smooth transitions between two distinct visual states
 - **Controlled animation** — When both keyframes are pre-generated and you need reliable interpolation
+- **Video editing** — Character swaps, style changes, lighting adjustments on existing footage
+- **Cinematic continuity** — Generating new shots that match an existing video's motion and camera language
 
 ---
 
@@ -1138,13 +1188,17 @@ The O3 variant (`fal-ai/kling-video/o3/standard/image-to-video`) is a specialize
 ---
 
 **Version History:**
+- v2.1 (February 19, 2026) — Expanded O3 section: full endpoint table, O3 Image, O3 Edit, O3 Omni (reference V2V) documentation
 - v2.0 (February 19, 2026) — Complete rewrite with full API documentation, multi-shot system, Elements 3.0, voice control, O3 variant, genre examples, migration guide
 - v1.0 (February 9, 2026) — Initial guide
 
 **Sources:**
 - fal.ai Kling V3 Pro Text-to-Video API documentation
 - fal.ai Kling V3 Pro Image-to-Video API documentation
-- fal.ai Kling O3 Standard Image-to-Video API documentation
+- fal.ai Kling O3 Standard/Pro Image-to-Video API documentation
+- fal.ai Kling O3 Standard/Pro Video-to-Video Edit API documentation
+- fal.ai Kling O3 Omni Reference Video-to-Video API documentation
+- fal.ai Kling O3 Image (text-to-image, image-to-image) API documentation
 - fal.ai Kling Video Create Voice endpoint
 - Kling 2.6 Prompting Mastery Guide (internal reference)
 - Community testing and best practices

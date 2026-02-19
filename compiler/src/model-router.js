@@ -223,6 +223,126 @@ const MODEL_PROFILES = {
     provider: 'fal',
     apiModel: 'reve',
   },
+
+  // ── Utility Models ─────────────────────────────────────────────────
+
+  topaz_upscale_image: {
+    displayName: 'Topaz Upscale (Image)',
+    type: 'utility',
+    category: 'upscale',
+    description: 'AI-powered image upscaling via Topaz',
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'topaz-upscale',
+  },
+  topaz_upscale_video: {
+    displayName: 'Topaz Upscale (Video)',
+    type: 'utility',
+    category: 'upscale',
+    description: 'AI-powered video upscaling via Topaz',
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'topaz-upscale-video',
+  },
+  seedvr_upscale_image: {
+    displayName: 'SeedVR2 Upscale (Image)',
+    type: 'utility',
+    category: 'upscale',
+    description: 'SeedVR2 image upscaler — alternative to Topaz',
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'seedvr-upscale-image',
+  },
+  seedvr_upscale_video: {
+    displayName: 'SeedVR2 Upscale (Video)',
+    type: 'utility',
+    category: 'upscale',
+    description: 'SeedVR2 video upscaler',
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'seedvr-upscale-video',
+  },
+  recraft_upscale_creative: {
+    displayName: 'Recraft Upscale (Creative)',
+    type: 'utility',
+    category: 'upscale',
+    description: 'Recraft creative upscaler — adds detail and texture',
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'recraft-upscale-creative',
+  },
+  recraft_upscale_crisp: {
+    displayName: 'Recraft Upscale (Crisp)',
+    type: 'utility',
+    category: 'upscale',
+    description: 'Recraft crisp upscaler — clean, sharp upscaling',
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'recraft-upscale-crisp',
+  },
+  bria_bg_remove: {
+    displayName: 'Bria Background Removal (Image)',
+    type: 'utility',
+    category: 'background-removal',
+    description: 'Remove background from images using Bria RMBG 2.0',
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'bria-bg-remove',
+  },
+  bria_bg_remove_video: {
+    displayName: 'Bria Background Removal (Video)',
+    type: 'utility',
+    category: 'background-removal',
+    description: 'Remove background from video using Bria',
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'bria-bg-remove-video',
+  },
+  trim_video: {
+    displayName: 'Trim Video',
+    type: 'utility',
+    category: 'video-utility',
+    description: 'Trim video to a start/end time range (FFMPEG-based)',
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'trim-video',
+  },
+  scale_video: {
+    displayName: 'Scale Video',
+    type: 'utility',
+    category: 'video-utility',
+    description: 'Scale/resize video (FFMPEG-based)',
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'scale-video',
+  },
+  blend_video: {
+    displayName: 'Blend Video',
+    type: 'utility',
+    category: 'video-utility',
+    description: 'Blend/crossfade between videos (FFMPEG-based)',
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'blend-video',
+  },
+  reverse_video: {
+    displayName: 'Reverse Video',
+    type: 'utility',
+    category: 'video-utility',
+    description: 'Reverse video playback (FFMPEG-based)',
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'reverse-video',
+  },
+  extract_frame: {
+    displayName: 'Extract Frame',
+    type: 'utility',
+    category: 'video-utility',
+    description: 'Extract the Nth frame from a video (FFMPEG-based)',
+    apiAvailable: true,
+    provider: 'fal',
+    apiModel: 'extract-frame',
+  },
 };
 
 /**
@@ -319,13 +439,19 @@ function getModelProfile(modelName) {
 }
 
 /**
- * List all models with their profiles.
+ * List all models with their profiles, optionally categorized by type.
  */
-function listModels() {
-  return Object.entries(MODEL_PROFILES).map(([id, profile]) => ({
+function listModels(categorize = false) {
+  const all = Object.entries(MODEL_PROFILES).map(([id, profile]) => ({
     id,
     ...profile,
   }));
+  if (!categorize) return all;
+  return {
+    image: all.filter(m => m.type === 'image'),
+    video: all.filter(m => m.type === 'video'),
+    utility: all.filter(m => m.type === 'utility'),
+  };
 }
 
 /**

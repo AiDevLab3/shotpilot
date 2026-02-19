@@ -1,7 +1,8 @@
-# Minimax Hailuo 02
+# Minimax Hailuo 02 (⚠️ Hailuo 2.3 now available)
 
 > **Official Model Name:** Minimax Hailuo 02 (codename "Kangaroo") | **Developer:** MiniMax
 > **Type:** VIDEO generation | **Last Updated:** 2026-02-19 | Source: minimax_hailuo_02/Prompting_Mastery.md
+> **⚠️ UPDATE:** Hailuo 2.3 is now available (standard/pro, plus 2.3-Fast variants). Prefer Hailuo 2.3 for new projects.
 
 ## Model Overview
 - **Type:** VIDEO generation (no native audio)

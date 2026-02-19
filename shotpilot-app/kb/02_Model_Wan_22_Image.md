@@ -1,7 +1,8 @@
-# Wan 2.2 Image
+# Wan 2.2 Image (⚠️ Legacy — see Wan 2.6)
 
 > **Official Model Name:** Wan 2.2 Text-to-Image Realism | **Developer:** Alibaba / Wan AI
 > **Type:** IMAGE generation | **Last Updated:** 2026-02-19 | Source: wan_2_2_image/Prompting_Mastery.md
+> **⚠️ LEGACY:** Superseded by Wan 2.6 (`wan/v2.6/text-to-image`, `wan/v2.6/image-to-image`). See 02_Model_Wan_26.md.
 
 ## Model Overview
 - **Type:** IMAGE generation (still images only)

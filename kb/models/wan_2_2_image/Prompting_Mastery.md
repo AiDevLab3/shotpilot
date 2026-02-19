@@ -1,6 +1,12 @@
+> **⚠️ VERSION NOTE (February 2026):** Wan 2.2 Image is now **legacy**. **Wan 2.6** includes both
+> text-to-image (`wan/v2.6/text-to-image`) and image-to-image (`wan/v2.6/image-to-image`) endpoints
+> that supersede Wan 2.2's image capabilities with improved quality and additional features.
+> See `kb/models/wan_2_6/Prompting_Mastery.md` for the current guide.
+> This guide's prompting patterns remain broadly applicable to Wan 2.6.
+
 # Wan 2.2 Image Prompting Mastery Guide
 
-Model: Wan 2.2 Text-to-Image Realism
+Model: Wan 2.2 Text-to-Image Realism (⚠️ Legacy — see Wan 2.6)
 Developer: Alibaba / Wan AI
 Specialty: Photorealistic image generation with detailed human rendering
 Version: 2.2

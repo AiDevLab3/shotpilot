@@ -17,6 +17,7 @@ import { auditImage } from './audit.js';
 import { generateImage } from './gemini.js';
 import { recommendModel, listModels, routeGeneration, getAvailableApiModels } from './model-router.js';
 import { listStyles, getStyle, createStyle, updateStyle, deleteStyle } from './style-manager.js';
+import { runUtility, listUtilities } from './fal.js';
 
 const app = express();
 const PORT = process.env.PORT || 3100;
@@ -33,9 +34,9 @@ app.get('/health', (req, res) => {
 // ── Models ───────────────────────────────────────────────────────────
 
 app.get('/models', (req, res) => {
-  const all = listModels();
+  const categorized = listModels(true);
   const available = getAvailableApiModels();
-  res.json({ all, available });
+  res.json({ all: listModels(false), categorized, available });
 });
 
 app.post('/models/recommend', (req, res) => {
@@ -308,6 +309,39 @@ app.post('/pipeline', async (req, res) => {
   }
 });
 
+// ── Utilities ────────────────────────────────────────────────────────
+
+app.get('/utilities', (req, res) => {
+  res.json(listUtilities());
+});
+
+app.post('/utility/:action', async (req, res) => {
+  try {
+    const utilityKey = req.params.action;
+    const params = req.body || {};
+    const result = await runUtility(utilityKey, params);
+    
+    if (result.buffer) {
+      res.json({
+        ok: true,
+        utility: utilityKey,
+        mimeType: result.mimeType,
+        url: result.url,
+        data: result.buffer.toString('base64'),
+      });
+    } else {
+      res.json({
+        ok: true,
+        utility: utilityKey,
+        rawResponse: result.rawResponse || null,
+      });
+    }
+  } catch (err) {
+    console.error(`[utility/${req.params.action}]`, err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Style Profiles ───────────────────────────────────────────────────
 
 app.get('/styles', (req, res) => {
@@ -362,6 +396,8 @@ app.listen(PORT, () => {
   console.log(`  POST /styles          — Create style profile`);
   console.log(`  PUT  /styles/:id      — Update style profile`);
   console.log(`  DELETE /styles/:id    — Delete style profile`);
+  console.log(`  GET  /utilities       — List available utilities`);
+  console.log(`  POST /utility/:action — Run a utility (upscale, bg-remove, trim, etc.)`);
   console.log(`  GET  /health          — Health check\n`);
 });
 

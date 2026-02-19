@@ -1,6 +1,16 @@
+> **⚠️ VERSION NOTE (February 2026):** Kling O1 Edit has been **superseded by Kling O3 Video Edit** endpoints:
+> - `fal-ai/kling-video/o3/standard/video-to-video/edit` ($0.252/s)
+> - `fal-ai/kling-video/o3/pro/video-to-video/edit` (higher quality)
+>
+> O3 Edit supports the same @Element reference system and prompt patterns described here.
+> Additionally, **Kling O3 Omni** (`kling-video/o3/*/video-to-video/reference`) is a new mode that
+> generates new shots guided by an input reference video, preserving cinematic language (motion,
+> camera style) for seamless scene continuity.
+> **New projects should use Kling O3.** See also: `kb/models/kling_3_0/Prompting_Mastery.md`
+
 # Kling O1 Edit Prompting Mastery Guide
 
-**Model:** Kling O1 (Video & Edit)  
+**Model:** Kling O1 (Video & Edit) — ⚠️ Legacy, see Kling O3  
 **Developer:** Kuaishou Technology (Kling AI)  
 **Specialty:** Unified multimodal video generation and editing  
 **Architecture:** MVL (Multimodal Visual Language)  

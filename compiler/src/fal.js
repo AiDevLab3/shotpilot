@@ -130,8 +130,93 @@ const FAL_MODELS = {
   },
   'topaz-upscale': {
     id: 'fal-ai/topaz/upscale/image',
-    displayName: 'Topaz Upscale',
-    type: 'upscale',
+    displayName: 'Topaz Upscale (Image)',
+    type: 'utility',
+    category: 'upscale',
+    defaultParams: {},
+  },
+  'topaz-upscale-video': {
+    id: 'fal-ai/topaz/upscale/video',
+    displayName: 'Topaz Upscale (Video)',
+    type: 'utility',
+    category: 'upscale',
+    defaultParams: {},
+  },
+  'seedvr-upscale-image': {
+    id: 'fal-ai/seedvr/upscale/image',
+    displayName: 'SeedVR2 Upscale (Image)',
+    type: 'utility',
+    category: 'upscale',
+    defaultParams: {},
+  },
+  'seedvr-upscale-video': {
+    id: 'fal-ai/seedvr/upscale/video',
+    displayName: 'SeedVR2 Upscale (Video)',
+    type: 'utility',
+    category: 'upscale',
+    defaultParams: {},
+  },
+  'recraft-upscale-creative': {
+    id: 'fal-ai/recraft/upscale/creative',
+    displayName: 'Recraft Upscale (Creative)',
+    type: 'utility',
+    category: 'upscale',
+    defaultParams: {},
+  },
+  'recraft-upscale-crisp': {
+    id: 'fal-ai/recraft/upscale/crisp',
+    displayName: 'Recraft Upscale (Crisp)',
+    type: 'utility',
+    category: 'upscale',
+    defaultParams: {},
+  },
+  'bria-bg-remove': {
+    id: 'fal-ai/bria/background/remove',
+    displayName: 'Bria Background Removal (Image)',
+    type: 'utility',
+    category: 'background-removal',
+    defaultParams: {},
+  },
+  'bria-bg-remove-video': {
+    id: 'bria/video/background-removal',
+    displayName: 'Bria Background Removal (Video)',
+    type: 'utility',
+    category: 'background-removal',
+    defaultParams: {},
+  },
+  'trim-video': {
+    id: 'fal-ai/workflow-utilities/trim-video',
+    displayName: 'Trim Video',
+    type: 'utility',
+    category: 'video-utility',
+    defaultParams: {},
+  },
+  'scale-video': {
+    id: 'fal-ai/workflow-utilities/scale-video',
+    displayName: 'Scale Video',
+    type: 'utility',
+    category: 'video-utility',
+    defaultParams: {},
+  },
+  'blend-video': {
+    id: 'fal-ai/workflow-utilities/blend-video',
+    displayName: 'Blend Video',
+    type: 'utility',
+    category: 'video-utility',
+    defaultParams: {},
+  },
+  'reverse-video': {
+    id: 'fal-ai/workflow-utilities/reverse-video',
+    displayName: 'Reverse Video',
+    type: 'utility',
+    category: 'video-utility',
+    defaultParams: {},
+  },
+  'extract-frame': {
+    id: 'fal-ai/workflow-utilities/extract-nth-frame',
+    displayName: 'Extract Frame',
+    type: 'utility',
+    category: 'video-utility',
     defaultParams: {},
   },
 };
@@ -157,11 +242,10 @@ async function generateFal(modelKey, prompt, overrides = {}) {
   const apiKey = getApiKey();
   const baseUrl = `https://queue.fal.run/${modelConfig.id}`;
 
-  const input = {
-    prompt,
-    ...modelConfig.defaultParams,
-    ...overrides,
-  };
+  // For utility models, prompt is ignored — input comes from overrides
+  const input = modelConfig.type === 'utility'
+    ? { ...modelConfig.defaultParams, ...overrides }
+    : { prompt, ...modelConfig.defaultParams, ...overrides };
 
   // Step 1: Submit to queue
   const submitRes = await fetch(baseUrl, {
@@ -233,8 +317,31 @@ async function processFalResponse(data) {
     return { buffer, mimeType: contentType, url: typeof videoUrl === 'string' ? videoUrl : videoUrl.url, textResponse: null };
   }
 
+  // Handle utility responses that return an image field (e.g., background removal, upscale)
+  if (data.image) {
+    const imgUrl = data.image.url || data.image;
+    const contentType = data.image.content_type || 'image/png';
+    const imgRes = await fetch(typeof imgUrl === 'string' ? imgUrl : imgUrl.url);
+    if (!imgRes.ok) throw new Error(`Failed to download fal.ai result: ${imgRes.status}`);
+    const buffer = Buffer.from(await imgRes.arrayBuffer());
+    return { buffer, mimeType: contentType, url: typeof imgUrl === 'string' ? imgUrl : imgUrl.url, textResponse: null };
+  }
+
+  // Handle frame extraction or other outputs that return a generic output_url / file
+  if (data.output_url || data.file) {
+    const outUrl = data.output_url || data.file.url || data.file;
+    const outRes = await fetch(typeof outUrl === 'string' ? outUrl : outUrl.url);
+    if (!outRes.ok) throw new Error(`Failed to download fal.ai result: ${outRes.status}`);
+    const buffer = Buffer.from(await outRes.arrayBuffer());
+    const ct = outRes.headers.get('content-type') || 'application/octet-stream';
+    return { buffer, mimeType: ct, url: typeof outUrl === 'string' ? outUrl : outUrl.url, textResponse: null };
+  }
+
   const images = data.images || [];
-  if (images.length === 0) throw new Error('No images/video returned from fal.ai');
+  if (images.length === 0) {
+    // Return raw data for utility responses that don't fit standard shapes
+    return { buffer: null, mimeType: null, url: null, textResponse: null, rawResponse: data };
+  }
 
   const firstImage = images[0];
   const imageUrl = firstImage.url;
@@ -304,11 +411,40 @@ async function generateReve(prompt, overrides = {}) {
   return generateFal('reve', prompt, overrides);
 }
 
+/**
+ * Run a utility model (upscale, background removal, video utility, etc.)
+ * Unlike generation, utilities take input media rather than prompts.
+ * 
+ * @param {string} utilityKey - Key from FAL_MODELS where type === 'utility'
+ * @param {object} params - Input parameters (image_url, video_url, etc.)
+ * @returns {Promise<object>} Result with buffer, mimeType, url
+ */
+async function runUtility(utilityKey, params = {}) {
+  const modelConfig = FAL_MODELS[utilityKey];
+  if (!modelConfig) throw new Error(`Unknown utility: ${utilityKey}`);
+  if (modelConfig.type !== 'utility') throw new Error(`${utilityKey} is not a utility model (type: ${modelConfig.type})`);
+  return generateFal(utilityKey, null, params);
+}
+
+/**
+ * List all utility models.
+ */
+function listUtilities() {
+  return Object.entries(FAL_MODELS)
+    .filter(([, m]) => m.type === 'utility')
+    .map(([key, m]) => ({
+      key,
+      id: m.id,
+      displayName: m.displayName,
+      category: m.category,
+    }));
+}
+
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 export {
   generateFal, generateFlux2, generateRecraftV4, generateKling3,
   generateGrokImagine, generateVeo31, generateWan26, generateSeedream45,
   generateZImage, generateMinimaxHailuo, generateSeedance15Pro, generateSora2Fal,
-  generateReve, FAL_MODELS,
+  generateReve, runUtility, listUtilities, FAL_MODELS,
 };

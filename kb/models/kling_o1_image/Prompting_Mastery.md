@@ -1,6 +1,12 @@
+> **⚠️ VERSION NOTE (February 2026):** Kling O1 Image has been **superseded by Kling O3 Image** (`kling-image/o3`).
+> The O3 endpoints (`fal-ai/kling-image/o3/text-to-image` and `fal-ai/kling-image/o3/image-to-image`) offer
+> "top-tier image generation with flawless consistency" and use the same @Element reference system.
+> **New projects should use Kling O3 Image.** This guide remains useful for prompting patterns and
+> reference syntax, which carry over to O3. Cost: $0.028/image (1K/2K), double for 4K.
+
 # Kling O1 Image Prompting Mastery Guide
 
-Model: Kling O1 Image
+Model: Kling O1 Image (⚠️ Legacy — see Kling O3 Image)
 Developer: Kuaishou (Kwai)
 Release: December 2025
 Specialty: Multi-reference image editing, photorealistic composition, precise subject transplantation
