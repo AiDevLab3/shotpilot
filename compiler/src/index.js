@@ -15,7 +15,8 @@ import cors from 'cors';
 import { compile, compileMulti, refine } from './compiler.js';
 import { auditImage } from './audit.js';
 import { generateImage } from './gemini.js';
-import { recommendModel, listModels, routeGeneration, getAvailableApiModels } from './model-router.js';
+import { recommendModel, listModels, routeGeneration, getAvailableApiModels, smartRecommend } from './model-router.js';
+import { analyzeBrief } from './brief-analyzer.js';
 import { listStyles, getStyle, createStyle, updateStyle, deleteStyle } from './style-manager.js';
 import { runUtility, listUtilities } from './fal.js';
 
@@ -47,6 +48,75 @@ app.post('/models/recommend', (req, res) => {
     const result = recommendModel(brief, { currentModel, currentScore, availableModels });
     res.json(result);
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Smart Recommendation ─────────────────────────────────────────────
+
+app.post('/recommend', (req, res) => {
+  try {
+    const { brief } = req.body;
+    if (!brief) return res.status(400).json({ error: 'brief is required (string or object with .description)' });
+    const result = smartRecommend(brief);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/compile/smart', async (req, res) => {
+  try {
+    const { brief } = req.body;
+    if (!brief) return res.status(400).json({ error: 'brief is required' });
+
+    const briefObj = typeof brief === 'string' ? { description: brief } : brief;
+    if (!briefObj.description) return res.status(400).json({ error: 'brief.description is required' });
+
+    // Auto-select best model
+    const { analysis, recommendations } = smartRecommend(brief);
+    const bestModel = recommendations[0];
+
+    // Compile with that model
+    const compiled = await compile(briefObj, bestModel.id);
+
+    res.json({
+      analysis,
+      selectedModel: { id: bestModel.id, displayName: bestModel.displayName, score: bestModel.score, reasons: bestModel.reasons },
+      compiled,
+    });
+  } catch (err) {
+    console.error('[compile/smart]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/compile/smart-multi', async (req, res) => {
+  try {
+    const { brief, count = 3 } = req.body;
+    if (!brief) return res.status(400).json({ error: 'brief is required' });
+
+    const briefObj = typeof brief === 'string' ? { description: brief } : brief;
+    if (!briefObj.description) return res.status(400).json({ error: 'brief.description is required' });
+
+    const { analysis, recommendations } = smartRecommend(brief);
+    // Take top N that have API access
+    const topModels = recommendations.filter(r => r.apiAvailable).slice(0, count);
+
+    const results = await Promise.all(
+      topModels.map(async (model) => {
+        try {
+          const compiled = await compile(briefObj, model.id);
+          return { model: { id: model.id, displayName: model.displayName, score: model.score, reasons: model.reasons }, compiled };
+        } catch (err) {
+          return { model: { id: model.id, displayName: model.displayName, score: model.score, reasons: model.reasons }, error: err.message };
+        }
+      })
+    );
+
+    res.json({ analysis, results });
+  } catch (err) {
+    console.error('[compile/smart-multi]', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -382,6 +452,9 @@ app.listen(PORT, () => {
   console.log(`\n🎬 Cine-AI Prompt Compiler v0.3.0`);
   console.log(`📡 API running on http://localhost:${PORT}`);
   console.log(`\nEndpoints:`);
+  console.log(`  POST /recommend        — Brief → ranked model recommendations`);
+  console.log(`  POST /compile/smart   — Brief → auto-select best model + compile`);
+  console.log(`  POST /compile/smart-multi — Brief → top 3 models + compile each`);
   console.log(`  POST /compile         — Brief → model-specific prompt`);
   console.log(`  POST /compile/multi   — Brief → multiple model prompts`);
   console.log(`  POST /generate        — Brief → prompt + generated image`);

@@ -662,4 +662,204 @@ function getAvailableApiModels() {
     }));
 }
 
-export { recommendModel, getModelProfile, listModels, routeGeneration, getAvailableApiModels, MODEL_PROFILES };
+// ── Smart Recommendation (uses brief-analyzer) ──────────────────────
+
+import { analyzeBrief } from './brief-analyzer.js';
+
+/**
+ * Cost tiers for budget-aware routing (relative $/image or $/second).
+ * 1 = cheapest, 5 = most expensive.
+ */
+const COST_TIER = {
+  grok_imagine: 1,
+  z_image: 1,
+  bria_fibo: 1,
+  flux_2: 2,
+  recraft_v4: 2,
+  flux_kontext_t2i: 2,
+  flux_kontext_pro: 2,
+  seedream_4_5: 2,
+  qwen_image_max: 2,
+  ideogram_v3: 2,
+  kling_image_o3: 2,
+  kling_image_v3: 3,
+  nano_banana_pro: 3,
+  imagen_4: 3,
+  reve: 2,
+  gpt_image_1_5: 4,
+  gpt_image_1: 4,
+  flux_kontext_max: 4,
+  // Video models
+  wan_2_6: 2,
+  kling_3_0: 3,
+  minimax_hailuo_02: 3,
+  seedance_1_5_pro: 3,
+  pixverse_v56_t2v: 2,
+  pixverse_v56_i2v: 2,
+  vidu_q3_t2v: 3,
+  vidu_q3_i2v: 3,
+  ltx_2_19b: 3,
+  sora_2: 5,
+  veo_3_1: 5,
+};
+
+/**
+ * Score a single model 0-100 against an analyzed brief.
+ * Returns { score, reasons[] }.
+ */
+function scoreModel(modelId, profile, analysis) {
+  let score = 50;
+  const reasons = [];
+
+  // ── Type match (hard filter — wrong type gets massive penalty) ────
+  if (analysis.mediaType === 'video' && profile.type !== 'video') {
+    score -= 60;
+    reasons.push('Not a video model');
+  }
+  if (analysis.mediaType === 'image' && profile.type === 'video') {
+    score -= 60;
+    reasons.push('Video model for image task');
+  }
+  if (analysis.mediaType === 'edit') {
+    if (profile.subtype === 'image-to-image' || profile.strengths?.some(s => s.includes('edit'))) {
+      score += 20;
+      reasons.push('Supports editing');
+    } else {
+      score -= 30;
+      reasons.push('No editing capability');
+    }
+  }
+
+  // Skip utility models for generation tasks
+  if (profile.type === 'utility') {
+    return { score: 0, reasons: ['Utility model, not for generation'] };
+  }
+
+  const strengths = (profile.strengths || []).map(s => s.toLowerCase());
+  const weaknesses = (profile.weaknesses || []).map(w => w.toLowerCase());
+  const bestFor = (profile.bestFor || []).map(b => b.toLowerCase());
+  const worstFor = (profile.worstFor || []).map(w => w.toLowerCase());
+
+  // ── Style match ──────────────────────────────────────────────────
+  if (analysis.style === 'photorealistic') {
+    if (strengths.some(s => s.includes('photorealism') || s.includes('natural') || s.includes('photorealistic'))) {
+      score += 15; reasons.push('Strong photorealism');
+    }
+    if (worstFor.some(w => w.includes('photorealistic'))) {
+      score -= 15; reasons.push('Weak at photorealism');
+    }
+  }
+  if (analysis.style === 'cinematic') {
+    if (strengths.some(s => s.includes('cinematic') || s.includes('camera')) || bestFor.some(b => b.includes('cinematic'))) {
+      score += 15; reasons.push('Cinematic strength');
+    }
+  }
+  if (analysis.style === 'stylized') {
+    if (bestFor.some(b => b.includes('stylized') || b.includes('concept') || b.includes('artistic'))) {
+      score += 15; reasons.push('Great for stylized work');
+    }
+    if (worstFor.some(w => w.includes('stylized'))) {
+      score -= 10; reasons.push('Not ideal for stylized');
+    }
+  }
+  if (analysis.style === 'design') {
+    if (bestFor.some(b => b.includes('design') || b.includes('typography') || b.includes('logo') || b.includes('brand'))) {
+      score += 20; reasons.push('Design-focused model');
+    }
+    if (worstFor.some(w => w.includes('design'))) {
+      score -= 10;
+    }
+  }
+
+  // ── Text rendering ───────────────────────────────────────────────
+  if (analysis.hasTextRendering) {
+    if (strengths.some(s => s.includes('text rendering') || s.includes('typography'))) {
+      score += 20; reasons.push('Strong text rendering');
+    }
+    if (weaknesses.some(w => w.includes('text'))) {
+      score -= 20; reasons.push('Weak text rendering');
+    }
+  }
+
+  // ── Character consistency ────────────────────────────────────────
+  if (analysis.hasCharacterConsistency) {
+    if (strengths.some(s => s.includes('character consistency') || s.includes('identity'))) {
+      score += 15; reasons.push('Character consistency support');
+    }
+  }
+
+  // ── Reference images ────────────────────────────────────────────
+  if (analysis.hasReferenceImages || analysis.mediaType === 'edit') {
+    if (profile.subtype === 'image-to-image' || strengths.some(s => s.includes('edit') || s.includes('reference') || s.includes('composit'))) {
+      score += 15; reasons.push('Reference/edit support');
+    }
+  }
+
+  // ── Audio (video models) ─────────────────────────────────────────
+  if (analysis.hasAudio && analysis.mediaType === 'video') {
+    if (strengths.some(s => s.includes('audio'))) {
+      score += 15; reasons.push('Audio generation');
+    }
+  }
+
+  // ── Camera movement (video) ──────────────────────────────────────
+  if (analysis.requiredFeatures.includes('camera-movement')) {
+    if (strengths.some(s => s.includes('camera movement') || s.includes('camera rig') || s.includes('cinematographic'))) {
+      score += 10; reasons.push('Camera movement support');
+    }
+  }
+
+  // ── Budget weighting ─────────────────────────────────────────────
+  const cost = COST_TIER[modelId] || 3;
+  if (analysis.budgetPriority === 'economy') {
+    score += (5 - cost) * 6; // Cheaper = better
+    if (cost <= 2) reasons.push('Budget-friendly');
+  } else if (analysis.budgetPriority === 'quality') {
+    // Slightly prefer premium models
+    score += cost * 2;
+  }
+  // balanced = no adjustment
+
+  // ── Complexity bonus for capable models ──────────────────────────
+  if (analysis.complexity === 'high') {
+    if (strengths.some(s => s.includes('multi') || s.includes('composit') || s.includes('complex'))) {
+      score += 5;
+    }
+  }
+
+  // ── API availability hard requirement ────────────────────────────
+  if (!profile.apiAvailable) {
+    score -= 40;
+    reasons.push('No API available');
+  }
+
+  return { score: Math.max(0, Math.min(100, score)), reasons };
+}
+
+/**
+ * Smart recommendation: analyze a brief string and return ranked model list.
+ * 
+ * @param {string|object} brief - Creative brief text or object
+ * @param {object} options
+ * @returns {{ analysis: object, recommendations: object[] }}
+ */
+function smartRecommend(brief, options = {}) {
+  const analysis = analyzeBrief(brief);
+
+  const candidates = Object.entries(MODEL_PROFILES)
+    .filter(([, p]) => p.type !== 'utility'); // exclude utilities
+
+  const scored = candidates.map(([id, profile]) => {
+    const { score, reasons } = scoreModel(id, profile, analysis);
+    return { id, displayName: profile.displayName, type: profile.type, score, reasons, apiAvailable: profile.apiAvailable !== false };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+
+  return {
+    analysis,
+    recommendations: scored.slice(0, 10), // top 10
+  };
+}
+
+export { recommendModel, getModelProfile, listModels, routeGeneration, getAvailableApiModels, MODEL_PROFILES, smartRecommend, scoreModel, analyzeBrief };
