@@ -49,7 +49,7 @@ async function compile(brief, targetModel) {
 CRITICAL RULES:
 1. Output ONLY the ready-to-use prompt. No preamble, no explanation, no markdown formatting.
 2. Follow the ${targetModel} KB syntax EXACTLY — parameters, structure, word order.
-3. Include safety framing: "Film still from a movie production" or "On-set photograph from a film shoot" to pass content filters.
+3. Include safety framing: "Cinematic film still" or "A scene from a feature film" to pass content filters. Do NOT describe crew, cameras, or behind-the-scenes elements — the frame should look like a final film frame, not a BTS photo.
 4. Include anti-AI-artifact language: avoid CGI, plastic skin, HDR glow, hyper-detailed, 8K clarity, waxy texture.
 5. Include filmic entropy: natural grain, motivated lighting with physical sources, micro-imperfections.
 6. Reference characters by EXACT NAME from the brief.
