@@ -32,3 +32,4 @@ shotpilot-app/uploads/
 # Environment files (API keys — NEVER commit)
 .env
 *.env.local
+compiler/.env.backup
