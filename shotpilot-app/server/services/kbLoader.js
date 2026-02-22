@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { queryKB, queryForModel, queryForStyle } from '../rag/query-simple.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -96,6 +97,8 @@ function readKBFile(relativePath) {
 }
 
 function loadKBForModel(modelName) {
+    console.warn(`[DEPRECATED] loadKBForModel(${modelName}) called - consider using loadKBForModelViaRAG() for better performance`);
+    
     const model = LITE_MODELS[modelName];
 
     if (!model) {
@@ -146,6 +149,134 @@ function loadKBForModel(modelName) {
     return combinedKB;
 }
 
+// Mapping from display model names to RAG model IDs
+const MODEL_NAME_TO_RAG_ID = {
+    'higgsfield': 'higgsfield_cinema_studio_v1_5',
+    'veo-3.1': 'veo_3_1',
+    'midjourney': 'midjourney',
+    'kling-2.6': 'kling_2_6',
+    'gpt-image': 'gpt_image_1_5',
+    'kling-3.0': 'kling_30', // or 'kling_3_0' - need to check which exists
+    'nano-banana-pro': 'nano_banana_pro',
+    'flux-2': 'flux_2'
+};
+
+/**
+ * Load KB for a model using RAG queries (RECOMMENDED - replaces loadKBForModel)
+ * @param {string} modelName - Display model name (e.g., 'flux-2', 'gpt-image')
+ * @param {string} shotContext - Context about the shot for relevant pack selection
+ * @returns {string} Focused KB content assembled from RAG chunks
+ */
+function loadKBForModelViaRAG(modelName, shotContext = '') {
+    const ragModelId = MODEL_NAME_TO_RAG_ID[modelName];
+    
+    if (!ragModelId) {
+        console.warn(`[rag] No RAG model ID mapping for ${modelName}, falling back to file-based loading`);
+        return loadKBForModel(modelName);
+    }
+
+    try {
+        // 1. Query model-specific chunks
+        const modelChunks = queryForModel(ragModelId, ['syntax', 'tips', 'failures'], 25);
+        
+        // 2. Query core principles
+        const corePrinciplesChunks = queryKB('realism core principles', { category: 'principles' }, 10);
+        
+        // 3. Query relevant pack chunks based on shot context
+        let packChunks = [];
+        if (shotContext) {
+            // Analyze shot context for relevant packs
+            const contextLower = shotContext.toLowerCase();
+            let packCategories = [];
+            
+            if (contextLower.includes('character') || contextLower.includes('person') || contextLower.includes('face')) {
+                packCategories.push('character_consistency');
+            }
+            if (contextLower.includes('composition') || contextLower.includes('framing') || contextLower.includes('spatial')) {
+                packCategories.push('spatial_composition');
+            }
+            if (contextLower.includes('motion') || contextLower.includes('movement') || contextLower.includes('camera')) {
+                packCategories.push('motion_readiness');
+            }
+            
+            // Always include quality control
+            packCategories.push('image_quality_control', 'video_quality_control');
+            
+            if (packCategories.length > 0) {
+                packChunks = queryKB(shotContext, { category: packCategories }, 15);
+            }
+        } else {
+            // Default packs if no context
+            packChunks = queryKB('quality control character consistency', { category: ['image_quality_control', 'character_consistency'] }, 10);
+        }
+        
+        // 4. Query translation matrix
+        const translationChunks = queryKB('translation matrix', { category: 'translation' }, 5);
+        
+        // 5. Assemble structured KB content
+        let combinedKB = '';
+        
+        // Core principles
+        if (corePrinciplesChunks.length > 0) {
+            combinedKB += '=== Core Realism Principles ===\n\n';
+            combinedKB += corePrinciplesChunks.map(c => c.text).join('\n\n') + '\n\n';
+        }
+        
+        // Model-specific chunks by category
+        const syntaxChunks = modelChunks.filter(c => c.metadata.category === 'syntax');
+        const tipsChunks = modelChunks.filter(c => c.metadata.category === 'tips');
+        const failuresChunks = modelChunks.filter(c => c.metadata.category === 'failures');
+        const otherModelChunks = modelChunks.filter(c => !['syntax', 'tips', 'failures'].includes(c.metadata.category));
+        
+        if (syntaxChunks.length > 0) {
+            combinedKB += '=== Model Syntax & Rules ===\n\n';
+            combinedKB += syntaxChunks.map(c => c.text).join('\n\n') + '\n\n';
+        }
+        
+        if (failuresChunks.length > 0) {
+            combinedKB += '=== Known Issues & Failures ===\n\n';
+            combinedKB += failuresChunks.map(c => c.text).join('\n\n') + '\n\n';
+        }
+        
+        if (tipsChunks.length > 0) {
+            combinedKB += '=== Tips & Best Practices ===\n\n';
+            combinedKB += tipsChunks.map(c => c.text).join('\n\n') + '\n\n';
+        }
+        
+        if (otherModelChunks.length > 0) {
+            combinedKB += '=== Additional Model Guidelines ===\n\n';
+            combinedKB += otherModelChunks.map(c => c.text).join('\n\n') + '\n\n';
+        }
+        
+        // Relevant packs
+        if (packChunks.length > 0) {
+            combinedKB += '=== Relevant Packs ===\n\n';
+            combinedKB += packChunks.map(c => c.text).join('\n\n') + '\n\n';
+        }
+        
+        // Translation matrix
+        if (translationChunks.length > 0) {
+            combinedKB += '=== Translation Matrix ===\n\n';
+            combinedKB += translationChunks.map(c => c.text).join('\n\n') + '\n\n';
+        }
+        
+        const totalTokens = (
+            modelChunks.reduce((sum, c) => sum + (c.metadata.tokens || 0), 0) +
+            corePrinciplesChunks.reduce((sum, c) => sum + (c.metadata.tokens || 0), 0) +
+            packChunks.reduce((sum, c) => sum + (c.metadata.tokens || 0), 0) +
+            translationChunks.reduce((sum, c) => sum + (c.metadata.tokens || 0), 0)
+        );
+        
+        console.log(`[rag] Using RAG for model: ${ragModelId} (retrieved ${modelChunks.length} model + ${corePrinciplesChunks.length} principles + ${packChunks.length} pack + ${translationChunks.length} translation chunks, ~${totalTokens} tokens)`);
+        
+        return combinedKB.trim();
+        
+    } catch (error) {
+        console.error(`[rag] RAG query failed for ${modelName} (${ragModelId}), falling back to file-based loading:`, error.message);
+        return loadKBForModel(modelName);
+    }
+}
+
 function getAvailableModels() {
     return Object.entries(LITE_MODELS).map(([id, info]) => ({
         name: id, // Frontend uses 'name' as the ID key based on user request example
@@ -158,6 +289,7 @@ function getAvailableModels() {
 
 export {
     loadKBForModel,
+    loadKBForModelViaRAG,
     getAvailableModels,
     readKBFile
 };

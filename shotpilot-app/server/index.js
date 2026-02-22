@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 import { db, initDatabase } from './database.js';
 import { setupAuth, requireAuth, checkCredits } from './middleware/auth.js';
 import { deductCredit, getUserCredits, getUsageStats, logAIFeatureUsage, getAIUsageStats } from './services/creditService.js';
-import { loadKBForModel, getAvailableModels, readKBFile } from './services/kbLoader.js';
+import { loadKBForModel, loadKBForModelViaRAG, getAvailableModels, readKBFile } from './services/kbLoader.js';
 import { calculateCompleteness, checkReadinessWithKB } from './services/qualityCheck.js';
 import { generateRecommendations, generatePrompt, analyzeReadiness, generateAestheticSuggestions, generateCharacterSuggestions, generateShotPlan, readinessDialogue, analyzeScript, generateObjectSuggestions, generateTurnaroundPrompt, refineContent, creativeDirectorCollaborate, summarizeConversation, holisticImageAudit, refinePromptFromAudit, analyzeEntityImage } from './services/geminiService.js';
 
@@ -34,6 +34,7 @@ import v2promptRouter from './routes/v2prompt.js';
 import v2videoRouter from './routes/v2video.js';
 import v2charactersRouter from './routes/v2characters.js';
 import v2projectRouter from './routes/v2project.js';
+import ragRouter from './routes/rag.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -124,7 +125,7 @@ app.use(createAuthRoutes({
 
 app.use(createAIRoutes({
     db, requireAuth, checkCredits, sanitize,
-    loadKBForModel, getAvailableModels, readKBFile,
+    loadKBForModel, loadKBForModelViaRAG, getAvailableModels, readKBFile,
     calculateCompleteness, checkReadinessWithKB,
     generateRecommendations, generatePrompt, generateAestheticSuggestions,
     generateCharacterSuggestions, generateShotPlan, readinessDialogue,
@@ -141,11 +142,11 @@ app.use(createShotRoutes({ db, sanitize, calculateCompleteness }));
 
 app.use(createImageRoutes({
     db, requireAuth, checkCredits, upload,
-    holisticImageAudit, loadKBForModel, readKBFile,
+    holisticImageAudit, loadKBForModel, loadKBForModelViaRAG, readKBFile,
     deductCredit, logAIFeatureUsage,
 }));
 app.use(createConversationRoutes({ db, requireAuth }));
-app.use(createGenerationRoutes({ db, sanitize, analyzeEntityImage, loadKBForModel, readKBFile }));
+app.use(createGenerationRoutes({ db, sanitize, analyzeEntityImage, loadKBForModel, loadKBForModelViaRAG, readKBFile }));
 app.use(createAgentRoutes());
 app.use(createAssetRoutes());
 app.use(createCostRoutes());
@@ -159,6 +160,7 @@ app.use(v2promptRouter);
 app.use(v2videoRouter);
 app.use(v2charactersRouter);
 app.use(v2projectRouter);
+app.use('/api/v2/rag', ragRouter);
 
 // Only listen when run directly (not imported for testing)
 if (process.env.NODE_ENV !== 'test') {

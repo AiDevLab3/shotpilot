@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export default function createGenerationRoutes({ db, sanitize, analyzeEntityImage, loadKBForModel, readKBFile }) {
+export default function createGenerationRoutes({ db, sanitize, analyzeEntityImage, loadKBForModel, loadKBForModelViaRAG, readKBFile }) {
     const router = Router();
 
     // ── AI Generation History ──────────────────────────────────────
@@ -182,7 +182,8 @@ export default function createGenerationRoutes({ db, sanitize, analyzeEntityImag
             }
             // Load model-specific KB for revised prompt syntax
             try {
-                modelKBContent = loadKBForModel(resolvedModelName);
+                const entityContext = `${entityType} ${entityName} ${entity.description || ''}`.trim();
+                modelKBContent = loadKBForModelViaRAG(resolvedModelName, entityContext);
             } catch (err) {
                 console.warn(`[entity-analyze] Could not load model KB for ${resolvedModelName}:`, err.message);
             }

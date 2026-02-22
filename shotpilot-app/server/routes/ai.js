@@ -11,7 +11,7 @@ const __dirname = path.dirname(__filename);
 export default function createAIRoutes({
     db, requireAuth, checkCredits, sanitize,
     // KB services
-    loadKBForModel, getAvailableModels, readKBFile,
+    loadKBForModel, loadKBForModelViaRAG, getAvailableModels, readKBFile,
     // Quality services
     calculateCompleteness, checkReadinessWithKB,
     // AI services
@@ -214,7 +214,8 @@ export default function createAIRoutes({
             let modelKBContent = '';
             if (resolvedModel) {
                 try {
-                    modelKBContent = loadKBForModel(resolvedModel);
+                    const characterContext = `character ${name} ${description || ''} ${personality || ''}`.trim();
+                    modelKBContent = loadKBForModelViaRAG(resolvedModel, characterContext);
                     kbFilesUsed.push(`model:${resolvedModel}`);
                 } catch (err) {
                     console.warn(`[character-suggestions] Could not load model KB for ${resolvedModel}:`, err.message);
@@ -426,7 +427,8 @@ export default function createAIRoutes({
             let modelKBContent = '';
             if (resolvedModel) {
                 try {
-                    modelKBContent = loadKBForModel(resolvedModel);
+                    const objectContext = `object ${name} ${description || ''}`.trim();
+                    modelKBContent = loadKBForModelViaRAG(resolvedModel, objectContext);
                     kbFilesUsed.push(`model:${resolvedModel}`);
                 } catch (err) {
                     console.warn(`[object-suggestions] Could not load model KB for ${resolvedModel}:`, err.message);
@@ -547,7 +549,10 @@ export default function createAIRoutes({
 
             let modelKBContent = '';
             if (resolvedModel) {
-                try { modelKBContent = loadKBForModel(resolvedModel); } catch {}
+                try {
+                    const entityContext = `${entityType} ${entityName} ${entityDescription || ''}`.trim();
+                    modelKBContent = loadKBForModelViaRAG(resolvedModel, entityContext);
+                } catch {}
             }
 
             // If no reference prompt and no reference image, use entity description as the source
@@ -633,7 +638,8 @@ export default function createAIRoutes({
             let kbFilesUsed = [];
             if (targetModel) {
                 try {
-                    modelKBContent = loadKBForModel(targetModel);
+                    const collaborateContext = `creative director ${message || ''}`.trim();
+                    modelKBContent = loadKBForModelViaRAG(targetModel, collaborateContext);
                     kbFilesUsed.push(`model:${targetModel}`);
                 } catch (err) {
                     console.warn(`[creative-director] Could not load model KB for ${targetModel}:`, err.message);
@@ -977,7 +983,10 @@ export default function createAIRoutes({
                 }
 
                 const readiness = calculateCompleteness(project, scene, shot);
-                const kbContent = loadKBForModel(modelName);
+                
+                // Create shot context for RAG pack selection
+                const shotContext = `${shot.description || ''} ${shot.shot_type || ''} ${shot.camera_angle || ''} ${scene.mood_tone || ''} ${characters.map(c => c.name).join(' ')}`.trim();
+                const kbContent = loadKBForModelViaRAG(modelName, shotContext);
 
                 const result = await generatePrompt({
                     project, scene, shot,
@@ -1096,7 +1105,8 @@ export default function createAIRoutes({
 
             let modelKBContent = '';
             try {
-                modelKBContent = loadKBForModel(modelName);
+                const refineContext = `${shot.description || ''} ${originalPrompt}`.trim();
+                modelKBContent = loadKBForModelViaRAG(modelName, refineContext);
             } catch (err) {
                 console.warn(`[refine-prompt] Could not load model KB for ${modelName}:`, err.message);
             }

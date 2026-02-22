@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 
 export default function createImageRoutes({
     db, requireAuth, checkCredits, upload,
-    holisticImageAudit, loadKBForModel, readKBFile,
+    holisticImageAudit, loadKBForModel, loadKBForModelViaRAG, readKBFile,
     deductCredit, logAIFeatureUsage,
 }) {
     const router = Router();
@@ -88,7 +88,8 @@ export default function createImageRoutes({
                 let modelKB = null;
                 if (variant.model_used) {
                     try {
-                        modelKB = loadKBForModel(variant.model_used);
+                        const auditContext = `image audit ${shot?.description || ''} ${variant.generated_prompt || ''}`.trim();
+                        modelKB = loadKBForModelViaRAG(variant.model_used, auditContext);
                     } catch (e) {
                         console.warn(`[audit] Could not load model KB for ${variant.model_used}:`, e.message);
                     }
