@@ -171,7 +171,12 @@ OUTPUT FORMAT:
 
 Generate the prompt now.`;
 
-    const result = await callGemini(systemPrompt, 'Generate the expert prompt.');
+    const result = await callGemini({
+      parts: [{ text: 'Generate the expert prompt.' }],
+      systemInstruction: systemPrompt,
+      thinkingLevel: 'medium',
+      maxOutputTokens: 2048,
+    });
 
     // Clean up the response
     let prompt = result.trim();
