@@ -1,6 +1,8 @@
 import ReactDOM from 'react-dom/client';
-import App from './App';
+// v2: Single-page workbench (core loop)
+// To revert to v1: change AppV2 back to App
+import AppV2 from './AppV2';
 import './index.css';
 
-console.log("SHOTPILOT: Main script v5");
-ReactDOM.createRoot(document.getElementById('root')!).render(<App />);
+console.log("SHOTPILOT: Main script v2.0 — Core Loop");
+ReactDOM.createRoot(document.getElementById('root')!).render(<AppV2 />);

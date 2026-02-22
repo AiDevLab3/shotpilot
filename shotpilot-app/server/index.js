@@ -29,6 +29,8 @@ import createCostRoutes from './routes/costs.js';
 import analyzeRouter from './routes/analyze.js';
 import generateRouter from './routes/generate.js';
 import upscaleRouter from './routes/upscale.js';
+import v2modelsRouter from './routes/v2models.js';
+import v2promptRouter from './routes/v2prompt.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -149,6 +151,8 @@ app.use(createCostRoutes());
 app.use(analyzeRouter);
 app.use(generateRouter);
 app.use(upscaleRouter);
+app.use(v2modelsRouter);
+app.use(v2promptRouter);
 
 // Only listen when run directly (not imported for testing)
 if (process.env.NODE_ENV !== 'test') {

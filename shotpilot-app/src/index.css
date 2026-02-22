@@ -66,3 +66,7 @@ button.status-badge:hover {
 .spin {
     animation: spin 1s linear infinite;
 }
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}

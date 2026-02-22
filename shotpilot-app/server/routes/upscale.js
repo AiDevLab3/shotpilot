@@ -26,12 +26,14 @@ router.post('/api/upscale', upload.single('image'), async (req, res) => {
     let imagePath;
 
     if (req.file) {
-      // Uploaded file — make path relative to project root
       imagePath = `uploads/images/${path.basename(req.file.path)}`;
     } else if (req.body?.imagePath) {
       imagePath = req.body.imagePath;
+    } else if (req.body?.imageUrl) {
+      // v2 API: imageUrl (relative like /uploads/images/xxx.jpg)
+      imagePath = req.body.imageUrl.replace(/^\//, '');
     } else {
-      return res.status(400).json({ error: 'No image provided. Upload a file or pass imagePath.' });
+      return res.status(400).json({ error: 'No image provided. Upload a file or pass imageUrl/imagePath.' });
     }
 
     const scale = parseInt(req.body?.scale) || 2;

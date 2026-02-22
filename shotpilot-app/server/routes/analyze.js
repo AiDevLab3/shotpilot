@@ -23,13 +23,28 @@ const router = Router();
 
 router.post('/api/analyze', upload.single('image'), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No image provided' });
-    }
-
     const fs = await import('fs');
-    const imageBuffer = fs.readFileSync(req.file.path);
-    const mimeType = req.file.mimetype || 'image/jpeg';
+    const pathMod = await import('path');
+    let imageBuffer, mimeType;
+
+    if (req.file) {
+      imageBuffer = fs.readFileSync(req.file.path);
+      mimeType = req.file.mimetype || 'image/jpeg';
+    } else if (req.body?.imageUrl) {
+      // Re-analyze from local path (e.g. /uploads/images/xxx.jpg)
+      const localPath = pathMod.join(__dirname, '../../', req.body.imageUrl.replace(/^\//, ''));
+      if (fs.existsSync(localPath)) {
+        imageBuffer = fs.readFileSync(localPath);
+        mimeType = 'image/jpeg';
+      } else {
+        // Try fetching from URL
+        const imgRes = await fetch(req.body.imageUrl);
+        imageBuffer = Buffer.from(await imgRes.arrayBuffer());
+        mimeType = imgRes.headers.get('content-type') || 'image/jpeg';
+      }
+    } else {
+      return res.status(400).json({ error: 'No image provided — upload a file or pass imageUrl' });
+    }
 
     // Optional context from request body
     const { projectStyle, projectName } = req.body || {};
@@ -79,12 +94,20 @@ router.post('/api/analyze', upload.single('image'), async (req, res) => {
       issues: auditResult.issues || [],
       dimensions: auditResult.dimensions,
       promptAdjustments: auditResult.prompt_adjustments || [],
+      styleMatch: ((auditResult.dimensions?.style_consistency?.score || 0)),
+      realism: ((auditResult.dimensions?.physics?.score || 0) + (auditResult.dimensions?.clarity?.score || 0)) / 2,
+      fixes: auditResult.prompt_adjustments || [],
       recommendation: {
-        model: recommendation.topRecommendation.model,
+        modelId: recommendation.topRecommendation.model,
         modelName: recommendation.topRecommendation.modelName,
         strategy: recommendation.strategy,
         reasoning: recommendation.reasoning,
-        alternatives: recommendation.alternatives,
+        alternatives: (recommendation.alternatives || []).map(a => ({
+          modelId: a.model,
+          modelName: a.modelName,
+          strategy: a.strategy || recommendation.strategy,
+          reasoning: a.reasoning || '',
+        })),
       },
     });
   } catch (error) {
