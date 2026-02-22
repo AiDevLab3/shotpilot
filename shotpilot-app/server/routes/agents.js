@@ -1,5 +1,5 @@
 import express from 'express';
-import { generateShot, generateScene, auditGeneratedImage, screenReferenceImage, improveImage, generateAndIterate } from '../services/agents/orchestrator.js';
+import { generateShot, generateScene, auditGeneratedImage, screenReferenceImage, improveImage, generateAndIterate, analyzeAndRecommend, executeImprovement, generateWithAudit, importImage } from '../services/agents/orchestrator.js';
 import { getModelRegistry } from '../services/agents/creativeDirector.js';
 import { listStyleProfiles } from '../services/agents/styleProfile.js';
 import { loadProject, listProjects } from '../services/agents/projectContext.js';
@@ -212,7 +212,7 @@ export default function createAgentRoutes() {
   /**
    * POST /api/agents/generate-and-iterate
    * Body: { description, model_preference?, project_id?, scene_id?, max_iterations? }
-   * Full pipeline: generate + QG loop
+   * DEPRECATED: Full pipeline: generate + QG loop (kept for backward compatibility)
    */
   router.post('/api/agents/generate-and-iterate', async (req, res) => {
     try {
@@ -230,6 +230,106 @@ export default function createAgentRoutes() {
       res.json(result);
     } catch (err) {
       console.error('[agents/generate-and-iterate] Error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ========================================
+  // NEW USER-IN-THE-LOOP WORKFLOW ENDPOINTS
+  // ========================================
+
+  /**
+   * POST /api/agents/analyze
+   * Body: { image (base64), shot_context, project_id? }
+   * Returns audit + recommendations (no execution)
+   */
+  router.post('/api/agents/analyze', async (req, res) => {
+    try {
+      const { image, shot_context, project_id } = req.body;
+      if (!image) {
+        return res.status(400).json({ error: 'image (base64) is required' });
+      }
+      const result = await analyzeAndRecommend(image, shot_context || '', project_id);
+      res.json(result);
+    } catch (err) {
+      console.error('[agents/analyze] Error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  /**
+   * POST /api/agents/execute-improvement
+   * Body: { image (base64), model_id, instruction?, shot_context, project_id? }
+   * Executes one improvement step, returns result + new audit
+   */
+  router.post('/api/agents/execute-improvement', async (req, res) => {
+    try {
+      const { image, model_id, instruction, shot_context, project_id } = req.body;
+      if (!image) {
+        return res.status(400).json({ error: 'image (base64) is required' });
+      }
+      if (!model_id) {
+        return res.status(400).json({ error: 'model_id is required' });
+      }
+      const result = await executeImprovement(
+        image, 
+        model_id, 
+        instruction, 
+        shot_context || '', 
+        project_id
+      );
+      res.json(result);
+    } catch (err) {
+      console.error('[agents/execute-improvement] Error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  /**
+   * POST /api/agents/generate-with-audit
+   * Body: { description, model_preference?, project_id?, scene_id? }
+   * Generates one image, audits it, returns result + recommendation
+   */
+  router.post('/api/agents/generate-with-audit', async (req, res) => {
+    try {
+      const { description, model_preference, project_id, scene_id } = req.body;
+      if (!description && !scene_id) {
+        return res.status(400).json({ error: 'description or scene_id is required' });
+      }
+      const result = await generateWithAudit({
+        description,
+        modelPreference: model_preference,
+        projectId: project_id,
+        sceneId: scene_id,
+      });
+      res.json(result);
+    } catch (err) {
+      console.error('[agents/generate-with-audit] Error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  /**
+   * POST /api/agents/import-image
+   * Body: { image (base64), source_model?, source_prompt?, shot_context?, project_id? }
+   * Saves the image, logs metadata (model, prompt), runs QG audit, returns audit + recommendations
+   */
+  router.post('/api/agents/import-image', async (req, res) => {
+    try {
+      const { image, source_model, source_prompt, shot_context, project_id } = req.body;
+      if (!image) {
+        return res.status(400).json({ error: 'image (base64) is required' });
+      }
+      const result = await importImage({
+        imageBase64: image,
+        sourceModel: source_model,
+        sourcePrompt: source_prompt,
+        shotContext: shot_context,
+        projectId: project_id,
+      });
+      res.json(result);
+    } catch (err) {
+      console.error('[agents/import-image] Error:', err);
       res.status(500).json({ error: err.message });
     }
   });
