@@ -47,7 +47,26 @@ router.post('/api/analyze', upload.single('image'), async (req, res) => {
     }
 
     // Optional context from request body
-    const { projectStyle, projectName } = req.body || {};
+    let { projectStyle, projectName, projectId } = req.body || {};
+
+    // Auto-load Project DNA if projectId provided
+    if (projectId && !projectStyle) {
+      try {
+        const { db } = await import('../database.js');
+        const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId);
+        if (project) {
+          projectName = project.name;
+          if (project.style_dna) {
+            const dna = JSON.parse(project.style_dna);
+            projectStyle = `Visual Style: ${dna.visualStyle || ''}. Color Palette: ${dna.colorPalette || ''}. Lighting: ${dna.lightingKey || ''}. Film Stock: ${dna.filmStock || ''}. Mood: ${dna.mood || ''}. Tone: ${dna.tone || ''}. Custom: ${(dna.customDirectives || []).join('; ')}. Avoid: ${(dna.negativeDirectives || []).join('; ')}.`;
+          } else if (project.visual_style) {
+            projectStyle = project.visual_style;
+          }
+        }
+      } catch (e) {
+        console.warn('[analyze] Could not load project DNA:', e.message);
+      }
+    }
 
     // Load core KB for audit context
     const kbContent = readKBFile('01_Core_Realism_Principles.md') || '';
