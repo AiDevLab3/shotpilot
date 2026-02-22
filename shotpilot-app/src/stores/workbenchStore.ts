@@ -1,12 +1,24 @@
-// ShotPilot v2 — Single store for the core loop
+// ShotPilot v3 — User-in-the-loop store
 import { create } from 'zustand';
-import type { AnalysisResult, AppState, IterationEntry, ModelInfo } from '../types/v2';
+import type { 
+  AnalysisResult, 
+  AppState, 
+  IterationEntry, 
+  ModelInfo, 
+  GenerateWithAuditResult,
+  AnalyzeResult,
+  ExecuteResult 
+} from '../types/v2';
 import * as api from '../services/v2Api';
 
 interface WorkbenchState {
   // App state
   appState: AppState;
   error: string | null;
+  
+  // Mode
+  mode: 'import' | 'generate';
+  shotDescription: string;
   
   // Models
   models: ModelInfo[];
@@ -15,6 +27,7 @@ interface WorkbenchState {
   // Current image
   currentImageUrl: string | null;
   currentImageFile: File | null;
+  currentImageBase64: string | null;
   currentAnalysis: AnalysisResult | null;
   
   // Expert prompt
@@ -29,12 +42,16 @@ interface WorkbenchState {
   
   // Actions
   loadModels: () => Promise<void>;
+  setMode: (mode: 'import' | 'generate') => void;
+  setShotDescription: (desc: string) => void;
   uploadAndAnalyze: (file: File) => Promise<void>;
+  generateFromDescription: () => Promise<void>;
   reAnalyze: (imageUrl: string) => Promise<void>;
   selectModel: (modelId: string) => void;
   setStrategy: (strategy: 'edit' | 'regenerate') => void;
   setPrompt: (prompt: string) => void;
   generateExpertPrompt: () => Promise<void>;
+  executeStep: (modelId: string, instruction?: string) => Promise<void>;
   generate: () => Promise<void>;
   upscale: () => Promise<void>;
   reset: () => void;
@@ -44,10 +61,13 @@ interface WorkbenchState {
 export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   appState: 'idle',
   error: null,
+  mode: 'import',
+  shotDescription: '',
   models: [],
   selectedModelId: null,
   currentImageUrl: null,
   currentImageFile: null,
+  currentImageBase64: null,
   currentAnalysis: null,
   expertPrompt: '',
   promptLoading: false,
@@ -62,6 +82,9 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       console.error('[workbench] Failed to load models:', e);
     }
   },
+
+  setMode: (mode) => set({ mode }),
+  setShotDescription: (desc) => set({ shotDescription: desc }),
 
   uploadAndAnalyze: async (file: File) => {
     const id = `iter_${Date.now()}`;
@@ -96,6 +119,69 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       }));
     } catch (e: any) {
       set({ appState: 'error', error: e.message || 'Analysis failed' });
+    }
+  },
+
+  generateFromDescription: async () => {
+    const { shotDescription } = get();
+    if (!shotDescription.trim()) return;
+
+    set({ appState: 'generating', error: null, currentAnalysis: null, expertPrompt: '' });
+
+    try {
+      const result: GenerateWithAuditResult = await api.generateWithAudit({
+        description: shotDescription,
+      });
+
+      // If we got an image back, display it
+      let imageUrl: string | null = null;
+      if (result.image) {
+        imageUrl = `data:image/jpeg;base64,${result.image}`;
+      }
+
+      // Build analysis from audit if available
+      let analysis: AnalysisResult | null = null;
+      if (result.audit) {
+        // The audit comes in raw QG format — adapt it
+        const score = Math.round((result.audit.overall_score || 5) * 10);
+        const verdictMap: Record<string, 'LOCK_IT_IN' | 'REFINE' | 'REGENERATE'> = {
+          'approve': 'LOCK_IT_IN', 'iterate': 'REFINE', 'reject': 'REGENERATE',
+        };
+        analysis = {
+          verdict: verdictMap[result.audit.recommendation] || 'REFINE',
+          score,
+          diagnosis: result.audit.iteration_guidance || 'Generation complete.',
+          issues: [],
+          fixes: [],
+          recommendation: {
+            modelId: result.generation?.creative_direction?.selected_model || '',
+            modelName: result.generation?.creative_direction?.model_name || '',
+            strategy: 'edit',
+            reasoning: result.generation?.creative_direction?.reasoning || '',
+            alternatives: [],
+          },
+          styleMatch: result.audit.style_match?.score || 5,
+          realism: result.audit.realism?.score || 5,
+        };
+      }
+
+      const entry: IterationEntry = {
+        id: `iter_${Date.now()}`,
+        imageUrl: imageUrl || '',
+        analysis: analysis || undefined,
+        timestamp: Date.now(),
+        isOriginal: true,
+      };
+
+      set(state => ({
+        appState: 'idle',
+        currentImageUrl: imageUrl,
+        currentAnalysis: analysis,
+        selectedModelId: result.generation?.creative_direction?.selected_model || null,
+        iterations: [...state.iterations, entry],
+      }));
+    } catch (e: any) {
+      set({ appState: 'error', error: e.message || 'Generation failed' });
     }
   },
 
@@ -198,7 +284,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       set(state => ({
         appState: 'idle',
         currentImageUrl: result.imageUrl,
-        currentAnalysis: null, // Will need re-analysis
+        currentAnalysis: null,
         iterations: [...state.iterations, entry],
       }));
     } catch (e: any) {
@@ -209,8 +295,11 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   reset: () => set({
     appState: 'idle',
     error: null,
+    mode: 'import',
+    shotDescription: '',
     currentImageUrl: null,
     currentImageFile: null,
+    currentImageBase64: null,
     currentAnalysis: null,
     expertPrompt: '',
     selectedModelId: null,

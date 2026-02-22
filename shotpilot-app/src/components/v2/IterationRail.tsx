@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle, AlertTriangle, XCircle, Upload, ArrowUpCircle } from 'lucide-react';
+import { CheckCircle, AlertTriangle, XCircle, Upload } from 'lucide-react';
 import type { IterationEntry } from '../../types/v2';
 
 interface IterationRailProps {

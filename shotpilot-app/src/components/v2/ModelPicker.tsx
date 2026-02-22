@@ -7,7 +7,7 @@ interface ModelPickerProps {
   selectedModelId: string | null;
   recommendation: ModelRecommendation | null;
   onSelect: (modelId: string) => void;
-  showVideo?: boolean;
+  
 }
 
 function ModelTag({ label, color }: { label: string; color?: string }) {
@@ -44,7 +44,7 @@ function CapabilityDots({ capabilities }: { capabilities: string[] }) {
 }
 
 export const ModelPicker: React.FC<ModelPickerProps> = ({
-  models, selectedModelId, recommendation, onSelect, showVideo,
+  models, selectedModelId, recommendation, onSelect, 
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [filterType, setFilterType] = useState<'all' | 'image' | 'video' | 'utility'>('image');

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Loader2, AlertCircle, RotateCcw } from 'lucide-react';
+import { Loader2, AlertCircle, RotateCcw, Upload, Wand2 } from 'lucide-react';
 import { useWorkbenchStore } from '../../stores/workbenchStore';
 import { DropZone } from './DropZone';
 import { GradeCard } from './GradeCard';
@@ -7,6 +7,59 @@ import { ModelPicker } from './ModelPicker';
 import { PromptEditor } from './PromptEditor';
 import { ActionBar } from './ActionBar';
 import { IterationRail } from './IterationRail';
+
+const GeneratePanel: React.FC = () => {
+  const store = useWorkbenchStore();
+
+  return (
+    <div style={{
+      flex: 1, display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: '40px', gap: '20px',
+    }}>
+      <Wand2 size={40} color="#8b5cf6" />
+      <div style={{ fontSize: '18px', fontWeight: 700, color: '#e4e4e7' }}>
+        Describe your shot
+      </div>
+      <div style={{ fontSize: '13px', color: '#71717a', textAlign: 'center', maxWidth: '400px' }}>
+        The Creative Director will interpret your vision, pick the best model, and generate an expert prompt.
+      </div>
+      <textarea
+        value={store.shotDescription}
+        onChange={(e) => store.setShotDescription(e.target.value)}
+        placeholder="e.g. Wide establishing shot of Houston skyline at dusk, warm amber light, anamorphic lens flare..."
+        style={{
+          width: '100%', maxWidth: '500px', minHeight: '120px',
+          padding: '14px', borderRadius: '12px',
+          border: '1px solid #27272a', backgroundColor: '#18181b',
+          color: '#e4e4e7', fontSize: '14px', lineHeight: 1.6,
+          resize: 'vertical', outline: 'none',
+          fontFamily: 'inherit',
+        }}
+        onFocus={(e) => { e.currentTarget.style.borderColor = '#8b5cf6'; }}
+        onBlur={(e) => { e.currentTarget.style.borderColor = '#27272a'; }}
+      />
+      <button
+        onClick={store.generateFromDescription}
+        disabled={!store.shotDescription.trim() || store.appState !== 'idle'}
+        style={{
+          padding: '12px 32px', borderRadius: '10px', border: 'none',
+          backgroundColor: store.shotDescription.trim() ? '#8b5cf6' : '#27272a',
+          color: store.shotDescription.trim() ? 'white' : '#52525b',
+          fontSize: '14px', fontWeight: 600, cursor: store.shotDescription.trim() ? 'pointer' : 'default',
+          display: 'flex', alignItems: 'center', gap: '8px',
+          transition: 'all 0.15s ease',
+        }}
+      >
+        {store.appState === 'generating' ? (
+          <><Loader2 size={16} className="animate-spin" /> Generating...</>
+        ) : (
+          <><Wand2 size={16} /> Generate</>
+        )}
+      </button>
+    </div>
+  );
+};
 
 export const Workbench: React.FC = () => {
   const store = useWorkbenchStore();
@@ -19,7 +72,7 @@ export const Workbench: React.FC = () => {
   const hasPrompt = store.expertPrompt.trim().length > 0;
   const canGenerate = hasPrompt && !!store.selectedModelId;
   const canUpscale = !!store.currentImageUrl && store.appState === 'idle';
-  const hasActiveModel = selectedModel?.active ?? false;
+  const hasActiveModel = selectedModel?.hasAPI ?? (selectedModel as any)?.active ?? false;
 
   return (
     <div style={{
@@ -44,10 +97,47 @@ export const Workbench: React.FC = () => {
           gap: '12px', minWidth: 0,
         }}>
           {!store.currentImageUrl ? (
-            <DropZone
-              onFile={store.uploadAndAnalyze}
-              disabled={store.appState !== 'idle'}
-            />
+            <>
+              {/* Mode tabs */}
+              <div style={{
+                display: 'flex', gap: '0', borderRadius: '10px',
+                border: '1px solid #27272a', overflow: 'hidden',
+              }}>
+                <button
+                  onClick={() => store.setMode('import')}
+                  style={{
+                    flex: 1, padding: '10px', border: 'none', fontSize: '13px', fontWeight: 600,
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                    backgroundColor: store.mode === 'import' ? 'rgba(139, 92, 246, 0.15)' : 'transparent',
+                    color: store.mode === 'import' ? '#a78bfa' : '#71717a',
+                    borderBottom: store.mode === 'import' ? '2px solid #8b5cf6' : '2px solid transparent',
+                  }}
+                >
+                  <Upload size={14} /> Import
+                </button>
+                <button
+                  onClick={() => store.setMode('generate')}
+                  style={{
+                    flex: 1, padding: '10px', border: 'none', fontSize: '13px', fontWeight: 600,
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                    backgroundColor: store.mode === 'generate' ? 'rgba(139, 92, 246, 0.15)' : 'transparent',
+                    color: store.mode === 'generate' ? '#a78bfa' : '#71717a',
+                    borderBottom: store.mode === 'generate' ? '2px solid #8b5cf6' : '2px solid transparent',
+                  }}
+                >
+                  <Wand2 size={14} /> Generate
+                </button>
+              </div>
+
+              {store.mode === 'import' ? (
+                <DropZone
+                  onFile={store.uploadAndAnalyze}
+                  disabled={store.appState !== 'idle'}
+                />
+              ) : (
+                <GeneratePanel />
+              )}
+            </>
           ) : (
             <>
               {/* Image display */}
@@ -125,7 +215,7 @@ export const Workbench: React.FC = () => {
             <GradeCard analysis={store.currentAnalysis} />
           )}
 
-          {/* Model picker */}
+          {/* Model picker + prompt editor + action bar */}
           {store.currentAnalysis && store.currentAnalysis.verdict !== 'LOCK_IT_IN' && (
             <>
               <ModelPicker
@@ -135,7 +225,6 @@ export const Workbench: React.FC = () => {
                 onSelect={store.selectModel}
               />
 
-              {/* Prompt editor */}
               <PromptEditor
                 prompt={store.expertPrompt}
                 loading={store.promptLoading}
@@ -145,7 +234,6 @@ export const Workbench: React.FC = () => {
                 modelName={selectedModel?.name}
               />
 
-              {/* Action bar */}
               <ActionBar
                 strategy={store.strategy}
                 onStrategyChange={store.setStrategy}
@@ -169,7 +257,7 @@ export const Workbench: React.FC = () => {
               <div style={{ fontSize: '24px', marginBottom: '8px' }}>🎬</div>
               <div style={{ fontSize: '16px', fontWeight: 700, color: '#10b981' }}>Production Ready</div>
               <div style={{ fontSize: '13px', color: '#a1a1aa', marginTop: '4px' }}>
-                This image is ready. You can still upscale it with Topaz for maximum resolution.
+                This image is approved. You can still upscale with Topaz for maximum resolution.
               </div>
               <div style={{ marginTop: '16px', display: 'flex', gap: '8px', justifyContent: 'center' }}>
                 <button
@@ -209,11 +297,11 @@ export const Workbench: React.FC = () => {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {[
-                  { num: '1', text: 'Upload an image — AI-generated, photo, concept art, anything' },
-                  { num: '2', text: "Get instant analysis — does it match your style? Does it look real?" },
-                  { num: '3', text: 'AI recommends the best model and generates an expert prompt' },
-                  { num: '4', text: 'Edit or regenerate right here — no switching platforms' },
-                  { num: '5', text: 'Upscale with Topaz when you\'re happy' },
+                  { num: '1', text: 'Import an image or describe a shot to generate one' },
+                  { num: '2', text: 'AI audits it for style match and realism' },
+                  { num: '3', text: 'CD recommends improvements — you pick the model' },
+                  { num: '4', text: 'Specialist writes an expert prompt, you approve and execute' },
+                  { num: '5', text: 'Iterate until you\'re happy — you\'re in control' },
                 ].map(step => (
                   <div key={step.num} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                     <div style={{
