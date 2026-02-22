@@ -26,6 +26,9 @@ import createGenerationRoutes from './routes/generations.js';
 import createAgentRoutes from './routes/agents.js';
 import createAssetRoutes from './routes/assets.js';
 import createCostRoutes from './routes/costs.js';
+import analyzeRouter from './routes/analyze.js';
+import generateRouter from './routes/generate.js';
+import upscaleRouter from './routes/upscale.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -141,6 +144,11 @@ app.use(createGenerationRoutes({ db, sanitize, analyzeEntityImage, loadKBForMode
 app.use(createAgentRoutes());
 app.use(createAssetRoutes());
 app.use(createCostRoutes());
+
+// V2 unified routes
+app.use(analyzeRouter);
+app.use(generateRouter);
+app.use(upscaleRouter);
 
 // Only listen when run directly (not imported for testing)
 if (process.env.NODE_ENV !== 'test') {
