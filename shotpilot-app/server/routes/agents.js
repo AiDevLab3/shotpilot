@@ -1,5 +1,5 @@
 import express from 'express';
-import { generateShot, generateScene, auditGeneratedImage, screenReferenceImage } from '../services/agents/orchestrator.js';
+import { generateShot, generateScene, auditGeneratedImage, screenReferenceImage, improveImage, generateAndIterate } from '../services/agents/orchestrator.js';
 import { getModelRegistry } from '../services/agents/creativeDirector.js';
 import { listStyleProfiles } from '../services/agents/styleProfile.js';
 import { loadProject, listProjects } from '../services/agents/projectContext.js';
@@ -181,6 +181,55 @@ export default function createAgentRoutes() {
       res.json(result);
     } catch (err) {
       console.error('[agents/generate-scene] Error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  /**
+   * POST /api/agents/improve-image
+   * Body: { image (base64), shot_context, project_id?, max_iterations? }
+   * One-button "make this better"
+   */
+  router.post('/api/agents/improve-image', async (req, res) => {
+    try {
+      const { image, shot_context, project_id, max_iterations } = req.body;
+      if (!image) {
+        return res.status(400).json({ error: 'image (base64) is required' });
+      }
+      const result = await improveImage({
+        imageBase64: image,
+        shotContext: shot_context || '',
+        projectId: project_id,
+        maxIterations: max_iterations || 3,
+      });
+      res.json(result);
+    } catch (err) {
+      console.error('[agents/improve-image] Error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  /**
+   * POST /api/agents/generate-and-iterate
+   * Body: { description, model_preference?, project_id?, scene_id?, max_iterations? }
+   * Full pipeline: generate + QG loop
+   */
+  router.post('/api/agents/generate-and-iterate', async (req, res) => {
+    try {
+      const { description, model_preference, project_id, scene_id, max_iterations } = req.body;
+      if (!description && !scene_id) {
+        return res.status(400).json({ error: 'description or scene_id is required' });
+      }
+      const result = await generateAndIterate({
+        description,
+        modelPreference: model_preference,
+        projectId: project_id,
+        sceneId: scene_id,
+        maxIterations: max_iterations || 3,
+      });
+      res.json(result);
+    } catch (err) {
+      console.error('[agents/generate-and-iterate] Error:', err);
       res.status(500).json({ error: err.message });
     }
   });
