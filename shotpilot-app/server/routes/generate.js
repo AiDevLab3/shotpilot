@@ -49,23 +49,21 @@ async function submitToFal(endpoint, body) {
     const err = await submitRes.text();
     throw new Error(`fal.ai submit failed (${endpoint}): ${submitRes.status} ${err}`);
   }
-  const { request_id } = await submitRes.json();
+  const submitData = await submitRes.json();
+  const { request_id } = submitData;
+  // Use the status_url and response_url from the API response (more reliable than constructing our own)
+  const statusUrl = submitData.status_url || `https://queue.fal.run/${endpoint}/requests/${request_id}/status`;
+  const responseUrl = submitData.response_url || `https://queue.fal.run/${endpoint}/requests/${request_id}`;
 
   // Poll (max 3 min)
   const start = Date.now();
   while (Date.now() - start < 180000) {
     await new Promise(r => setTimeout(r, 3000));
-    const statusRes = await fetch(
-      `https://queue.fal.run/${endpoint}/requests/${request_id}/status`,
-      { headers: { 'Authorization': `Key ${key}` } }
-    );
+    const statusRes = await fetch(statusUrl, { headers: { 'Authorization': `Key ${key}` } });
     let status;
     try { status = await statusRes.json(); } catch { continue; }
     if (status.status === 'COMPLETED') {
-      const resultRes = await fetch(
-        `https://queue.fal.run/${endpoint}/requests/${request_id}`,
-        { headers: { 'Authorization': `Key ${key}` } }
-      );
+      const resultRes = await fetch(responseUrl, { headers: { 'Authorization': `Key ${key}` } });
       return await resultRes.json();
     }
     if (status.status === 'FAILED') throw new Error(`Generation failed: ${JSON.stringify(status)}`);

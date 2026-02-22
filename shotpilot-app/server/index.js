@@ -31,6 +31,7 @@ import generateRouter from './routes/generate.js';
 import upscaleRouter from './routes/upscale.js';
 import v2modelsRouter from './routes/v2models.js';
 import v2promptRouter from './routes/v2prompt.js';
+import v2videoRouter from './routes/v2video.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -153,6 +154,7 @@ app.use(generateRouter);
 app.use(upscaleRouter);
 app.use(v2modelsRouter);
 app.use(v2promptRouter);
+app.use(v2videoRouter);
 
 // Only listen when run directly (not imported for testing)
 if (process.env.NODE_ENV !== 'test') {
