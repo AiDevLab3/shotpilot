@@ -79,6 +79,7 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '25mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use(express.static(path.join(__dirname, '../dist')));
 
 // --- HEALTH CHECK ---
 app.get('/api/health/gemini', async (req, res) => {
@@ -161,6 +162,12 @@ app.use(v2videoRouter);
 app.use(v2charactersRouter);
 app.use(v2projectRouter);
 app.use('/api/v2/rag', ragRouter);
+
+// SPA catch-all: serve index.html for non-API routes
+app.use((req, res, next) => {
+    if (req.method !== 'GET' || req.path.startsWith('/api') || req.path.startsWith('/uploads')) return next();
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
+});
 
 // Only listen when run directly (not imported for testing)
 if (process.env.NODE_ENV !== 'test') {

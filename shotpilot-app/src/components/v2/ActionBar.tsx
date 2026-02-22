@@ -6,16 +6,20 @@ interface ActionBarProps {
   strategy: 'edit' | 'regenerate';
   onStrategyChange: (s: 'edit' | 'regenerate') => void;
   onGenerate: () => void;
+  onExecuteStep?: (modelId: string, instruction?: string) => void;
   onUpscale: () => void;
   appState: AppState;
   canGenerate: boolean;
   canUpscale: boolean;
   hasActiveModel: boolean;
+  selectedModelId?: string | null;
+  expertPrompt?: string;
 }
 
 export const ActionBar: React.FC<ActionBarProps> = ({
-  strategy, onStrategyChange, onGenerate, onUpscale,
+  strategy, onStrategyChange, onGenerate, onExecuteStep, onUpscale,
   appState, canGenerate, canUpscale, hasActiveModel,
+  selectedModelId, expertPrompt,
 }) => {
   const isWorking = appState === 'generating' || appState === 'upscaling' || appState === 'analyzing';
 
@@ -72,7 +76,15 @@ export const ActionBar: React.FC<ActionBarProps> = ({
 
       {/* Main generate button */}
       <button
-        onClick={onGenerate}
+        onClick={() => {
+          if (onExecuteStep && selectedModelId && expertPrompt) {
+            // Use new user-in-the-loop executeStep function
+            onExecuteStep(selectedModelId, expertPrompt);
+          } else {
+            // Fall back to legacy generate function
+            onGenerate();
+          }
+        }}
         disabled={!canGenerate || isWorking || !hasActiveModel}
         style={{
           padding: '10px 28px', borderRadius: '8px', border: 'none',
@@ -86,7 +98,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
         {appState === 'generating' ? (
           <><Loader2 size={16} className="animate-spin" /> Generating...</>
         ) : (
-          <>{strategy === 'edit' ? <Pencil size={16} /> : <RefreshCw size={16} />} {strategy === 'edit' ? 'Fix It' : 'Regenerate'}</>
+          <>{strategy === 'edit' ? <Pencil size={16} /> : <RefreshCw size={16} />} {strategy === 'edit' ? 'Execute Step' : 'Regenerate'}</>
         )}
       </button>
     </div>

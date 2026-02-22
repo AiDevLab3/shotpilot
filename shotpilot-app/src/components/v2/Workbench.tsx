@@ -238,11 +238,14 @@ export const Workbench: React.FC = () => {
                 strategy={store.strategy}
                 onStrategyChange={store.setStrategy}
                 onGenerate={store.generate}
+                onExecuteStep={store.executeStep}
                 onUpscale={store.upscale}
                 appState={store.appState}
                 canGenerate={canGenerate}
                 canUpscale={canUpscale}
                 hasActiveModel={hasActiveModel}
+                selectedModelId={store.selectedModelId}
+                expertPrompt={store.expertPrompt}
               />
             </>
           )}

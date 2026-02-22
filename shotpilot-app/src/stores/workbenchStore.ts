@@ -6,7 +6,6 @@ import type {
   IterationEntry, 
   ModelInfo, 
   GenerateWithAuditResult,
-  AnalyzeResult,
   ExecuteResult 
 } from '../types/v2';
 import * as api from '../services/v2Api';
@@ -44,7 +43,7 @@ interface WorkbenchState {
   loadModels: () => Promise<void>;
   setMode: (mode: 'import' | 'generate') => void;
   setShotDescription: (desc: string) => void;
-  uploadAndAnalyze: (file: File) => Promise<void>;
+  uploadAndAnalyze: (file: File, shotContext?: string, sourceModel?: string, sourcePrompt?: string) => Promise<void>;
   generateFromDescription: () => Promise<void>;
   reAnalyze: (imageUrl: string) => Promise<void>;
   selectModel: (modelId: string) => void;
@@ -86,21 +85,38 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   setMode: (mode) => set({ mode }),
   setShotDescription: (desc) => set({ shotDescription: desc }),
 
-  uploadAndAnalyze: async (file: File) => {
+  uploadAndAnalyze: async (file: File, shotContext?: string, _sourceModel?: string, _sourcePrompt?: string) => {
     const id = `iter_${Date.now()}`;
     const localUrl = URL.createObjectURL(file);
+    
+    // Convert file to base64 for storage
+    const base64 = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.readAsDataURL(file);
+    });
+    const imageBase64 = base64.split(',')[1]; // Remove data URL prefix
     
     set({
       appState: 'analyzing',
       error: null,
       currentImageFile: file,
       currentImageUrl: localUrl,
+      currentImageBase64: imageBase64,
       currentAnalysis: null,
       expertPrompt: '',
     });
 
     try {
-      const analysis = await api.analyzeImage(file);
+      // Try new agent API first (returns legacy AnalysisResult format)
+      let analysis: AnalysisResult;
+      try {
+        analysis = await api.analyzeImage(file, shotContext);
+      } catch (agentError) {
+        // Fall back to legacy API
+        console.warn('Agent API failed, falling back to legacy:', agentError);
+        analysis = await api.analyzeImageLegacy(file);
+      }
       
       const entry: IterationEntry = {
         id,
@@ -220,6 +236,89 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       set({ expertPrompt: result.prompt, promptLoading: false });
     } catch (e: any) {
       set({ promptLoading: false, error: e.message });
+    }
+  },
+
+  executeStep: async (modelId: string, instruction?: string) => {
+    const { currentImageUrl, currentImageBase64 } = get();
+    if (!currentImageUrl) return;
+
+    set({ appState: 'generating', error: null });
+
+    try {
+      // Convert image URL to base64 if we don't already have it
+      let imageBase64 = currentImageBase64;
+      if (!imageBase64) {
+        // If it's a blob URL, we need to fetch it
+        if (currentImageUrl.startsWith('blob:')) {
+          const response = await fetch(currentImageUrl);
+          const blob = await response.blob();
+          const base64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+          imageBase64 = base64.split(',')[1]; // Remove data URL prefix
+        } else if (currentImageUrl.startsWith('data:')) {
+          imageBase64 = currentImageUrl.split(',')[1]; // Remove data URL prefix
+        } else {
+          throw new Error('Cannot convert image to base64 for processing');
+        }
+      }
+
+      const result: ExecuteResult = await api.executeImprovement({
+        imageBase64,
+        modelId,
+        instruction,
+      });
+
+      // Convert result image to display URL
+      const resultImageUrl = `data:image/jpeg;base64,${result.result_image}`;
+
+      // Create analysis from audit result
+      let analysis: AnalysisResult | null = null;
+      if (result.audit) {
+        const score = Math.round((result.audit.overall_score || 5) * 10);
+        const verdictMap: Record<string, 'LOCK_IT_IN' | 'REFINE' | 'REGENERATE'> = {
+          'approve': 'LOCK_IT_IN', 'iterate': 'REFINE', 'reject': 'REGENERATE',
+        };
+        analysis = {
+          verdict: verdictMap[result.audit.recommendation] || 'REFINE',
+          score,
+          diagnosis: result.audit.iteration_guidance || 'Step executed successfully.',
+          issues: [],
+          fixes: [],
+          recommendation: {
+            modelId: result.recommendation?.cd_recommendation?.suggested_model || modelId,
+            modelName: result.model_used,
+            strategy: 'edit',
+            reasoning: result.recommendation?.cd_recommendation?.reasoning || 'Continue iterating',
+            alternatives: result.recommendation?.cd_recommendation?.alternative_models || [],
+          },
+          styleMatch: result.audit.style_match?.score || 5,
+          realism: result.audit.realism?.score || 5,
+        };
+      }
+
+      const entry: IterationEntry = {
+        id: `iter_${Date.now()}`,
+        imageUrl: resultImageUrl,
+        analysis: analysis || undefined,
+        timestamp: Date.now(),
+      };
+
+      set(state => ({
+        appState: 'idle',
+        currentImageUrl: resultImageUrl,
+        currentImageBase64: result.result_image,
+        currentAnalysis: analysis,
+        selectedModelId: result.recommendation?.cd_recommendation?.suggested_model || modelId,
+        strategy: 'edit',
+        expertPrompt: '', // Clear prompt after execution
+        iterations: [...state.iterations, entry],
+      }));
+    } catch (e: any) {
+      set({ appState: 'error', error: e.message || 'Step execution failed' });
     }
   },
 

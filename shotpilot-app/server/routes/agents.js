@@ -1,9 +1,20 @@
 import express from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { generateShot, generateScene, auditGeneratedImage, screenReferenceImage, improveImage, generateAndIterate, analyzeAndRecommend, executeImprovement, generateWithAudit, importImage } from '../services/agents/orchestrator.js';
 import { getModelRegistry } from '../services/agents/creativeDirector.js';
 import { listStyleProfiles } from '../services/agents/styleProfile.js';
 import { loadProject, listProjects } from '../services/agents/projectContext.js';
 import { checkContinuity, buildCharacterBible } from '../services/agents/continuityTracker.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const upload = multer({
+  dest: path.join(__dirname, '../../uploads/images'),
+  limits: { fileSize: 25 * 1024 * 1024 },
+});
 
 export default function createAgentRoutes() {
   const router = express.Router();
@@ -13,13 +24,39 @@ export default function createAgentRoutes() {
    */
   router.get('/api/agents/models', (req, res) => {
     const registry = getModelRegistry();
+    
+    // Infer model type from characteristics
+    const inferType = (m) => {
+      if (m.name.toLowerCase().includes('topaz')) return 'utility';
+      if (m.strengths?.some(s => s.toLowerCase().includes('video'))) return 'video';
+      return 'image';
+    };
+    
+    // Infer capabilities from strengths
+    const inferCapabilities = (m) => {
+      const caps = [];
+      if (m.hasAPI) caps.push('generate');
+      if (m.strengths?.some(s => /edit|inpaint|surgical/.test(s.toLowerCase()))) caps.push('edit');
+      if (m.strengths?.some(s => /reference|consistency|img2img/.test(s.toLowerCase()))) caps.push('img2img');
+      if (m.strengths?.some(s => /upscal/.test(s.toLowerCase()))) caps.push('upscale');
+      if (m.strengths?.some(s => /text render|typography/.test(s.toLowerCase()))) caps.push('text');
+      if (m.strengths?.some(s => /character|face|identity/.test(s.toLowerCase()))) caps.push('character-consistency');
+      if (m.strengths?.some(s => /style.?transfer|remix/.test(s.toLowerCase()))) caps.push('style-transfer');
+      return caps;
+    };
+    
     const models = Object.entries(registry).map(([id, m]) => ({
       id,
       name: m.name,
       description: m.description,
-      strengths: m.strengths,
-      weaknesses: m.weaknesses,
+      strengths: m.strengths || [],
+      weaknesses: m.weaknesses || [],
       hasAPI: m.hasAPI,
+      active: m.hasAPI,
+      type: inferType(m),
+      provider: id.includes('gpt') ? 'openai' : id.includes('midjourney') ? 'external' : 'fal',
+      capabilities: inferCapabilities(m),
+      hasEdit: m.strengths?.some(s => /edit|surgical/.test(s.toLowerCase())) || false,
     }));
     res.json({ models, profiles: listStyleProfiles() });
   });
@@ -243,13 +280,27 @@ export default function createAgentRoutes() {
    * Body: { image (base64), shot_context, project_id? }
    * Returns audit + recommendations (no execution)
    */
-  router.post('/api/agents/analyze', async (req, res) => {
+  router.post('/api/agents/analyze', upload.single('image'), async (req, res) => {
     try {
-      const { image, shot_context, project_id } = req.body;
-      if (!image) {
-        return res.status(400).json({ error: 'image (base64) is required' });
+      let imageBase64;
+      
+      if (req.file) {
+        // File upload via FormData
+        const buffer = fs.readFileSync(req.file.path);
+        imageBase64 = buffer.toString('base64');
+        // Clean up temp file
+        try { fs.unlinkSync(req.file.path); } catch {}
+      } else if (req.body?.image) {
+        // Base64 in JSON body
+        imageBase64 = req.body.image.replace(/^data:image\/\w+;base64,/, '');
+      } else {
+        return res.status(400).json({ error: 'image is required (file upload or base64)' });
       }
-      const result = await analyzeAndRecommend(image, shot_context || '', project_id);
+      
+      const shot_context = req.body?.shot_context || '';
+      const project_id = req.body?.project_id;
+      
+      const result = await analyzeAndRecommend(imageBase64, shot_context, project_id);
       res.json(result);
     } catch (err) {
       console.error('[agents/analyze] Error:', err);
