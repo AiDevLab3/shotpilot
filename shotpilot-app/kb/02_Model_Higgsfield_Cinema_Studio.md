@@ -1,8 +1,15 @@
-# Higgsfield Cinema Studio v1.5 - AI Prompt Generation Guide
+# Higgsfield Cinema Studio v2.0 - AI Prompt Generation Guide
 
-> Last Updated: 2026-02-08 | Source: higgsfield_cinema_studio_image_guide.md
+> Last Updated: 2026-02-21 | Source: higgsfield_cinema_studio_image_guide.md
 
-**Model:** Higgsfield Cinema Studio | **Type:** IMAGE generation with virtual camera rig | **Version:** 1.5
+**Model:** Higgsfield Cinema Studio | **Type:** IMAGE generation with virtual camera rig | **Version:** 2.0
+
+## ⚠️ Updates (Feb 2026)
+- **Cinema Studio 2.0** released — "Step inside 3D scenes, control every shot, craft cinematic sequences"
+- **Soul 2.0** — New photo model for creative, fashion-forward visuals with cultural fluency (separate from Cinema Studio)
+- **Vibe Motion** — New tool for turning prompts into motion-designed videos
+- **Kling 3.0 integration** — Now public with reduced wait times
+- **$500K AI Action Video Contest** — Running through Feb 2026
 
 ---
 

@@ -194,13 +194,23 @@ export const Header: React.FC = () => {
                     Scene Manager
                 </NavLink>
                 <NavLink
-                    to={`/projects/${pid}/images`}
+                    to={`/projects/${pid}/assets`}
                     style={({ isActive }) => ({
                         ...styles.navLink,
-                        ...(isActive ? styles.activeNavLink : {})
+                        ...(isActive ? { color: '#8b5cf6', borderBottom: '2px solid #8b5cf6' } : {})
                     })}
                 >
-                    Image Library
+                    📦 Asset Manager
+                </NavLink>
+                {/* Image Library removed — Asset Manager supersedes it */}
+                <NavLink
+                    to={`/projects/${pid}/agents`}
+                    style={({ isActive }) => ({
+                        ...styles.navLink,
+                        ...(isActive ? { color: '#8b5cf6', borderBottom: '2px solid #8b5cf6' } : {})
+                    })}
+                >
+                    ⚡ Agent Studio
                 </NavLink>
             </nav>
         </header>

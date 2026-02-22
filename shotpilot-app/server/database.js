@@ -325,6 +325,65 @@ export const initDatabase = () => {
         console.error("Phase 8b migration failed:", e);
     }
 
+    // Phase 9: Asset Manager — classification, scoring, scene assignment
+    try {
+        const piCols = db.prepare("PRAGMA table_info(project_images)").all();
+        const piColNames = new Set(piCols.map(c => c.name));
+        const assetCols = [
+            { name: 'asset_type', type: "TEXT DEFAULT 'unclassified'" },      // real_ref, ai_generated, style_ref, unclassified
+            { name: 'subject_category', type: 'TEXT' },     // hero, property_manager, vehicle, environment, dome, equipment, other
+            { name: 'scene_id', type: 'TEXT' },             // mapped scene (from agent project context)
+            { name: 'style_score', type: 'REAL' },          // 0-10 score against project style
+            { name: 'realism_score', type: 'REAL' },        // 0-10 photorealism
+            { name: 'pipeline_score', type: 'REAL' },       // 0-10 safe to use as downstream ref
+            { name: 'status', type: "TEXT DEFAULT 'unreviewed'" },  // unreviewed, approved, needs_work, rejected
+            { name: 'analysis_json', type: 'TEXT' },        // full AI analysis stored as JSON
+            { name: 'refinement_notes', type: 'TEXT' },     // expert advice for improving this image
+            { name: 'source_model', type: 'TEXT' },         // model that generated this (if known)
+            { name: 'source_prompt', type: 'TEXT' },        // original prompt (if known or reverse-engineered)
+            { name: 'parent_asset_id', type: 'INTEGER' },   // links to the asset this was refined from
+            { name: 'iteration', type: 'INTEGER DEFAULT 1' }, // iteration number in refinement chain
+            { name: 'refinement_json', type: 'TEXT' },      // refinement plan from AI (ref strategy, prompt, model rec)
+        ];
+        assetCols.forEach(col => {
+            if (!piColNames.has(col.name)) {
+                console.log(`Migrating: Adding ${col.name} to project_images...`);
+                db.exec(`ALTER TABLE project_images ADD COLUMN ${col.name} ${col.type}`);
+            }
+        });
+    } catch (e) {
+        console.error("Phase 9 (Asset Manager) Migration failed:", e);
+    }
+
+    // Phase 10: Cost Tracking System
+    try {
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS api_cost_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT DEFAULT (datetime('now')),
+                provider TEXT NOT NULL,
+                model TEXT NOT NULL,
+                action TEXT NOT NULL,
+                project_id INTEGER,
+                asset_id INTEGER,
+                input_tokens INTEGER,
+                output_tokens INTEGER,
+                image_count INTEGER,
+                duration_ms INTEGER,
+                estimated_cost_usd REAL,
+                request_meta TEXT,
+                response_meta TEXT,
+                error TEXT
+            )
+        `);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_cost_log_timestamp ON api_cost_log(timestamp)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_cost_log_project ON api_cost_log(project_id)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_cost_log_action ON api_cost_log(action)`);
+        console.log('Phase 10: Cost tracking table created');
+    } catch (e) {
+        console.error("Phase 10 (Cost Tracking) Migration failed:", e);
+    }
+
     // Create default test user if not exists
     try {
         const testUser = db.prepare('SELECT * FROM users WHERE email = ?').get('test@shotpilot.com');

@@ -1,4 +1,5 @@
 # Core Realism Principles
+> Last Updated: 2026-02-21
 
 ## REALISM_LOCK_BLOCK (Inject Into Every Realism Prompt)
 
@@ -249,3 +250,48 @@ Optics + lighting motivation + filmic tonality + entropy + negative pack from th
 Translate Blocks 1-3 into the target model's specific syntax and constraints. Each model has different prompt structures — this block adapts the universal content into model-native language.
 
 **Why this matters:** Without Block 4, prompts look identical across models and miss model-specific optimizations. Without Block 2, every shot loses project cohesion. Without Block 3, realism drifts.
+
+---
+
+## Film Stock Presets (Added 2026-02-21)
+
+Specifying a real film stock dramatically improves realism over generic terms. Use ONE per generation:
+
+| Film Stock | Character | Best For |
+|---|---|---|
+| **Kodak Portra 400** | Warm skin tones, gentle contrast, fine grain | Portraits, dialogue scenes, golden hour |
+| **Kodak Ektar 100** | Vivid saturated colors, ultra-fine grain | Environments, daylight exteriors, product |
+| **Kodak Vision3 500T** | Tungsten-balanced, cinematic warmth, visible grain | Night interiors, cinematic scenes, neon |
+| **Kodak Vision3 250D** | Daylight-balanced, rich color, medium grain | Daylight exteriors, natural scenes |
+| **Fuji Pro 400H** | Cool pastels, soft highlights, muted tones | Fashion, editorial, dreamy aesthetics |
+| **Ilford HP5+** | High contrast B&W, visible grain | Noir, dramatic B&W, documentary |
+| **Kodak Tri-X 400** | Classic B&W, rich midtones, grain character | Street photography, gritty B&W |
+
+**Usage:** Add to prompt: `"shot on Kodak Portra 400 film stock"` — models trained on photography data recognize these.
+
+---
+
+## Advanced Texture Keywords (Added 2026-02-21)
+
+Push realism further with specific micro-texture descriptors:
+
+**Skin:** `visible pores, fine peach fuzz, natural skin irregularities, subtle redness at nose/cheeks, visible capillaries`
+**Hair:** `natural flyaways, slight frizz, individual strands catching light, not perfectly styled`
+**Fabric:** `natural wrinkles, slight pilling, thread texture visible, seam details`
+**Surfaces:** `micro-scratches, fingerprints on glass, dust motes, patina, natural wear`
+**Environment:** `chipped paint, hairline cracks in concrete, water stains, natural aging`
+
+**Anti-AI markers:** `imperfect symmetry, slight facial asymmetry, one eye slightly different, uneven lighting, not studio-perfect, candid moment`
+
+---
+
+## Model-Specific Realism Settings (Added 2026-02-21)
+
+| Model | Key Realism Settings |
+|---|---|
+| **FLUX.2 [flex]** | Guidance 3.5-5.0 (lower = more natural), Steps 30-40 |
+| **FLUX.2 [max]** | Natural language, describe photographically, no negative prompts |
+| **Midjourney V7** | `--style raw --s 50-100` (low stylize = less AI aesthetic) |
+| **GPT Image 1.5** | Photography language, specific film stock + lens, avoid quality buzzwords |
+| **Higgsfield CS 2.0** | ARRI Alexa 35 + Cooke S4 + f/2.8-4.0 = most realistic combination |
+| **Nano Banana Pro** | Be descriptive, specify textures and materials, use reference images |

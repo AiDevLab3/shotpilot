@@ -1,6 +1,7 @@
 import fetch from 'node-fetch';
 import fs from 'fs';
 import path from 'path';
+import { logApiCall } from '../costTracker.js';
 
 // Gemini API — use gemini-3-flash-preview (latest with thinking support)
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3-flash-preview';
@@ -120,7 +121,7 @@ function buildImageParts(characters, objects) {
  * Core Gemini API call with thinking support and retry logic.
  * Retries up to 3 times with exponential backoff on transient errors (429, 503, network).
  */
-async function callGemini({ parts, systemInstruction, thinkingLevel = 'high', responseMimeType, temperature, maxOutputTokens = 4096 }) {
+async function callGemini({ parts, systemInstruction, thinkingLevel = 'high', responseMimeType, temperature, maxOutputTokens = 4096, meta }) {
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     if (!GEMINI_API_KEY) {
         throw new Error('GEMINI_API_KEY not configured');
@@ -161,6 +162,7 @@ async function callGemini({ parts, systemInstruction, thinkingLevel = 'high', re
     const TIMEOUT_MS = 120000; // 2 minute timeout per attempt
 
     let lastError;
+    const startTime = Date.now();
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         try {
@@ -205,6 +207,34 @@ async function callGemini({ parts, systemInstruction, thinkingLevel = 'high', re
             // Strip markdown code fences that Gemini sometimes wraps around JSON responses
             text = text.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
 
+            // Log API cost asynchronously
+            const durationMs = Date.now() - startTime;
+            const usage = data.usageMetadata;
+            if (usage) {
+                // Fire and forget cost logging - don't let it break the main flow
+                setImmediate(() => {
+                    try {
+                        logApiCall({
+                            provider: 'gemini',
+                            model: GEMINI_MODEL,
+                            action: meta?.action || 'unknown',
+                            projectId: meta?.projectId,
+                            assetId: meta?.assetId,
+                            inputTokens: usage.promptTokenCount || 0,
+                            outputTokens: usage.candidatesTokenCount || 0,
+                            imageCount: 0,
+                            durationMs,
+                            requestMeta: { thinkingLevel, temperature, maxOutputTokens },
+                            responseMeta: { usageMetadata: usage },
+                            error: null
+                        });
+                    } catch (err) {
+                        // Silently fail cost logging to not break the main request
+                        console.warn('[costs] Failed to log Gemini call:', err.message);
+                    }
+                });
+            }
+
             return text;
         } catch (err) {
             lastError = err;
@@ -220,6 +250,29 @@ async function callGemini({ parts, systemInstruction, thinkingLevel = 'high', re
             throw err;
         }
     }
+
+    // Log failed request
+    const durationMs = Date.now() - startTime;
+    setImmediate(() => {
+        try {
+            logApiCall({
+                provider: 'gemini',
+                model: GEMINI_MODEL,
+                action: meta?.action || 'unknown',
+                projectId: meta?.projectId,
+                assetId: meta?.assetId,
+                inputTokens: 0,
+                outputTokens: 0,
+                imageCount: 0,
+                durationMs,
+                requestMeta: { thinkingLevel, temperature, maxOutputTokens },
+                responseMeta: null,
+                error: lastError?.message || 'Unknown error'
+            });
+        } catch (err) {
+            // Silently fail cost logging
+        }
+    });
 
     throw lastError;
 }

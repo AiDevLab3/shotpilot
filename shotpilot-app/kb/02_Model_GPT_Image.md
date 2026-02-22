@@ -1,8 +1,14 @@
 # GPT Image 1.5 - AI Prompt Generation Guide
 
-> Last Updated: 2026-02-08 | Source: gpt_image_1.5_prompting_mastery_guide.md
+> Last Updated: 2026-02-21 | Source: gpt_image_1.5_prompting_mastery_guide.md
 
 **Model:** gpt-image-1.5 | **Type:** IMAGE generation (NOT video) | **Developer:** OpenAI
+
+## ⚠️ Important Updates (Feb 2026)
+- **DALL·E 2 and DALL·E 3 are DEPRECATED** — support ends **May 12, 2026**. Migrate to GPT Image models.
+- **gpt-image-1-mini** available as cost-effective option (lower quality, cheaper tokens)
+- **Responses API** now supports `action` parameter: `auto` (recommended), `generate` (new image), `edit` (modify existing). Multi-turn image editing with context preservation.
+- Can be called as a tool within **GPT-5** via Responses API for conversational image workflows.
 
 ---
 

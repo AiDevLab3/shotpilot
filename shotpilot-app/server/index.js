@@ -24,6 +24,8 @@ import createImageRoutes from './routes/images.js';
 import createConversationRoutes from './routes/conversations.js';
 import createGenerationRoutes from './routes/generations.js';
 import createAgentRoutes from './routes/agents.js';
+import createAssetRoutes from './routes/assets.js';
+import createCostRoutes from './routes/costs.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -62,7 +64,10 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use(cors());
+app.use(cors({
+    origin: true,
+    credentials: true,
+}));
 app.use(express.json({ limit: '25mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
@@ -134,11 +139,17 @@ app.use(createImageRoutes({
 app.use(createConversationRoutes({ db, requireAuth }));
 app.use(createGenerationRoutes({ db, sanitize, analyzeEntityImage, loadKBForModel, readKBFile }));
 app.use(createAgentRoutes());
+app.use(createAssetRoutes());
+app.use(createCostRoutes());
 
 // Only listen when run directly (not imported for testing)
 if (process.env.NODE_ENV !== 'test') {
-    const server = app.listen(PORT, () => {
-        console.log(`Server running on http://localhost:${PORT}`);
+    const BIND_HOST = process.env.BIND_HOST || '0.0.0.0';
+    const server = app.listen(PORT, BIND_HOST, () => {
+        console.log(`Server running on http://${BIND_HOST}:${PORT}`);
+        if (BIND_HOST === '0.0.0.0') {
+            console.log(`  Tailscale: http://100.105.103.35:${PORT}`);
+        }
     });
 
     server.on('error', (err) => {

@@ -9,8 +9,9 @@ function setupAuth(app) {
         resave: false,
         saveUninitialized: false,
         cookie: {
-            secure: process.env.NODE_ENV === 'production',
+            secure: false,
             httpOnly: true,
+            sameSite: 'lax',
             maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
         }
     }));
