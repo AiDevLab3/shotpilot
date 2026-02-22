@@ -32,6 +32,8 @@ import upscaleRouter from './routes/upscale.js';
 import v2modelsRouter from './routes/v2models.js';
 import v2promptRouter from './routes/v2prompt.js';
 import v2videoRouter from './routes/v2video.js';
+import v2charactersRouter from './routes/v2characters.js';
+import v2projectRouter from './routes/v2project.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -155,6 +157,8 @@ app.use(upscaleRouter);
 app.use(v2modelsRouter);
 app.use(v2promptRouter);
 app.use(v2videoRouter);
+app.use(v2charactersRouter);
+app.use(v2projectRouter);
 
 // Only listen when run directly (not imported for testing)
 if (process.env.NODE_ENV !== 'test') {

@@ -46,23 +46,21 @@ async function submitToFal(endpoint, body) {
     const err = await submitRes.text();
     throw new Error(`fal.ai submit failed (${endpoint}): ${submitRes.status} ${err}`);
   }
-  const { request_id } = await submitRes.json();
+  const submitData = await submitRes.json();
+  const { request_id } = submitData;
+  // Use status_url/response_url from API response (more reliable for nested-path endpoints)
+  const statusUrl = submitData.status_url || `https://queue.fal.run/${endpoint}/requests/${request_id}/status`;
+  const responseUrl = submitData.response_url || `https://queue.fal.run/${endpoint}/requests/${request_id}`;
 
   // Poll (max 5 min for video)
   const start = Date.now();
   while (Date.now() - start < 300000) {
     await new Promise(r => setTimeout(r, 5000));
-    const statusRes = await fetch(
-      `https://queue.fal.run/${endpoint}/requests/${request_id}/status`,
-      { headers: { 'Authorization': `Key ${key}` } }
-    );
+    const statusRes = await fetch(statusUrl, { headers: { 'Authorization': `Key ${key}` } });
     let status;
     try { status = await statusRes.json(); } catch { continue; }
     if (status.status === 'COMPLETED') {
-      const resultRes = await fetch(
-        `https://queue.fal.run/${endpoint}/requests/${request_id}`,
-        { headers: { 'Authorization': `Key ${key}` } }
-      );
+      const resultRes = await fetch(responseUrl, { headers: { 'Authorization': `Key ${key}` } });
       return await resultRes.json();
     }
     if (status.status === 'FAILED') throw new Error(`Video generation failed: ${JSON.stringify(status)}`);
