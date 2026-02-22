@@ -7,8 +7,14 @@ export interface ModelInfo {
   provider: 'fal' | 'openai' | 'external';
   capabilities: string[];
   strengths: string[];
-  active: boolean; // Can we call it via API?
+  weaknesses?: string[];
+  bestFor?: string[];
+  worstFor?: string[];
+  active: boolean;
   description?: string;
+  hasEdit?: boolean;
+  hasVariants?: boolean;
+  variants?: { id: string; endpoint: string; description: string }[];
 }
 
 export interface AnalysisResult {
