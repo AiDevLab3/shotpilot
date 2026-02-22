@@ -145,7 +145,7 @@ const MODELS = {
 
   qwen_image_max: {
     id: 'qwen_image_max', name: 'Qwen Image Max', type: 'image', provider: 'fal',
-    endpoint: 'fal-ai/qwen-image',
+    endpoint: 'fal-ai/qwen-image-max/text-to-image',
     editEndpoint: null,
     capabilities: ['generate'],
     strengths: ['stylized', 'characters', 'high resolution', 'strong text rendering', 'versatile styles'],
@@ -194,7 +194,7 @@ const MODELS = {
     weaknesses: ['less refined than top-tier models'],
     bestFor: ['rapid prototyping', 'quick iterations', 'draft generation'],
     worstFor: ['final production shots', 'extreme detail work'],
-    kbPath: 'models/z_image', active: true,
+    kbPath: 'models/z_image', active: false, // fal-ai/z-image endpoint does not exist on fal.ai
     defaultParams: { num_images: 1, image_size: 'landscape_16_9', output_format: 'jpeg' },
     variants: {
       turbo: { endpoint: 'fal-ai/z-image/turbo', description: 'Ultra-fast generation' },
