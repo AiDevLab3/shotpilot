@@ -71,9 +71,9 @@ export const SuggestionOverlay: React.FC<SuggestionOverlayProps> = ({
   };
 
   const getConfidenceLabel = (confidence: number) => {
-    if (confidence >= 80) return 'Strong match';
-    if (confidence >= 60) return 'Good match';
-    return 'Possible match';
+    if (confidence >= 80) return 'Strong fit';
+    if (confidence >= 60) return 'Good fit';
+    return 'Possible fit';
   };
 
   return (
@@ -96,7 +96,7 @@ export const SuggestionOverlay: React.FC<SuggestionOverlayProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Zap size={16} color="#a78bfa" />
           <span style={{ color: '#c4b5fd', fontSize: '13px', fontWeight: 600 }}>
-            CD Suggestions ({activeSuggestions.length})
+            Scene Fit Suggestions ({activeSuggestions.length})
           </span>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>

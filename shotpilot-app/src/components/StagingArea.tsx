@@ -149,7 +149,7 @@ export const StagingArea: React.FC<StagingAreaProps> = ({
                 opacity: suggestionsLoading ? 0.7 : 1,
               }}
             >
-              ✨ {suggestionsLoading ? 'Analyzing...' : 'Suggest Placements'}
+              ✨ {suggestionsLoading ? 'Analyzing fit...' : 'Suggest Placements'}
             </button>
           )}
         </div>

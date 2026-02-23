@@ -898,7 +898,7 @@ const ShotBoardPage: React.FC = () => {
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '4px',
-                            }} title="AI Design Shots"><Sparkles size={14} /> Design Shots</button>
+                            }} title="AI plans your shot breakdown based on the script and scene context"><Sparkles size={14} /> Design Shots</button>
                                             <button onClick={(e) => { e.stopPropagation(); handleGapAnalysis(scene.id); }} style={{
                                 padding: '6px 14px',
                                 background: gapAnalysisLoading[scene.id] ? 'rgba(251, 191, 36, 0.25)' : 'rgba(251, 191, 36, 0.1)',
@@ -912,7 +912,7 @@ const ShotBoardPage: React.FC = () => {
                                 alignItems: 'center',
                                 gap: '4px',
                                 opacity: gapAnalysisLoading[scene.id] ? 0.7 : 1,
-                            }} title="Gap Analysis" disabled={gapAnalysisLoading[scene.id]}>📊 {gapAnalysisLoading[scene.id] ? 'Analyzing...' : 'Gap Analysis'}</button>
+                            }} title="What shots am I still missing? Shows empty slots, priority, and cost to fill them." disabled={gapAnalysisLoading[scene.id]}>📊 {gapAnalysisLoading[scene.id] ? 'Analyzing...' : 'What\'s Missing?'}</button>
                                             <button onClick={(e) => { e.stopPropagation(); handleCohesionCheck(scene.id); }} style={{
                                 padding: '6px 14px',
                                 background: cohesionLoading[scene.id] ? 'rgba(16, 185, 129, 0.25)' : 'rgba(16, 185, 129, 0.1)',
@@ -926,7 +926,7 @@ const ShotBoardPage: React.FC = () => {
                                 alignItems: 'center',
                                 gap: '4px',
                                 opacity: cohesionLoading[scene.id] ? 0.7 : 1,
-                            }} title="Cohesion Check" disabled={cohesionLoading[scene.id]}>🔍 {cohesionLoading[scene.id] ? 'Checking...' : 'Cohesion Check'}</button>
+                            }} title="Do my filled shots look good together? Checks lighting, color, and style consistency across the sequence." disabled={cohesionLoading[scene.id]}>🔍 {cohesionLoading[scene.id] ? 'Checking...' : 'Look Consistent?'}</button>
                                             <button onClick={(e) => handleOpenSceneModal(scene, e)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px' }} title="Edit Scene"><Edit2 size={14} /></button>
                                             <button onClick={(e) => { e.stopPropagation(); handleDeleteScene(scene.id); }} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px' }} title="Delete Scene"><Trash2 size={14} /></button>
                                         </div>
