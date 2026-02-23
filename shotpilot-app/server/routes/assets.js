@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { db } from '../database.js';
 import { callGemini } from '../services/ai/shared.js';
 import { generateImage, generateFlux2, generateGptImage, generateNanoBanana, editNanoBanana, upscaleTopaz, applyGenFocus, getRealismLockBlock } from '../services/generation.js';
+import { getModelRegistryContext } from '../services/ragModelContext.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -134,6 +135,9 @@ export default function createAssetRoutes() {
       const asset = db.prepare('SELECT * FROM project_images WHERE id = ?').get(req.params.id);
       if (!asset) return res.status(404).json({ error: 'Asset not found' });
 
+      // Get RAG-powered model context
+      const modelContext = await getModelRegistryContext();
+
       // Load the project for style context
       const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(asset.project_id);
 
@@ -175,7 +179,7 @@ Look at this image and answer three questions. Return a JSON object (no markdown
   
   "improvement_plan": {
     "status": "approved" | "needs_work" | "rejected",
-    "next_steps": "What specific changes would make this image better? Name the tool: which model to regenerate with, what edit to apply, whether to upscale, what prompt changes to make. If it's already good enough, say so. If it's unfixable, say that too. Write this for a filmmaker, not a programmer."
+    "next_steps": "What specific changes would make this image better? Use these available models:\n${modelContext}\nRecommend the specific model by ID and explain why. If multiple steps needed (e.g., edit then upscale), list them in order."
   },
   
   "scene_suggestions": ["scene IDs this could work for"],
@@ -343,6 +347,9 @@ Look at this image and answer three questions. Return a JSON object (no markdown
       const asset = db.prepare('SELECT * FROM project_images WHERE id = ?').get(req.params.id);
       if (!asset) return res.status(404).json({ error: 'Asset not found' });
 
+      // Get RAG-powered model context
+      const modelContext = await getModelRegistryContext();
+
       const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(asset.project_id);
       const imagePath = path.join(__dirname, '../../', asset.image_url);
       if (!fs.existsSync(imagePath)) return res.status(404).json({ error: 'Image file not found' });
@@ -424,8 +431,8 @@ Return a JSON object (no markdown, raw JSON):
     "risk_if_used_as_ref": "What would go wrong if we DID use this as a reference image (even if you recommend not to)",
     "risk_if_not_used_as_ref": "What would we lose if we DON'T use this as a reference (even if you recommend using it)"
   },
-  "recommended_model": "The best model for this specific refinement task. Consider: flux-2 (best photorealism), gpt-image (best instruction following + characters), midjourney (best aesthetic/mood). Explain your pick.",
-  "model_reasoning": "Why this model for this specific image and these specific issues",
+  "recommended_model": "The best model for this specific refinement task. Use these available models:\n${modelContext}\nExplain your pick.",
+  "model_reasoning": "Why this model for this specific image and these specific issues. Reference the model's documented strengths and known failure modes from the knowledge base.",
   "refined_prompt": "The actual prompt to use for generation. This should be model-syntax-aware for the recommended model. Include all necessary style, lighting, composition, and subject details. If using as reference, note what the reference provides vs what the prompt needs to override. ${referenceImages.length > 0 ? `If provided reference images are used, reference them by number and role in the prompt (e.g., 'Using Reference #1 as ${referenceImages[0]?.role} guide, Reference #2 for ${referenceImages[1]?.role}').` : ''} Be specific and complete — this prompt should be copy-paste ready.",
   "prompt_notes": "Brief notes for the creator explaining what changed in the prompt vs the original and why",
   "generation_settings": {
