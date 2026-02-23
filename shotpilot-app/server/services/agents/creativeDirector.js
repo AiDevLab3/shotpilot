@@ -190,4 +190,151 @@ Respond with ONLY valid JSON:
   return JSON.parse(result);
 }
 
-export { directShot, getModelRegistry, MODEL_REGISTRY };
+/**
+ * Suggest placements — CD analyzes staged images against planned shots and suggests matches.
+ * Returns an array of { imageId, shotId, confidence, reasoning }.
+ */
+async function suggestPlacements(shots, stagedImages, sceneContext, projectContext) {
+  if (!shots.length || !stagedImages.length) return [];
+
+  const shotDescriptions = shots.map(s =>
+    `Shot ${s.shot_number} (ID ${s.id}): ${s.shot_type || 'Unknown type'}${s.camera_angle ? ', ' + s.camera_angle : ''}${s.description ? ' — ' + s.description : ''}`
+  ).join('\n');
+
+  const imageDescriptions = stagedImages.map(img => {
+    let desc = `Image ID ${img.id}`;
+    if (img.title) desc += `: ${img.title}`;
+    if (img.analysis_json) {
+      try {
+        const a = JSON.parse(img.analysis_json);
+        if (a.summary) desc += ` — ${a.summary}`;
+        if (a.detected_shot_type) desc += ` [detected: ${a.detected_shot_type}]`;
+        if (a.detected_mood) desc += ` [mood: ${a.detected_mood}]`;
+      } catch {}
+    }
+    if (img.tags) desc += ` [tags: ${img.tags}]`;
+    return desc;
+  }).join('\n');
+
+  const systemPrompt = `You are the Creative Director for a cinematic production pipeline.
+
+You're looking at a scene's planned shots and a set of staged images that haven't been assigned to shots yet.
+Analyze each staged image and determine which planned shot it best matches.
+
+## Scene Context
+${sceneContext || 'No additional scene context.'}
+
+## Planned Shots
+${shotDescriptions}
+
+## Staged Images
+${imageDescriptions}
+
+## Rules
+- Only suggest a match if you're reasonably confident (>50%)
+- An image can only match ONE shot
+- A shot can only receive ONE image suggestion
+- If an image doesn't match any shot well, skip it
+- Confidence is 0-100 (100 = perfect match)
+- Consider shot type, composition, mood, subject matter, camera angle
+
+## Output
+Return ONLY valid JSON array:
+[
+  {
+    "image_id": <number>,
+    "shot_id": <number>,
+    "confidence": <0-100>,
+    "reasoning": "<one sentence why this matches>"
+  }
+]
+
+If no matches are found, return an empty array [].`;
+
+  const result = await callGemini({
+    parts: [{ text: 'Analyze the staged images and suggest placements for the planned shots.' }],
+    systemInstruction: systemPrompt,
+    thinkingLevel: 'medium',
+    responseMimeType: 'application/json',
+    maxOutputTokens: 4096,
+  });
+
+  return JSON.parse(result);
+}
+
+/**
+ * Gap Analysis — CD compares planned shots vs filled shots, identifies what's missing.
+ */
+async function analyzeGaps(shots, shotImages, sceneContext, projectContext) {
+  const shotDetails = shots.map(s => {
+    const images = shotImages[s.id] || [];
+    const hasImage = images.some(v => v.image_url);
+    return `Shot ${s.shot_number} (ID ${s.id}): ${s.shot_type || 'Unknown'}${s.description ? ' — ' + s.description : ''} | ${hasImage ? 'HAS IMAGE ✅' : 'EMPTY ❌'}`;
+  }).join('\n');
+
+  const systemPrompt = `You are the Creative Director for a cinematic production pipeline.
+
+Analyze this scene's shot plan and identify gaps — missing shots, empty slots, and opportunities to strengthen the sequence.
+
+## Scene Context
+${sceneContext || 'No additional scene context.'}
+
+## Current Shot Plan
+${shotDetails}
+
+## Your Analysis Should Include
+1. Which empty shots need images most urgently (story flow)
+2. Are there gaps in the sequence? (e.g., need a bridging shot between 2 and 3)
+3. For each empty/missing shot, recommend which model to use and estimate cost
+4. Overall coverage assessment (what % of the scene is visually complete)
+
+## Cost Estimates (per image)
+- flux-2: ~$0.03
+- gpt-image-1.5: ~$0.05
+- grok-imagine: ~$0.02
+- kling-image-v3: ~$0.04
+- nano-banana-pro: ~$0.04
+- seedream-4.5: ~$0.03
+
+## Output
+Return ONLY valid JSON:
+{
+  "coverage_percent": <number>,
+  "total_shots": <number>,
+  "filled_shots": <number>,
+  "empty_shots": <number>,
+  "gaps": [
+    {
+      "shot_id": <number or null if suggesting a new shot>,
+      "shot_number": "<string>",
+      "description": "<what's needed>",
+      "urgency": "critical" | "important" | "nice-to-have",
+      "recommended_model": "<model-id>",
+      "estimated_cost": "<e.g. $0.03>",
+      "reasoning": "<why this matters for the scene>"
+    }
+  ],
+  "suggested_new_shots": [
+    {
+      "position": "<after shot X>",
+      "shot_type": "<type>",
+      "description": "<what this bridging/establishing shot would be>",
+      "reasoning": "<why the scene needs this>"
+    }
+  ],
+  "total_estimated_cost": "<total to fill all gaps>",
+  "summary": "<1-2 sentence overview>"
+}`;
+
+  const result = await callGemini({
+    parts: [{ text: 'Perform a gap analysis on this scene.' }],
+    systemInstruction: systemPrompt,
+    thinkingLevel: 'medium',
+    responseMimeType: 'application/json',
+    maxOutputTokens: 4096,
+  });
+
+  return JSON.parse(result);
+}
+
+export { directShot, getModelRegistry, MODEL_REGISTRY, suggestPlacements, analyzeGaps };

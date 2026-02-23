@@ -132,3 +132,55 @@ export const checkContinuity = async (params: {
     body: JSON.stringify(params),
   });
 };
+
+// Scene Workshop: CD Suggestions
+export interface PlacementSuggestion {
+  image_id: number;
+  shot_id: number;
+  confidence: number;
+  reasoning: string;
+}
+
+export const suggestPlacements = async (sceneId: number, projectId?: number): Promise<{
+  suggestions: PlacementSuggestion[];
+  staged_count: number;
+  shot_count: number;
+  message?: string;
+}> => {
+  return agentCall('/suggest-placements', {
+    method: 'POST',
+    body: JSON.stringify({ scene_id: sceneId, project_id: projectId }),
+  });
+};
+
+// Scene Workshop: Gap Analysis
+export interface GapAnalysis {
+  coverage_percent: number;
+  total_shots: number;
+  filled_shots: number;
+  empty_shots: number;
+  gaps: Array<{
+    shot_id: number | null;
+    shot_number: string;
+    description: string;
+    urgency: 'critical' | 'important' | 'nice-to-have';
+    recommended_model: string;
+    estimated_cost: string;
+    reasoning: string;
+  }>;
+  suggested_new_shots: Array<{
+    position: string;
+    shot_type: string;
+    description: string;
+    reasoning: string;
+  }>;
+  total_estimated_cost: string;
+  summary: string;
+}
+
+export const getGapAnalysis = async (sceneId: number, projectId?: number): Promise<GapAnalysis> => {
+  return agentCall('/gap-analysis', {
+    method: 'POST',
+    body: JSON.stringify({ scene_id: sceneId, project_id: projectId }),
+  });
+};

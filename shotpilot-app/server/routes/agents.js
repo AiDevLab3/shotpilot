@@ -4,7 +4,8 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { generateShot, generateScene, auditGeneratedImage, screenReferenceImage, improveImage, generateAndIterate, analyzeAndRecommend, executeImprovement, generateWithAudit, importImage } from '../services/agents/orchestrator.js';
-import { getModelRegistry } from '../services/agents/creativeDirector.js';
+import { getModelRegistry, suggestPlacements, analyzeGaps } from '../services/agents/creativeDirector.js';
+import { db } from '../database.js';
 import { listStyleProfiles } from '../services/agents/styleProfile.js';
 import { loadProject, listProjects } from '../services/agents/projectContext.js';
 import { checkContinuity, buildCharacterBible } from '../services/agents/continuityTracker.js';
@@ -452,6 +453,93 @@ export default function createAgentRoutes() {
       res.json({ prompt, notes });
     } catch (err) {
       console.error('[agents/generate-prompt] Error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ========================================
+  // SCENE WORKSHOP: SUGGESTIONS + GAP ANALYSIS
+  // ========================================
+
+  /**
+   * POST /api/agents/suggest-placements
+   * Body: { scene_id, project_id? }
+   * CD analyzes staged images against planned shots, returns placement suggestions
+   */
+  router.post('/api/agents/suggest-placements', async (req, res) => {
+    try {
+      const { scene_id, project_id } = req.body;
+      if (!scene_id) return res.status(400).json({ error: 'scene_id is required' });
+
+      const scene = db.prepare('SELECT * FROM scenes WHERE id = ?').get(scene_id);
+      if (!scene) return res.status(404).json({ error: 'Scene not found' });
+
+      // Get planned shots for this scene
+      const shots = db.prepare('SELECT * FROM shots WHERE scene_id = ? ORDER BY order_index ASC').all(scene_id);
+      if (!shots.length) return res.json({ suggestions: [], message: 'No planned shots to match against' });
+
+      // Get staged images (assigned to scene but not linked to shots)
+      const linkedUrls = db.prepare(`
+        SELECT DISTINCT iv.image_url FROM image_variants iv
+        JOIN shots s ON iv.shot_id = s.id WHERE s.scene_id = ?
+      `).all(scene_id).map(r => r.image_url);
+
+      const allSceneImages = db.prepare('SELECT * FROM project_images WHERE scene_id = ?').all(scene_id);
+      const stagedImages = allSceneImages.filter(img => !linkedUrls.includes(img.image_url));
+
+      if (!stagedImages.length) return res.json({ suggestions: [], message: 'No staged images to place' });
+
+      // Build scene context
+      const sceneContext = [
+        `Scene: ${scene.name}`,
+        scene.description ? `Description: ${scene.description}` : '',
+        scene.location_setting ? `Location: ${scene.location_setting}` : '',
+        scene.time_of_day ? `Time: ${scene.time_of_day}` : '',
+        scene.mood_tone ? `Mood: ${scene.mood_tone}` : '',
+      ].filter(Boolean).join('\n');
+
+      const suggestions = await suggestPlacements(shots, stagedImages, sceneContext);
+      res.json({ suggestions, staged_count: stagedImages.length, shot_count: shots.length });
+    } catch (err) {
+      console.error('[agents/suggest-placements] Error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  /**
+   * POST /api/agents/gap-analysis
+   * Body: { scene_id, project_id? }
+   * CD compares planned vs filled shots, identifies gaps, suggests generation plan
+   */
+  router.post('/api/agents/gap-analysis', async (req, res) => {
+    try {
+      const { scene_id, project_id } = req.body;
+      if (!scene_id) return res.status(400).json({ error: 'scene_id is required' });
+
+      const scene = db.prepare('SELECT * FROM scenes WHERE id = ?').get(scene_id);
+      if (!scene) return res.status(404).json({ error: 'Scene not found' });
+
+      const shots = db.prepare('SELECT * FROM shots WHERE scene_id = ? ORDER BY order_index ASC').all(scene_id);
+      if (!shots.length) return res.json({ error: 'No shots planned for this scene. Use "Design Shots" first.' });
+
+      // Build shot → images map
+      const shotImages = {};
+      for (const shot of shots) {
+        shotImages[shot.id] = db.prepare('SELECT * FROM image_variants WHERE shot_id = ?').all(shot.id);
+      }
+
+      const sceneContext = [
+        `Scene: ${scene.name}`,
+        scene.description ? `Description: ${scene.description}` : '',
+        scene.location_setting ? `Location: ${scene.location_setting}` : '',
+        scene.time_of_day ? `Time: ${scene.time_of_day}` : '',
+        scene.mood_tone ? `Mood: ${scene.mood_tone}` : '',
+      ].filter(Boolean).join('\n');
+
+      const analysis = await analyzeGaps(shots, shotImages, sceneContext);
+      res.json(analysis);
+    } catch (err) {
+      console.error('[agents/gap-analysis] Error:', err);
       res.status(500).json({ error: err.message });
     }
   });

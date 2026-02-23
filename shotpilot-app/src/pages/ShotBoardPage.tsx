@@ -7,6 +7,10 @@ import { StoryboardPanel } from '../components/StoryboardPanel';
 import { StagingArea } from '../components/StagingArea';
 import { ExpandedShotPanel } from '../components/ExpandedShotPanel';
 
+import { SuggestionOverlay } from '../components/SuggestionOverlay';
+import { GapAnalysisPanel } from '../components/GapAnalysisPanel';
+import { suggestPlacements, getGapAnalysis } from '../services/agentApi';
+import type { PlacementSuggestion, GapAnalysis } from '../services/agentApi';
 import { GeneratePromptModal } from '../components/GeneratePromptModal';
 import { RecommendationsDialog } from '../components/RecommendationsDialog';
 import { VariantList } from '../components/VariantList';
@@ -73,6 +77,15 @@ const ShotBoardPage: React.FC = () => {
     // New state for Scene Workshop UI
     const [stagedImagesByScene, setStagedImagesByScene] = useState<Record<number, ProjectImage[]>>({});
     const [expandedShotId, setExpandedShotId] = useState<number | null>(null);
+    
+    // CD Suggestions state
+    const [suggestionsByScene, setSuggestionsByScene] = useState<Record<number, PlacementSuggestion[]>>({});
+    const [suggestionsLoading, setSuggestionsLoading] = useState<Record<number, boolean>>({});
+    const [dismissedSuggestions, setDismissedSuggestions] = useState<Set<number>>(new Set());
+    
+    // Gap Analysis state
+    const [gapAnalysisByScene, setGapAnalysisByScene] = useState<Record<number, GapAnalysis>>({});
+    const [gapAnalysisLoading, setGapAnalysisLoading] = useState<Record<number, boolean>>({});
 
     // Parse project frame_size to CSS aspect-ratio
     const frameAspectRatio = (() => {
@@ -215,6 +228,72 @@ const ShotBoardPage: React.FC = () => {
         }
     };
 
+    // CD Suggestions handlers
+    const handleRequestSuggestions = async (sceneId: number) => {
+        setSuggestionsLoading(prev => ({ ...prev, [sceneId]: true }));
+        try {
+            const result = await suggestPlacements(sceneId, projectId || undefined);
+            setSuggestionsByScene(prev => ({ ...prev, [sceneId]: result.suggestions || [] }));
+        } catch (err) {
+            console.error('Failed to get suggestions:', err);
+        } finally {
+            setSuggestionsLoading(prev => ({ ...prev, [sceneId]: false }));
+        }
+    };
+
+    const handleAcceptSuggestion = async (sceneId: number, suggestion: PlacementSuggestion) => {
+        try {
+            const image = (stagedImagesByScene[sceneId] || []).find(img => img.id === suggestion.image_id);
+            if (!image) return;
+            
+            // Link the image to the shot
+            await createImageVariant(suggestion.shot_id, image.image_url, 'CD suggestion');
+            
+            // Remove from suggestions
+            setSuggestionsByScene(prev => ({
+                ...prev,
+                [sceneId]: (prev[sceneId] || []).filter(s => s.image_id !== suggestion.image_id),
+            }));
+            
+            // Refresh scene data
+            await refreshSceneShots(sceneId);
+            
+            // Refresh staged images
+            const stagedImages = await getStagedImages(sceneId);
+            setStagedImagesByScene(prev => ({ ...prev, [sceneId]: stagedImages }));
+        } catch (err) {
+            console.error('Failed to accept suggestion:', err);
+        }
+    };
+
+    const handleAcceptAllSuggestions = async (sceneId: number) => {
+        const suggestions = suggestionsByScene[sceneId] || [];
+        for (const suggestion of suggestions) {
+            await handleAcceptSuggestion(sceneId, suggestion);
+        }
+    };
+
+    const handleRejectSuggestion = (_suggestion: PlacementSuggestion) => {
+        // Dismissal handled by SuggestionOverlay's internal state
+    };
+
+    const handleDismissSuggestions = (sceneId: number) => {
+        setSuggestionsByScene(prev => ({ ...prev, [sceneId]: [] }));
+    };
+
+    // Gap Analysis handlers
+    const handleGapAnalysis = async (sceneId: number) => {
+        setGapAnalysisLoading(prev => ({ ...prev, [sceneId]: true }));
+        try {
+            const result = await getGapAnalysis(sceneId, projectId || undefined);
+            setGapAnalysisByScene(prev => ({ ...prev, [sceneId]: result }));
+        } catch (err) {
+            console.error('Failed to get gap analysis:', err);
+        } finally {
+            setGapAnalysisLoading(prev => ({ ...prev, [sceneId]: false }));
+        }
+    };
+
     const toggleScene = async (sceneId: number) => {
         const isCurrentlyExpanded = expandedScenes.includes(sceneId);
         
@@ -229,6 +308,12 @@ const ShotBoardPage: React.FC = () => {
             try {
                 const stagedImages = await getStagedImages(sceneId);
                 setStagedImagesByScene(prev => ({ ...prev, [sceneId]: stagedImages }));
+                
+                // Auto-request suggestions if there are staged images and planned shots
+                const sceneShots = shotsByScene[sceneId] || [];
+                if (stagedImages.length > 0 && sceneShots.length > 0 && !suggestionsByScene[sceneId]) {
+                    handleRequestSuggestions(sceneId);
+                }
             } catch (error) {
                 console.error(`Failed to load staged images for scene ${sceneId}:`, error);
                 setStagedImagesByScene(prev => ({ ...prev, [sceneId]: [] }));
@@ -746,6 +831,20 @@ const ShotBoardPage: React.FC = () => {
                                 alignItems: 'center',
                                 gap: '4px',
                             }} title="AI Design Shots"><Sparkles size={14} /> Design Shots</button>
+                                            <button onClick={(e) => { e.stopPropagation(); handleGapAnalysis(scene.id); }} style={{
+                                padding: '6px 14px',
+                                background: gapAnalysisLoading[scene.id] ? 'rgba(251, 191, 36, 0.25)' : 'rgba(251, 191, 36, 0.1)',
+                                border: '1px solid rgba(251, 191, 36, 0.3)',
+                                borderRadius: '6px',
+                                color: '#fbbf24',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                cursor: gapAnalysisLoading[scene.id] ? 'wait' : 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                opacity: gapAnalysisLoading[scene.id] ? 0.7 : 1,
+                            }} title="Gap Analysis" disabled={gapAnalysisLoading[scene.id]}>📊 {gapAnalysisLoading[scene.id] ? 'Analyzing...' : 'Gap Analysis'}</button>
                                             <button onClick={(e) => handleOpenSceneModal(scene, e)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px' }} title="Edit Scene"><Edit2 size={14} /></button>
                                             <button onClick={(e) => { e.stopPropagation(); handleDeleteScene(scene.id); }} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px' }} title="Delete Scene"><Trash2 size={14} /></button>
                                         </div>
@@ -874,10 +973,58 @@ const ShotBoardPage: React.FC = () => {
                                             sceneId={scene.id}
                                             stagedImages={stagedImagesByScene[scene.id] || []}
                                             onImageClick={(image) => {
-                                                // Optional: Handle staging area image click
                                                 console.log('Staged image clicked:', image);
                                             }}
                                         />
+                                        
+                                        {/* CD Suggestion Overlay */}
+                                        {(suggestionsLoading[scene.id] || (suggestionsByScene[scene.id] || []).length > 0) && (
+                                            <SuggestionOverlay
+                                                suggestions={suggestionsByScene[scene.id] || []}
+                                                shots={sceneShots}
+                                                stagedImages={stagedImagesByScene[scene.id] || []}
+                                                onAccept={(s) => handleAcceptSuggestion(scene.id, s)}
+                                                onReject={handleRejectSuggestion}
+                                                onAcceptAll={() => handleAcceptAllSuggestions(scene.id)}
+                                                onDiscussWithCD={() => {
+                                                    // TODO: Open contextual CD chat
+                                                    console.log('Discuss with CD - coming soon');
+                                                }}
+                                                onDismiss={() => handleDismissSuggestions(scene.id)}
+                                                loading={suggestionsLoading[scene.id]}
+                                            />
+                                        )}
+                                        
+                                        {/* Gap Analysis Panel */}
+                                        {gapAnalysisByScene[scene.id] && (
+                                            <GapAnalysisPanel
+                                                analysis={gapAnalysisByScene[scene.id]}
+                                                onClose={() => setGapAnalysisByScene(prev => {
+                                                    const next = { ...prev };
+                                                    delete next[scene.id];
+                                                    return next;
+                                                })}
+                                                onGenerateShot={(shotId, modelId) => {
+                                                    if (shotId) {
+                                                        const shot = sceneShots.find(s => s.id === shotId);
+                                                        if (shot) {
+                                                            setGenerateModalShot(shot);
+                                                            setGenerateModalSceneId(scene.id);
+                                                            setGenerateModalType('image');
+                                                            setIsGenerateModalOpen(true);
+                                                        }
+                                                    }
+                                                }}
+                                                onAddShot={async (newShot) => {
+                                                    await createShot(scene.id, {
+                                                        shot_number: String(sceneShots.length + 1),
+                                                        shot_type: newShot.shot_type,
+                                                        description: newShot.description,
+                                                    });
+                                                    refreshSceneShots(scene.id);
+                                                }}
+                                            />
+                                        )}
                                         
                                         {/* Expanded Shot Panel */}
                                         {expandedShotId && sceneShots.find(s => s.id === expandedShotId) && (
