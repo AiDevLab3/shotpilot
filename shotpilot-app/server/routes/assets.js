@@ -95,52 +95,10 @@ export default function createAssetRoutes() {
     db.prepare(`UPDATE project_images SET ${updates.join(', ')} WHERE id = ?`).run(...values);
     const updated = db.prepare('SELECT * FROM project_images WHERE id = ?').get(req.params.id);
 
-    // If scene_id was set, auto-create a shot + image_variant in that scene
+    // When scene_id is set, images go to the staging area (not auto-create shots).
+    // The CD suggestion overlay or manual assignment handles placing staged images into shots.
     if (req.body.scene_id && updated) {
-      const sceneId = parseInt(req.body.scene_id);
-      const scene = db.prepare('SELECT * FROM scenes WHERE id = ?').get(sceneId);
-      if (scene) {
-        // Check if this asset already has a shot in this scene (avoid duplicates)
-        const existingVariant = db.prepare(`
-          SELECT iv.id FROM image_variants iv 
-          JOIN shots s ON iv.shot_id = s.id 
-          WHERE s.scene_id = ? AND iv.image_url = ?
-        `).get(sceneId, updated.image_url);
-
-        if (!existingVariant) {
-          // Get next shot order
-          const maxOrder = db.prepare('SELECT MAX(order_index) as mx FROM shots WHERE scene_id = ?').get(sceneId);
-          const nextOrder = (maxOrder?.mx || 0) + 1;
-          const shotCount = db.prepare('SELECT COUNT(*) as cnt FROM shots WHERE scene_id = ?').get(sceneId);
-          const shotNumber = String(shotCount.cnt + 1);
-
-          // Create shot
-          const shotResult = db.prepare(`
-            INSERT INTO shots (scene_id, shot_number, shot_type, description, status, order_index, created_at)
-            VALUES (?, ?, ?, ?, 'planning', ?, datetime('now'))
-          `).run(
-            sceneId,
-            shotNumber,
-            updated.subject_category === 'environment' ? 'Wide Shot' : 'Medium Shot',
-            updated.title || updated.refinement_notes || `Asset #${updated.id}`,
-            nextOrder
-          );
-
-          // Link image as variant
-          db.prepare(`
-            INSERT INTO image_variants (shot_id, image_url, model_used, prompt_used, status, created_at, iteration_number, asset_id)
-            VALUES (?, ?, ?, ?, 'imported', datetime('now'), 1, ?)
-          `).run(
-            shotResult.lastInsertRowid,
-            updated.image_url,
-            updated.source_model || 'unknown',
-            updated.source_prompt || '',
-            updated.id  // ← asset_id
-          );
-
-          console.log(`[assets] Auto-created shot #${shotResult.lastInsertRowid} in scene ${sceneId} for asset #${updated.id}`);
-        }
-      }
+      console.log(`[assets] Asset #${updated.id} staged in scene ${req.body.scene_id}`);
     }
 
     // If scene_id was cleared, remove the auto-created shot (optional — keep for now)

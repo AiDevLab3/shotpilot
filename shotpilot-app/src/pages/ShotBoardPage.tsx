@@ -222,6 +222,18 @@ const ShotBoardPage: React.FC = () => {
 
             // Auto-expand all scenes so generated prompts stay visible after navigation
             setExpandedScenes(fetchedScenes.map(s => s.id));
+            
+            // Load staged images for all scenes
+            for (const scene of fetchedScenes) {
+                try {
+                    const stagedImages = await getStagedImages(scene.id);
+                    if (stagedImages.length > 0) {
+                        setStagedImagesByScene(prev => ({ ...prev, [scene.id]: stagedImages }));
+                    }
+                } catch (err) {
+                    console.error(`Failed to load staged images for scene ${scene.id}:`, err);
+                }
+            }
 
             // Load Credits
             try {
@@ -236,6 +248,17 @@ const ShotBoardPage: React.FC = () => {
             setLoading(false);
         }
     };
+
+    // Auto-trigger suggestions when both staged images and shots are available
+    useEffect(() => {
+        for (const sceneId of expandedScenes) {
+            const staged = stagedImagesByScene[sceneId] || [];
+            const shots = shotsByScene[sceneId] || [];
+            if (staged.length > 0 && shots.length > 0 && !suggestionsByScene[sceneId] && !suggestionsLoading[sceneId]) {
+                handleRequestSuggestions(sceneId);
+            }
+        }
+    }, [stagedImagesByScene, shotsByScene, expandedScenes]);
 
     // CD Suggestions handlers
     const handleRequestSuggestions = async (sceneId: number) => {
@@ -325,8 +348,8 @@ const ShotBoardPage: React.FC = () => {
                 : [...prev, sceneId]
         );
         
-        // Load staged images when expanding a scene
-        if (!isCurrentlyExpanded && !stagedImagesByScene[sceneId]) {
+        // Load/refresh staged images when expanding a scene (always refresh, not just first time)
+        if (!isCurrentlyExpanded) {
             try {
                 const stagedImages = await getStagedImages(sceneId);
                 setStagedImagesByScene(prev => ({ ...prev, [sceneId]: stagedImages }));
@@ -343,7 +366,24 @@ const ShotBoardPage: React.FC = () => {
         }
     };
 
-    const expandAll = () => setExpandedScenes(scenes.map(s => s.id));
+    const expandAll = async () => {
+        setExpandedScenes(scenes.map(s => s.id));
+        // Load staged images for all scenes
+        for (const scene of scenes) {
+            try {
+                const stagedImages = await getStagedImages(scene.id);
+                setStagedImagesByScene(prev => ({ ...prev, [scene.id]: stagedImages }));
+                
+                // Auto-trigger suggestions if applicable
+                const sceneShots = shotsByScene[scene.id] || [];
+                if (stagedImages.length > 0 && sceneShots.length > 0 && !suggestionsByScene[scene.id]) {
+                    handleRequestSuggestions(scene.id);
+                }
+            } catch (err) {
+                console.error(`Failed to load staged images for scene ${scene.id}:`, err);
+            }
+        }
+    };
     const collapseAll = () => setExpandedScenes([]);
 
     const refreshSceneShots = async (sceneId: number) => {
