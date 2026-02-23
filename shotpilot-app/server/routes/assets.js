@@ -156,10 +156,20 @@ Lighting: ${project.lighting_directions || 'High contrast, practical lighting so
 References: ${project.cinematic_references || 'The Dark Knight, Sicario, Heat'}
       `.trim() : '';
 
+      // Load actual project scenes so Gemini can suggest real scene IDs
+      const projectScenes = asset.project_id 
+        ? db.prepare('SELECT id, title, description, location FROM scenes WHERE project_id = ? ORDER BY order_index').all(asset.project_id)
+        : [];
+      const sceneContext = projectScenes.length > 0
+        ? 'PROJECT SCENES:\n' + projectScenes.map(s => `- Scene ${s.id}: "${s.title}"${s.description ? ` — ${s.description}` : ''}${s.location ? ` (${s.location})` : ''}`).join('\n')
+        : 'No scenes defined yet.';
+
       const prompt = `You are a cinematographer reviewing images for a professional film production. You're the expert on set — give your honest, practical assessment.
 
 PROJECT STYLE:
 ${styleContext}
+
+${sceneContext}
 
 Look at this image and answer three questions. Return a JSON object (no markdown, just raw JSON):
 
@@ -182,7 +192,7 @@ Look at this image and answer three questions. Return a JSON object (no markdown
     "next_steps": "What specific changes would make this image better? Use these available models:\n${modelContext}\nRecommend the specific model by ID and explain why. If multiple steps needed (e.g., edit then upscale), list them in order."
   },
   
-  "scene_suggestions": ["scene IDs this could work for"],
+  "scene_suggestions": [${projectScenes.length > 0 ? '"ONLY use scene IDs from the PROJECT SCENES list above. Return matching scene IDs as strings."' : '"No scenes available"'}],
   "summary": "One sentence — what's the verdict on this image?"
 }`;
 
