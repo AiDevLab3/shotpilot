@@ -9,8 +9,9 @@ import { ExpandedShotPanel } from '../components/ExpandedShotPanel';
 
 import { SuggestionOverlay } from '../components/SuggestionOverlay';
 import { GapAnalysisPanel } from '../components/GapAnalysisPanel';
-import { suggestPlacements, getGapAnalysis } from '../services/agentApi';
-import type { PlacementSuggestion, GapAnalysis } from '../services/agentApi';
+import { CohesionCheckPanel } from '../components/CohesionCheckPanel';
+import { suggestPlacements, getGapAnalysis, getCohesionCheck } from '../services/agentApi';
+import type { PlacementSuggestion, GapAnalysis, CohesionCheck } from '../services/agentApi';
 import { GeneratePromptModal } from '../components/GeneratePromptModal';
 import { RecommendationsDialog } from '../components/RecommendationsDialog';
 import { VariantList } from '../components/VariantList';
@@ -86,6 +87,10 @@ const ShotBoardPage: React.FC = () => {
     // Gap Analysis state
     const [gapAnalysisByScene, setGapAnalysisByScene] = useState<Record<number, GapAnalysis>>({});
     const [gapAnalysisLoading, setGapAnalysisLoading] = useState<Record<number, boolean>>({});
+    
+    // Cohesion Check state
+    const [cohesionByScene, setCohesionByScene] = useState<Record<number, CohesionCheck>>({});
+    const [cohesionLoading, setCohesionLoading] = useState<Record<number, boolean>>({});
 
     // Parse project frame_size to CSS aspect-ratio
     const frameAspectRatio = (() => {
@@ -291,6 +296,19 @@ const ShotBoardPage: React.FC = () => {
             console.error('Failed to get gap analysis:', err);
         } finally {
             setGapAnalysisLoading(prev => ({ ...prev, [sceneId]: false }));
+        }
+    };
+
+    // Cohesion Check handler
+    const handleCohesionCheck = async (sceneId: number) => {
+        setCohesionLoading(prev => ({ ...prev, [sceneId]: true }));
+        try {
+            const result = await getCohesionCheck(sceneId, projectId || undefined);
+            setCohesionByScene(prev => ({ ...prev, [sceneId]: result }));
+        } catch (err) {
+            console.error('Failed to get cohesion check:', err);
+        } finally {
+            setCohesionLoading(prev => ({ ...prev, [sceneId]: false }));
         }
     };
 
@@ -845,6 +863,20 @@ const ShotBoardPage: React.FC = () => {
                                 gap: '4px',
                                 opacity: gapAnalysisLoading[scene.id] ? 0.7 : 1,
                             }} title="Gap Analysis" disabled={gapAnalysisLoading[scene.id]}>📊 {gapAnalysisLoading[scene.id] ? 'Analyzing...' : 'Gap Analysis'}</button>
+                                            <button onClick={(e) => { e.stopPropagation(); handleCohesionCheck(scene.id); }} style={{
+                                padding: '6px 14px',
+                                background: cohesionLoading[scene.id] ? 'rgba(16, 185, 129, 0.25)' : 'rgba(16, 185, 129, 0.1)',
+                                border: '1px solid rgba(16, 185, 129, 0.3)',
+                                borderRadius: '6px',
+                                color: '#34d399',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                cursor: cohesionLoading[scene.id] ? 'wait' : 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                opacity: cohesionLoading[scene.id] ? 0.7 : 1,
+                            }} title="Cohesion Check" disabled={cohesionLoading[scene.id]}>🔍 {cohesionLoading[scene.id] ? 'Checking...' : 'Cohesion Check'}</button>
                                             <button onClick={(e) => handleOpenSceneModal(scene, e)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px' }} title="Edit Scene"><Edit2 size={14} /></button>
                                             <button onClick={(e) => { e.stopPropagation(); handleDeleteScene(scene.id); }} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px' }} title="Delete Scene"><Trash2 size={14} /></button>
                                         </div>
@@ -1022,6 +1054,28 @@ const ShotBoardPage: React.FC = () => {
                                                         description: newShot.description,
                                                     });
                                                     refreshSceneShots(scene.id);
+                                                }}
+                                            />
+                                        )}
+                                        
+                                        {/* Cohesion Check Panel */}
+                                        {cohesionByScene[scene.id] && (
+                                            <CohesionCheckPanel
+                                                check={cohesionByScene[scene.id]}
+                                                shots={sceneShots}
+                                                onClose={() => setCohesionByScene(prev => {
+                                                    const next = { ...prev };
+                                                    delete next[scene.id];
+                                                    return next;
+                                                })}
+                                                onFixShot={(shotId, action, model, instruction) => {
+                                                    const shot = sceneShots.find(s => s.id === shotId);
+                                                    if (shot) {
+                                                        setGenerateModalShot(shot);
+                                                        setGenerateModalSceneId(scene.id);
+                                                        setGenerateModalType('image');
+                                                        setIsGenerateModalOpen(true);
+                                                    }
                                                 }}
                                             />
                                         )}

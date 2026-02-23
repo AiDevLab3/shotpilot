@@ -337,4 +337,90 @@ Return ONLY valid JSON:
   return JSON.parse(result);
 }
 
-export { directShot, getModelRegistry, MODEL_REGISTRY, suggestPlacements, analyzeGaps };
+/**
+ * Cohesion Check — CD evaluates all filled shots as a sequence for visual continuity.
+ * Checks lighting, color grading, character appearance, and overall flow.
+ */
+async function checkCohesion(shots, shotImages, sceneContext) {
+  // Only evaluate shots that have images
+  const filledShots = shots.filter(s => {
+    const images = shotImages[s.id] || [];
+    return images.some(v => v.image_url);
+  });
+
+  if (filledShots.length < 2) {
+    return {
+      cohesion_score: filledShots.length === 1 ? 100 : 0,
+      issues: [],
+      summary: filledShots.length === 0
+        ? 'No shots have images yet. Generate or assign images first.'
+        : 'Only one shot has an image — need at least two to check continuity.',
+      recommendations: [],
+    };
+  }
+
+  const shotDescriptions = filledShots.map(s => {
+    const images = shotImages[s.id] || [];
+    const mainImage = images.find(v => v.image_url);
+    return `Shot ${s.shot_number} (ID ${s.id}): ${s.shot_type || 'Unknown'}${s.camera_angle ? ', ' + s.camera_angle : ''}${s.description ? ' — ' + s.description : ''} | Image: ${mainImage?.image_url || 'none'}${mainImage?.prompt_used ? ' | Prompt: ' + mainImage.prompt_used : ''}`;
+  }).join('\n');
+
+  const systemPrompt = `You are the Creative Director for a cinematic production pipeline performing a COHESION CHECK.
+
+Evaluate the filled shots in sequence as if they will be cut together in the final film. Look for visual continuity issues.
+
+## Scene Context
+${sceneContext || 'No additional scene context.'}
+
+## Filled Shots (in sequence order)
+${shotDescriptions}
+
+## What to Evaluate
+1. **Lighting continuity** — Do adjacent shots have consistent light direction, intensity, color temperature?
+2. **Color grading** — Is the palette consistent? Does one shot feel warm while the next feels cold?
+3. **Character appearance** — If a character appears in multiple shots, do they look consistent?
+4. **Style consistency** — Same visual style across shots? (e.g., one photorealistic, one painterly)
+5. **Compositional flow** — Do the shots cut well together? Eye-line matches, screen direction
+6. **Mood consistency** — Does the emotional tone hold across the sequence?
+
+## Severity Levels
+- "critical" — Will break immersion (e.g., day/night mismatch between adjacent shots)
+- "warning" — Noticeable but manageable (e.g., slight color temperature shift)
+- "info" — Minor suggestion for polish
+
+## Output
+Return ONLY valid JSON:
+{
+  "cohesion_score": <0-100>,
+  "issues": [
+    {
+      "severity": "critical" | "warning" | "info",
+      "category": "lighting" | "color" | "character" | "style" | "composition" | "mood",
+      "between_shots": [<shot_id_1>, <shot_id_2>],
+      "description": "<what's wrong>",
+      "fix_suggestion": "<how to fix it>"
+    }
+  ],
+  "recommendations": [
+    {
+      "shot_id": <number>,
+      "action": "regenerate" | "edit" | "color-grade" | "keep",
+      "model": "<recommended model-id or null>",
+      "instruction": "<what to change>"
+    }
+  ],
+  "summary": "<2-3 sentence overview of cohesion quality>"
+}`;
+
+  const result = await callGemini({
+    parts: [{ text: 'Perform a cohesion check on the filled shots in this scene.' }],
+    systemInstruction: systemPrompt,
+    thinkingLevel: 'medium',
+    responseMimeType: 'application/json',
+    maxOutputTokens: 4096,
+  });
+
+  return JSON.parse(result);
+}
+
+export { directShot, getModelRegistry, MODEL_REGISTRY, suggestPlacements, analyzeGaps, checkCohesion };

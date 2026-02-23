@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { generateShot, generateScene, auditGeneratedImage, screenReferenceImage, improveImage, generateAndIterate, analyzeAndRecommend, executeImprovement, generateWithAudit, importImage } from '../services/agents/orchestrator.js';
-import { getModelRegistry, suggestPlacements, analyzeGaps } from '../services/agents/creativeDirector.js';
+import { getModelRegistry, suggestPlacements, analyzeGaps, checkCohesion } from '../services/agents/creativeDirector.js';
 import { db } from '../database.js';
 import { listStyleProfiles } from '../services/agents/styleProfile.js';
 import { loadProject, listProjects } from '../services/agents/projectContext.js';
@@ -540,6 +540,43 @@ export default function createAgentRoutes() {
       res.json(analysis);
     } catch (err) {
       console.error('[agents/gap-analysis] Error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  /**
+   * POST /api/agents/cohesion-check
+   * Body: { scene_id, project_id? }
+   * CD evaluates filled shots as a sequence for visual continuity
+   */
+  router.post('/api/agents/cohesion-check', async (req, res) => {
+    try {
+      const { scene_id, project_id } = req.body;
+      if (!scene_id) return res.status(400).json({ error: 'scene_id is required' });
+
+      const scene = db.prepare('SELECT * FROM scenes WHERE id = ?').get(scene_id);
+      if (!scene) return res.status(404).json({ error: 'Scene not found' });
+
+      const shots = db.prepare('SELECT * FROM shots WHERE scene_id = ? ORDER BY order_index ASC').all(scene_id);
+      if (!shots.length) return res.json({ cohesion_score: 0, issues: [], summary: 'No shots in this scene.', recommendations: [] });
+
+      const shotImages = {};
+      for (const shot of shots) {
+        shotImages[shot.id] = db.prepare('SELECT * FROM image_variants WHERE shot_id = ?').all(shot.id);
+      }
+
+      const sceneContext = [
+        `Scene: ${scene.name}`,
+        scene.description ? `Description: ${scene.description}` : '',
+        scene.location_setting ? `Location: ${scene.location_setting}` : '',
+        scene.time_of_day ? `Time: ${scene.time_of_day}` : '',
+        scene.mood_tone ? `Mood: ${scene.mood_tone}` : '',
+      ].filter(Boolean).join('\n');
+
+      const result = await checkCohesion(shots, shotImages, sceneContext);
+      res.json(result);
+    } catch (err) {
+      console.error('[agents/cohesion-check] Error:', err);
       res.status(500).json({ error: err.message });
     }
   });

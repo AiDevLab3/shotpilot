@@ -184,3 +184,33 @@ export const getGapAnalysis = async (sceneId: number, projectId?: number): Promi
     body: JSON.stringify({ scene_id: sceneId, project_id: projectId }),
   });
 };
+
+// Scene Workshop: Cohesion Check
+export interface CohesionIssue {
+  severity: 'critical' | 'warning' | 'info';
+  category: 'lighting' | 'color' | 'character' | 'style' | 'composition' | 'mood';
+  between_shots: number[];
+  description: string;
+  fix_suggestion: string;
+}
+
+export interface CohesionRecommendation {
+  shot_id: number;
+  action: 'regenerate' | 'edit' | 'color-grade' | 'keep';
+  model: string | null;
+  instruction: string;
+}
+
+export interface CohesionCheck {
+  cohesion_score: number;
+  issues: CohesionIssue[];
+  recommendations: CohesionRecommendation[];
+  summary: string;
+}
+
+export const getCohesionCheck = async (sceneId: number, projectId?: number): Promise<CohesionCheck> => {
+  return agentCall('/cohesion-check', {
+    method: 'POST',
+    body: JSON.stringify({ scene_id: sceneId, project_id: projectId }),
+  });
+};
