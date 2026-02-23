@@ -384,6 +384,32 @@ export const initDatabase = () => {
         console.error("Phase 10 (Cost Tracking) Migration failed:", e);
     }
 
+    // Phase 11: Unified Asset Data Model - Asset Sync
+    try {
+        const variantsInfo = db.pragma('table_info(image_variants)');
+        const hasAssetId = variantsInfo.some(col => col.name === 'asset_id');
+        
+        if (!hasAssetId) {
+            console.log('Migrating: Adding asset_id column to image_variants...');
+            db.exec('ALTER TABLE image_variants ADD COLUMN asset_id INTEGER REFERENCES project_images(id)');
+            
+            // Link existing variants to matching project_images by image_url
+            const variants = db.prepare('SELECT * FROM image_variants WHERE asset_id IS NULL').all();
+            console.log(`Migrating: Linking ${variants.length} existing variants to assets...`);
+            
+            for (const v of variants) {
+                const asset = db.prepare('SELECT id FROM project_images WHERE image_url = ?').get(v.image_url);
+                if (asset) {
+                    db.prepare('UPDATE image_variants SET asset_id = ? WHERE id = ?').run(asset.id, v.id);
+                    console.log(`Linked variant ${v.id} to asset ${asset.id}`);
+                }
+            }
+            console.log('Phase 11: Asset sync migration completed');
+        }
+    } catch (e) {
+        console.error("Phase 11 (Asset Sync) Migration failed:", e);
+    }
+
     // Create default test user if not exists
     try {
         const testUser = db.prepare('SELECT * FROM users WHERE email = ?').get('test@shotpilot.com');

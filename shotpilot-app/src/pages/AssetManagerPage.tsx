@@ -174,6 +174,7 @@ export const AssetManagerPage: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterScene, setFilterScene] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('id');
   const [lightboxImg, setLightboxImg] = useState<string | null>(null);
   const [pollTimer, setPollTimer] = useState<ReturnType<typeof setInterval> | null>(null);
@@ -282,6 +283,9 @@ export const AssetManagerPage: React.FC = () => {
     if (filterStatus !== 'all' && (a.status || 'unreviewed') !== filterStatus) return false;
     if (filterType !== 'all' && (a.asset_type || 'unclassified') !== filterType) return false;
     if (filterCategory !== 'all' && a.subject_category !== filterCategory) return false;
+    if (filterScene === 'unassigned' && a.scene_id) return false;
+    if (filterScene === 'assigned' && !a.scene_id) return false;
+    if (filterScene !== 'all' && filterScene !== 'unassigned' && filterScene !== 'assigned' && String(a.scene_id) !== filterScene) return false;
     return true;
   }).sort((a, b) => {
     if (sortBy === 'realism') return (b.realism_score || 0) - (a.realism_score || 0);
@@ -370,6 +374,14 @@ export const AssetManagerPage: React.FC = () => {
           <option value="all">All Categories</option>
           {activeCategories.map(c => (
             <option key={c} value={c!}>{CATEGORY_LABELS[c!] || c}</option>
+          ))}
+        </select>
+        <select value={filterScene} onChange={e => setFilterScene(e.target.value)} style={s.filterSelect}>
+          <option value="all">All Scenes</option>
+          <option value="unassigned">Unassigned</option>
+          <option value="assigned">Assigned (any)</option>
+          {projectScenes.map(sc => (
+            <option key={sc.id} value={sc.id}>{sc.name}</option>
           ))}
         </select>
         <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={s.filterSelect}>
@@ -535,9 +547,21 @@ const AssetCard: React.FC<{
       {/* Info — click to open detail panel */}
       <div style={s.cardInfo} onClick={onSelect}>
         <div style={s.cardTitle}>{asset.title || `Asset #${asset.id}`}</div>
-        {asset.subject_category && (
-          <div style={s.categoryTag}>{CATEGORY_LABELS[asset.subject_category] || asset.subject_category}</div>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px', flexWrap: 'wrap' }}>
+          {asset.subject_category && (
+            <div style={s.categoryTag}>{CATEGORY_LABELS[asset.subject_category] || asset.subject_category}</div>
+          )}
+          {asset.scene_id && (
+            <span style={{ fontSize: '9px', padding: '1px 4px', borderRadius: '3px', backgroundColor: 'rgba(139, 92, 246, 0.2)', color: '#a78bfa' }}>
+              {projectScenes.find(s => s.id === String(asset.scene_id))?.name || `Scene ${asset.scene_id}`}
+            </span>
+          )}
+          {asset.parent_asset_id && asset.iteration && (
+            <span style={{ fontSize: '9px', padding: '1px 4px', borderRadius: '3px', backgroundColor: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa' }}>
+              v{asset.iteration}
+            </span>
+          )}
+        </div>
         {/* Scores */}
         {asset.realism_score != null && (
           <div style={s.scoreRow}>

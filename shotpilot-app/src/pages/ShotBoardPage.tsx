@@ -895,13 +895,104 @@ const ShotBoardPage: React.FC = () => {
                                                     // Optional: Handle analyze action
                                                     console.log('Analyze image:', variant);
                                                 }}
-                                                onImprove={(variant) => {
-                                                    // Optional: Handle improve action
-                                                    console.log('Improve image:', variant);
+                                                onImprove={async (variant) => {
+                                                    try {
+                                                        // Find the corresponding asset by image_url
+                                                        const response = await fetch(`/api/projects/${projectId}/assets`);
+                                                        const assets = await response.json();
+                                                        const asset = assets.find((a: any) => a.image_url === variant.image_url);
+                                                        
+                                                        if (asset) {
+                                                            // Generate refinement plan first
+                                                            const planResponse = await fetch(`/api/assets/${asset.id}/refinement-plan`, {
+                                                                method: 'POST',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({})
+                                                            });
+                                                            const planResult = await planResponse.json();
+                                                            
+                                                            // Generate improved version using the plan
+                                                            const genResponse = await fetch(`/api/assets/${asset.id}/generate`, {
+                                                                method: 'POST',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({
+                                                                    model: 'flux-2',
+                                                                    num_images: 1,
+                                                                    realism_lock: true
+                                                                })
+                                                            });
+                                                            const genResult = await genResponse.json();
+                                                            
+                                                            if (genResult.generated && genResult.generated.length > 0) {
+                                                                // Create iteration linked to the shot
+                                                                const iterResponse = await fetch(`/api/assets/${asset.id}/iterate`, {
+                                                                    method: 'POST',
+                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                    body: JSON.stringify({
+                                                                        image_url: genResult.generated[0].image_url,
+                                                                        model_used: genResult.model,
+                                                                        prompt_used: genResult.prompt,
+                                                                        title_suffix: 'improved',
+                                                                        shot_id: variant.shot_id
+                                                                    })
+                                                                });
+                                                                const iterResult = await iterResponse.json();
+                                                                
+                                                                console.log('Created improved iteration:', iterResult);
+                                                                // Refresh the shot images
+                                                                loadData();
+                                                            }
+                                                        }
+                                                    } catch (err) {
+                                                        console.error('Improve action failed:', err);
+                                                    }
                                                 }}
-                                                onUpscale={(variant) => {
-                                                    // Optional: Handle upscale action
-                                                    console.log('Upscale image:', variant);
+                                                onUpscale={async (variant) => {
+                                                    try {
+                                                        // Find the corresponding asset by image_url
+                                                        const response = await fetch(`/api/projects/${projectId}/assets`);
+                                                        const assets = await response.json();
+                                                        const asset = assets.find((a: any) => a.image_url === variant.image_url);
+                                                        
+                                                        if (asset) {
+                                                            // Call upscale directly via generation service
+                                                            const upscaleResponse = await fetch(`/api/assets/${asset.id}/pipeline`, {
+                                                                method: 'POST',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({
+                                                                    prompt: asset.source_prompt || 'high quality, detailed, photorealistic',
+                                                                    model: 'topaz-redefine',
+                                                                    use_reference: true,
+                                                                    num_images: 1,
+                                                                    refine_model: 'none',
+                                                                    upscale: true
+                                                                })
+                                                            });
+                                                            const upscaleResult = await upscaleResponse.json();
+                                                            
+                                                            if (upscaleResult.step3_upscale) {
+                                                                // Create iteration linked to the shot
+                                                                const iterResponse = await fetch(`/api/assets/${asset.id}/iterate`, {
+                                                                    method: 'POST',
+                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                    body: JSON.stringify({
+                                                                        image_url: upscaleResult.step3_upscale.image_url,
+                                                                        model_used: 'topaz-redefine',
+                                                                        prompt_used: 'upscaled 2x',
+                                                                        title_suffix: 'upscaled',
+                                                                        shot_id: variant.shot_id
+                                                                    })
+                                                                });
+                                                                const iterResult = await iterResponse.json();
+                                                                
+                                                                console.log('Created upscaled iteration:', iterResult);
+                                                                // Refresh the shot images
+                                                                loadData();
+                                                            }
+                                                        }
+                                                    } catch (err) {
+                                                        console.error('Upscale action failed:', err);
+                                                    }
                                                 }}
                                             />
                                         )}

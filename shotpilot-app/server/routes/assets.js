@@ -6,6 +6,7 @@ import { db } from '../database.js';
 import { callGemini } from '../services/ai/shared.js';
 import { generateImage, generateFlux2, generateGptImage, generateNanoBanana, editNanoBanana, upscaleTopaz, applyGenFocus, getRealismLockBlock } from '../services/generation.js';
 import { getModelRegistryContext } from '../services/ragModelContext.js';
+import { createIteration, getAssetIterations } from '../services/assetSync.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -127,13 +128,14 @@ export default function createAssetRoutes() {
 
           // Link image as variant
           db.prepare(`
-            INSERT INTO image_variants (shot_id, image_url, model_used, prompt_used, status, created_at, iteration_number)
-            VALUES (?, ?, ?, ?, 'imported', datetime('now'), 1)
+            INSERT INTO image_variants (shot_id, image_url, model_used, prompt_used, status, created_at, iteration_number, asset_id)
+            VALUES (?, ?, ?, ?, 'imported', datetime('now'), 1, ?)
           `).run(
             shotResult.lastInsertRowid,
             updated.image_url,
             updated.source_model || 'unknown',
-            updated.source_prompt || ''
+            updated.source_prompt || '',
+            updated.id  // ← asset_id
           );
 
           console.log(`[assets] Auto-created shot #${shotResult.lastInsertRowid} in scene ${sceneId} for asset #${updated.id}`);
@@ -563,8 +565,9 @@ Return a JSON object (no markdown, raw JSON):
   /**
    * POST /api/assets/:id/iterate — upload a new version (iteration) of this asset
    * Links the new upload to the parent asset for tracking
+   * REMOVED: Duplicate of the assetSync version below
    */
-  router.post('/api/assets/:id/iterate', (req, res) => {
+  /* router.post('/api/assets/:id/iterate', (req, res) => {
     try {
       const parent = db.prepare('SELECT * FROM project_images WHERE id = ?').get(req.params.id);
       if (!parent) return res.status(404).json({ error: 'Parent asset not found' });
@@ -598,7 +601,7 @@ Return a JSON object (no markdown, raw JSON):
       console.error('[assets/iterate] Error:', err);
       res.status(500).json({ error: err.message });
     }
-  });
+  }); */
 
   /**
    * POST /api/assets/:id/transform-prompt — transform prompt for different model
@@ -1057,17 +1060,33 @@ Return a JSON object (no markdown, raw JSON):
    * GET /api/assets/:id/iterations — get all iterations of an asset (the refinement chain)
    */
   router.get('/api/assets/:id/iterations', (req, res) => {
-    const asset = db.prepare('SELECT * FROM project_images WHERE id = ?').get(req.params.id);
-    if (!asset) return res.status(404).json({ error: 'Asset not found' });
+    try {
+      const iterations = getAssetIterations(parseInt(req.params.id));
+      res.json(iterations);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 
-    // Find the root asset
-    const rootId = asset.parent_asset_id || asset.id;
-    const iterations = db.prepare(`
-      SELECT * FROM project_images
-      WHERE id = ? OR parent_asset_id = ?
-      ORDER BY iteration ASC
-    `).all(rootId, rootId);
-    res.json(iterations);
+  /**
+   * POST /api/assets/:id/iterate — create a new iteration of an asset
+   */
+  router.post('/api/assets/:id/iterate', (req, res) => {
+    try {
+      const { image_url, model_used, prompt_used, title_suffix, shot_id } = req.body;
+      if (!image_url) return res.status(400).json({ error: 'image_url required' });
+      
+      const result = createIteration(
+        parseInt(req.params.id),
+        image_url,
+        { model_used, prompt_used, title_suffix },
+        shot_id ? parseInt(shot_id) : null
+      );
+      
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
   });
 
   /**
