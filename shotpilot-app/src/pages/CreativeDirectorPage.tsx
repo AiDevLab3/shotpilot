@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Save, FileText, Check, Upload, Send, ChevronDown, ChevronUp, Plus, Trash2, FolderPlus } from 'lucide-react';
-import { getAllProjects, updateProject, createProject, deleteProject } from '../services/api';
+import { getAllProjects, updateProject, createProject, deleteProject, loadConversation } from '../services/api';
 import { useCreativeDirectorStore } from '../stores/creativeDirectorStore';
 import { useProjectContext } from '../components/ProjectLayout';
 import type { Project } from '../types/schema';
@@ -24,6 +24,26 @@ export const CreativeDirectorPage: React.FC = () => {
     const navigate = useNavigate();
     const store = useCreativeDirectorStore();
     const session = store.getSession(projectId);
+
+    // Hydrate store from DB conversation on mount
+    useEffect(() => {
+        if (!projectId) return;
+        const session = store.getSession(projectId);
+        // Only load from DB if store has no script content (fresh session or cleared localStorage)
+        if (!session.scriptContent) {
+            loadConversation(projectId).then(convo => {
+                if (convo.exists && convo.scriptContent) {
+                    store.setScriptContent(projectId, convo.scriptContent);
+                }
+                if (convo.exists && convo.mode) {
+                    store.setMode(projectId, convo.mode as any);
+                }
+                if (convo.exists && convo.targetModel) {
+                    store.setTargetModel(projectId, convo.targetModel);
+                }
+            }).catch(err => console.error('[CD] Failed to load conversation:', err));
+        }
+    }, [projectId]);
 
     const [savedNotice, setSavedNotice] = useState(false);
     const [scriptExpanded, setScriptExpanded] = useState(true);
