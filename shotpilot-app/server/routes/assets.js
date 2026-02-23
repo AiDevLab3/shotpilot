@@ -1070,6 +1070,31 @@ Return a JSON object (no markdown, raw JSON):
     res.json(iterations);
   });
 
+  /**
+   * GET /api/scenes/:id/staged-images — get project images assigned to this scene but not linked to any shot variant
+   */
+  router.get('/api/scenes/:id/staged-images', (req, res) => {
+    const sceneId = req.params.id;
+    
+    // Get all project_images assigned to this scene
+    const scene = db.prepare('SELECT * FROM scenes WHERE id = ?').get(sceneId);
+    if (!scene) return res.status(404).json({ error: 'Scene not found' });
+    
+    // Get image URLs already linked to shots in this scene
+    const linkedUrls = db.prepare(`
+      SELECT DISTINCT iv.image_url 
+      FROM image_variants iv 
+      JOIN shots s ON iv.shot_id = s.id 
+      WHERE s.scene_id = ?
+    `).all(sceneId).map(r => r.image_url);
+    
+    // Get project_images for this scene that aren't linked
+    const staged = db.prepare('SELECT * FROM project_images WHERE scene_id = ?').all(sceneId);
+    const unlinked = staged.filter(img => !linkedUrls.includes(img.image_url));
+    
+    res.json(unlinked);
+  });
+
   return router;
 }
 

@@ -934,6 +934,232 @@ const ShotBoardPage: React.FC = () => {
                                 <select name="camera_movement" value={formData.camera_movement || 'Static'} onChange={handleChange} style={styles.select}>
                                     <option>Static</option>
                                     <option>Pan</option>
+                                                const mainImage = imageVariants[0];
+                                                const imageUrl = mainImage?.image_url || null;
+                                                const currentStatus = shot.status || 'planning';
+                                                const isDropdownOpen = activeDropdownId === `shot-${shot.id}`;
+
+                                                const handleShotStatusChange = async (s: Shot, newStatus: Shot['status']) => {
+                                                    setActiveDropdownId(null);
+                                                    if (s.status === newStatus) return;
+                                                    try {
+                                                        const updatedShot = { ...s, status: newStatus };
+                                                        const updatedShots = sceneShots.map(shot => shot.id === s.id ? updatedShot : shot);
+                                                        setShotsByScene(prev => ({ ...prev, [scene.id]: updatedShots }));
+                                                        await updateShot(s.id, { status: newStatus });
+                                                        checkSceneCompletion(scene.id);
+
+                                                        // Sync: Downgrade scene if shot is not complete
+                                                        if ((newStatus === 'planning' || newStatus === 'in-progress') && scene.status === 'complete') {
+                                                            await updateScene(scene.id, { status: 'in-progress' });
+                                                            setScenes(prev => prev.map(sc => sc.id === scene.id ? { ...sc, status: 'in-progress' } : sc));
+                                                        }
+                                                    } catch (err) {
+                                                        console.error("Failed to update status", err);
+                                                        refreshSceneShots(scene.id);
+                                                    }
+                                                };
+
+                                                // Custom Insert Button Style
+                                                const insertBtnStyle: React.CSSProperties = {
+                                                    width: '32px',
+                                                    height: '32px', // Equal to width
+                                                    alignSelf: 'center', // Center vertically
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    borderRadius: '8px',
+                                                    cursor: 'pointer',
+                                                    backgroundColor: '#18181b', // Darker background for contrast
+                                                    border: '1px solid #3f3f46', // Visible border by default
+                                                    color: '#9ca3af',
+                                                    transition: 'all 0.2s ease',
+                                                    opacity: 1, // Full opacity
+                                                    margin: '0 4px'
+                                                };
+
+                                                return (
+                                                    <React.Fragment key={shot.id}>
+                                                        <ErrorBoundary>
+                                                            <div style={{ ...styles.card, minHeight: '600px', maxHeight: '600px', display: 'flex', flexDirection: 'column' }}>
+                                                                <div style={{ ...styles.cardHeader, flexShrink: 0 }}>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                        <span style={styles.shotBadge}>Shot {shot.shot_number}</span>
+                                                                        <ReadinessBadge tier={shot.readiness_tier || shot.quality_tier} onClick={() => handleOpenReadinessDialogue(shot.id, shot.readiness_percentage || shot.quality_percentage || 0)} />
+                                                                    </div>
+                                                                    <div style={{ position: 'relative' }} ref={isDropdownOpen ? dropdownRef : null}>
+                                                                        <button
+                                                                            className={`status-badge status-${currentStatus}`}
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setActiveDropdownId(isDropdownOpen ? null : `shot-${shot.id}`);
+                                                                            }}
+                                                                            title="Click to toggle status"
+                                                                        >
+                                                                            {currentStatus === 'planning' ? '📝 Planning' : currentStatus === 'in-progress' ? '🎬 In Progress' : '✅ Complete'}
+                                                                            <span style={{ fontSize: '10px', opacity: 0.8, marginLeft: '2px' }}>▼</span>
+                                                                        </button>
+
+                                                                        {isDropdownOpen && (
+                                                                            <div style={{ position: 'absolute', top: 'calc(100% + 4px)', right: '0', background: '#1f2937', border: '1px solid #374151', borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', zIndex: 100, minWidth: '140px', overflow: 'hidden' }}>
+                                                                                <DropdownOption label="Planning" isSelected={currentStatus === 'planning'} onClick={() => handleShotStatusChange(shot, 'planning')} icon={<FileText size={14} />} />
+                                                                                <DropdownOption label="In Progress" isSelected={currentStatus === 'in-progress'} onClick={() => handleShotStatusChange(shot, 'in-progress')} icon={<Clock size={14} />} />
+                                                                                <DropdownOption label="Complete" isSelected={currentStatus === 'complete'} onClick={() => handleShotStatusChange(shot, 'complete')} icon={<Check size={14} />} />
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                                <div style={{ ...styles.cardBody, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                                                                    <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px', marginBottom: '12px' }}>
+                                                                        <div style={{ ...styles.cardImage, aspectRatio: frameAspectRatio }}>
+                                                                            {mainImage ? (
+                                                                                <>
+                                                                                    <img src={imageUrl || ''} alt="" style={{ width: '100%', height: 'auto', cursor: 'zoom-in' }} onClick={(e) => { e.stopPropagation(); if (imageUrl) setLightboxSrc(imageUrl); }} />
+                                                                                    <button onClick={(e) => handleDeleteImage(mainImage.id, shot.id, e)} style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', padding: '4px', borderRadius: '4px', color: 'white', border: 'none', cursor: 'pointer' }}>
+                                                                                        <Trash2 size={12} />
+                                                                                    </button>
+                                                                                </>
+                                                                            ) : (
+                                                                                <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#6b7280' }}>
+                                                                                    <ImageIcon size={24} />
+                                                                                    <span style={{ fontSize: '10px' }}>Upload</span>
+                                                                                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleFileUpload(shot.id, e)} />
+                                                                                </label>
+                                                                            )}
+                                                                        </div>
+                                                                        <div style={{ marginTop: '12px' }}>
+                                                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                                                <span style={styles.shotType}>{shot.shot_type}</span>
+                                                                                <span style={{ fontSize: '10px', color: '#9ca3af' }}>{shot.camera_movement}</span>
+                                                                            </div>
+                                                                            <div style={{ fontSize: '12px', color: '#e5e7eb', lineHeight: '1.4' }}>{renderWithMentions(shot.description || 'No description')}</div>
+                                                                        </div>
+                                                                        <VariantList shotId={shot.id} />
+                                                                    </div>
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', flexShrink: 0 }}>
+                                                                        {/* Image Prompt Button - Top */}
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setGenerateModalShot(shot);
+                                                                                setGenerateModalSceneId(scene.id);
+                                                                                setGenerateModalType('image');
+                                                                                setIsGenerateModalOpen(true);
+                                                                            }}
+                                                                            style={{
+                                                                                width: '100%',
+                                                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                                                                padding: '8px 12px',
+                                                                                backgroundColor: 'rgba(20, 184, 166, 0.1)',
+                                                                                border: '1px solid rgba(20, 184, 166, 0.3)',
+                                                                                borderRadius: '6px',
+                                                                                color: '#2dd4bf',
+                                                                                fontSize: '13px', fontWeight: 600,
+                                                                                cursor: 'pointer',
+                                                                                transition: 'all 0.2s'
+                                                                            }}
+                                                                            onMouseEnter={e => {
+                                                                                e.currentTarget.style.backgroundColor = 'rgba(20, 184, 166, 0.2)';
+                                                                                e.currentTarget.style.transform = 'translateY(-1px)';
+                                                                            }}
+                                                                            onMouseLeave={e => {
+                                                                                e.currentTarget.style.backgroundColor = 'rgba(20, 184, 166, 0.1)';
+                                                                                e.currentTarget.style.transform = 'none';
+                                                                            }}
+                                                                        >
+                                                                            <ImageIcon size={16} /> Image Prompt
+                                                                        </button>
+
+                                                                        {/* Video Prompt Button - Bottom */}
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setGenerateModalShot(shot);
+                                                                                setGenerateModalSceneId(scene.id);
+                                                                                setGenerateModalType('video');
+                                                                                setIsGenerateModalOpen(true);
+                                                                            }}
+                                                                            style={{
+                                                                                width: '100%',
+                                                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                                                                padding: '8px 12px',
+                                                                                backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                                                                                border: '1px solid rgba(168, 85, 247, 0.3)',
+                                                                                borderRadius: '6px',
+                                                                                color: '#a78bfa',
+                                                                                fontSize: '13px', fontWeight: 600,
+                                                                                cursor: 'pointer',
+                                                                                transition: 'all 0.2s'
+                                                                            }}
+                                                                            onMouseEnter={e => {
+                                                                                e.currentTarget.style.backgroundColor = 'rgba(168, 85, 247, 0.2)';
+                                                                                e.currentTarget.style.transform = 'translateY(-1px)';
+                                                                            }}
+                                                                            onMouseLeave={e => {
+                                                                                e.currentTarget.style.backgroundColor = 'rgba(168, 85, 247, 0.1)';
+                                                                                e.currentTarget.style.transform = 'none';
+                                                                            }}
+                                                                        >
+                                                                            <Video size={16} /> Video Prompt
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                                <div style={{ ...styles.cardActions, flexShrink: 0, marginTop: '12px' }}>
+                                                                    <button onClick={() => handleOpenModal(scene.id, shot)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}><Edit2 size={14} /></button>
+                                                                    <button onClick={(e) => handleDelete(shot.id, scene.id, e)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Insert Button */}
+                                                            <button
+                                                                onClick={() => handleOpenModal(scene.id, undefined, shot)}
+                                                                style={insertBtnStyle}
+                                                                title="Insert Shot Here"
+                                                                onMouseEnter={(e) => {
+                                                                    e.currentTarget.style.backgroundColor = '#27272a'; // Lighter on hover
+                                                                    e.currentTarget.style.borderColor = '#60a5fa'; // Blue border
+                                                                    e.currentTarget.style.color = '#60a5fa';
+                                                                }}
+                                                                onMouseLeave={(e) => {
+                                                                    e.currentTarget.style.backgroundColor = '#18181b';
+                                                                    e.currentTarget.style.borderColor = '#3f3f46';
+                                                                    e.currentTarget.style.color = '#9ca3af';
+                                                                }}
+                                                            >
+                                                                <Plus size={20} />
+                                                            </button>
+                                                        </ErrorBoundary>
+                                                    </React.Fragment>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {isModalOpen && (
+                    <div style={styles.modalOverlay}>
+                        <div style={styles.modal}>
+                            <h2 style={{ color: 'white', marginBottom: '20px' }}>{editingShot ? `Edit Shot ${editingShot.shot_number}` : 'New Shot'}</h2>
+                            <div style={styles.formGroup}>
+                                <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>SHOT NUMBER</label>
+                                <input name="shot_number" value={formData.shot_number || ''} onChange={handleChange} style={styles.input} />
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>SHOT TYPE</label>
+                                <select name="shot_type" value={formData.shot_type || 'Wide'} onChange={handleChange} style={styles.select}>
+                                    <option>Wide</option>
+                                    <option>Medium</option>
+                                    <option>Close-up</option>
+                                    <option>Extreme Close-up</option>
+                                </select>
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label style={{ color: '#d1d5db', display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>MOVEMENT</label>
+                                <select name="camera_movement" value={formData.camera_movement || 'Static'} onChange={handleChange} style={styles.select}>
+                                    <option>Static</option>
+                                    <option>Pan</option>
                                     <option>Tilt</option>
                                     <option>Dolly</option>
                                     <option>Handheld</option>

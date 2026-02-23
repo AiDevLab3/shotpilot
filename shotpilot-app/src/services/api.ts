@@ -201,6 +201,10 @@ export const deleteScene = async (id: number): Promise<void> => {
     await apiCall(`/scenes/${id}`, { method: 'DELETE' });
 };
 
+export const getStagedImages = async (sceneId: number): Promise<ProjectImage[]> => {
+    return apiCall(`/scenes/${sceneId}/staged-images`);
+};
+
 // SHOTS
 export const getShots = async (sceneId: number): Promise<Shot[]> => {
     return apiCall(`/scenes/${sceneId}/shots`);
