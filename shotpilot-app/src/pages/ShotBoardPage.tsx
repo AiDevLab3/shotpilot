@@ -880,7 +880,7 @@ const ShotBoardPage: React.FC = () => {
                                         />
                                         
                                         {/* Expanded Shot Panel */}
-                                        {expandedShotId && (
+                                        {expandedShotId && sceneShots.find(s => s.id === expandedShotId) && (
                                             <ExpandedShotPanel
                                                 shot={sceneShots.find(s => s.id === expandedShotId)!}
                                                 imageVariants={shotImages[expandedShotId] || []}
