@@ -251,15 +251,27 @@ Return ONLY valid JSON array:
 
 If no matches are found, return an empty array [].`;
 
-  const result = await callGemini({
-    parts: [{ text: 'Analyze the staged images and suggest placements for the planned shots.' }],
-    systemInstruction: systemPrompt,
-    thinkingLevel: 'medium',
-    responseMimeType: 'application/json',
-    maxOutputTokens: 4096,
-  });
-
-  return JSON.parse(result);
+  // Try up to 2 times in case of truncated JSON
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const result = await callGemini({
+        parts: [{ text: 'Analyze the staged images and suggest placements for the planned shots.' }],
+        systemInstruction: systemPrompt,
+        thinkingLevel: 'medium',
+        responseMimeType: 'application/json',
+        maxOutputTokens: 4096,
+      });
+      return JSON.parse(result);
+    } catch (err) {
+      if (attempt === 0 && err instanceof SyntaxError) {
+        console.warn('[suggestPlacements] JSON parse failed, retrying...');
+        continue;
+      }
+      console.error('[suggestPlacements] Failed:', err.message);
+      return [];
+    }
+  }
+  return [];
 }
 
 /**

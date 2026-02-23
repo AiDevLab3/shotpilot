@@ -253,13 +253,21 @@ const ShotBoardPage: React.FC = () => {
     };
 
     // CD Suggestions handlers
+    const [suggestionsMessage, setSuggestionsMessage] = useState<Record<number, string>>({});
+    
     const handleRequestSuggestions = async (sceneId: number) => {
         setSuggestionsLoading(prev => ({ ...prev, [sceneId]: true }));
+        setSuggestionsMessage(prev => ({ ...prev, [sceneId]: '' }));
         try {
             const result = await suggestPlacements(sceneId, projectId || undefined);
-            setSuggestionsByScene(prev => ({ ...prev, [sceneId]: result.suggestions || [] }));
+            const suggestions = result.suggestions || [];
+            setSuggestionsByScene(prev => ({ ...prev, [sceneId]: suggestions }));
+            if (suggestions.length === 0) {
+                setSuggestionsMessage(prev => ({ ...prev, [sceneId]: result.message || 'No strong fits found for the remaining staged images.' }));
+            }
         } catch (err) {
             console.error('Failed to get suggestions:', err);
+            setSuggestionsMessage(prev => ({ ...prev, [sceneId]: 'Failed to analyze — try again.' }));
         } finally {
             setSuggestionsLoading(prev => ({ ...prev, [sceneId]: false }));
         }
@@ -1094,6 +1102,28 @@ const ShotBoardPage: React.FC = () => {
                                                 onDismiss={() => handleDismissSuggestions(scene.id)}
                                                 loading={suggestionsLoading[scene.id]}
                                             />
+                                        )}
+                                        
+                                        {/* Suggestions message (no results or error) */}
+                                        {suggestionsMessage[scene.id] && !suggestionsLoading[scene.id] && (suggestionsByScene[scene.id] || []).length === 0 && (
+                                            <div style={{
+                                                marginTop: '12px',
+                                                padding: '12px 16px',
+                                                backgroundColor: 'rgba(107, 114, 128, 0.08)',
+                                                border: '1px solid rgba(107, 114, 128, 0.2)',
+                                                borderRadius: '8px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'space-between',
+                                            }}>
+                                                <span style={{ color: '#9ca3af', fontSize: '12px' }}>
+                                                    {suggestionsMessage[scene.id]}
+                                                </span>
+                                                <button
+                                                    onClick={() => setSuggestionsMessage(prev => ({ ...prev, [scene.id]: '' }))}
+                                                    style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: '14px' }}
+                                                >✕</button>
+                                            </div>
                                         )}
                                         
                                         {/* Gap Analysis Panel */}
