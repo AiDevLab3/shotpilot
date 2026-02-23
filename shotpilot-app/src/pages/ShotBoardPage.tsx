@@ -10,6 +10,7 @@ import { ExpandedShotPanel } from '../components/ExpandedShotPanel';
 import { SuggestionOverlay } from '../components/SuggestionOverlay';
 import { GapAnalysisPanel } from '../components/GapAnalysisPanel';
 import { CohesionCheckPanel } from '../components/CohesionCheckPanel';
+import { ShotChatPanel } from '../components/ShotChatPanel';
 import { suggestPlacements, getGapAnalysis, getCohesionCheck } from '../services/agentApi';
 import type { PlacementSuggestion, GapAnalysis, CohesionCheck } from '../services/agentApi';
 import { GeneratePromptModal } from '../components/GeneratePromptModal';
@@ -91,6 +92,9 @@ const ShotBoardPage: React.FC = () => {
     // Cohesion Check state
     const [cohesionByScene, setCohesionByScene] = useState<Record<number, CohesionCheck>>({});
     const [cohesionLoading, setCohesionLoading] = useState<Record<number, boolean>>({});
+    
+    // Shot Chat state
+    const [shotChatTarget, setShotChatTarget] = useState<{ shot: Shot; scene: Scene; context?: string } | null>(null);
 
     // Parse project frame_size to CSS aspect-ratio
     const frameAspectRatio = (() => {
@@ -1019,8 +1023,23 @@ const ShotBoardPage: React.FC = () => {
                                                 onReject={handleRejectSuggestion}
                                                 onAcceptAll={() => handleAcceptAllSuggestions(scene.id)}
                                                 onDiscussWithCD={() => {
-                                                    // TODO: Open contextual CD chat
-                                                    console.log('Discuss with CD - coming soon');
+                                                    // Open shot chat with suggestion context
+                                                    const suggestions = suggestionsByScene[scene.id] || [];
+                                                    const contextLines = suggestions.map(s => {
+                                                        const img = (stagedImagesByScene[scene.id] || []).find(i => i.id === s.image_id);
+                                                        const targetShot = sceneShots.find(sh => sh.id === s.shot_id);
+                                                        return `Image "${img?.title || `#${s.image_id}`}" → Shot ${targetShot?.shot_number || '?'} (${s.confidence}% confidence): ${s.reasoning}`;
+                                                    }).join('\n');
+                                                    // Use first suggested shot as the chat target
+                                                    const firstSuggestion = suggestions[0];
+                                                    const targetShot = firstSuggestion ? sceneShots.find(s => s.id === firstSuggestion.shot_id) : sceneShots[0];
+                                                    if (targetShot) {
+                                                        setShotChatTarget({
+                                                            shot: targetShot,
+                                                            scene,
+                                                            context: `I have placement suggestions to discuss:\n${contextLines}`,
+                                                        });
+                                                    }
                                                 }}
                                                 onDismiss={() => handleDismissSuggestions(scene.id)}
                                                 loading={suggestionsLoading[scene.id]}
@@ -1194,6 +1213,9 @@ const ShotBoardPage: React.FC = () => {
                                                     } catch (err) {
                                                         console.error('Upscale action failed:', err);
                                                     }
+                                                }}
+                                                onDiscuss={(shot) => {
+                                                    setShotChatTarget({ shot, scene });
                                                 }}
                                             />
                                         )}
@@ -1411,6 +1433,17 @@ const ShotBoardPage: React.FC = () => {
                         onClose={() => setIsReadinessDialogueOpen(false)}
                         shotId={readinessDialogueShotId}
                         readinessScore={readinessDialogueScore}
+                    />
+                )}
+
+                {/* Shot Chat Panel */}
+                {shotChatTarget && project && (
+                    <ShotChatPanel
+                        shot={shotChatTarget.shot}
+                        scene={shotChatTarget.scene}
+                        project={project}
+                        initialContext={shotChatTarget.context}
+                        onClose={() => setShotChatTarget(null)}
                     />
                 )}
             </div>

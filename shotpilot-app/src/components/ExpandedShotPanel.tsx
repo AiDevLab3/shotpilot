@@ -10,6 +10,7 @@ interface ExpandedShotPanelProps {
   onAnalyze?: (imageVariant: ImageVariant) => void;
   onImprove?: (imageVariant: ImageVariant) => void;
   onUpscale?: (imageVariant: ImageVariant) => void;
+  onDiscuss?: (shot: Shot) => void;
 }
 
 export const ExpandedShotPanel: React.FC<ExpandedShotPanelProps> = ({
@@ -20,6 +21,7 @@ export const ExpandedShotPanel: React.FC<ExpandedShotPanelProps> = ({
   onAnalyze,
   onImprove,
   onUpscale,
+  onDiscuss,
 }) => {
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   
@@ -334,6 +336,26 @@ export const ExpandedShotPanel: React.FC<ExpandedShotPanelProps> = ({
                     }}
                   >
                     <ArrowUp size={16} /> Upscale
+                  </button>
+                )}
+                {onDiscuss && (
+                  <button
+                    onClick={() => onDiscuss(shot)}
+                    style={{
+                      padding: '8px 16px',
+                      backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                      border: '1px solid rgba(139, 92, 246, 0.3)',
+                      borderRadius: '6px',
+                      color: '#a78bfa',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    💬 Discuss with CD
                   </button>
                 )}
               </div>
