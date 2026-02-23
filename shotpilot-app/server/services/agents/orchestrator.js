@@ -364,9 +364,23 @@ async function recommendModelForImprovement(strategy, audit) {
   try {
     const cdResult = await directShot(fixDescription, null, null, null);
     
-    // Get alternative models that could work for this type of fix
+    // Never recommend a utility model (Topaz) as primary for generate/edit
+    const utilityIds = ['topaz'];
+    let suggestedModel = cdResult.selected_model;
+    
+    if (utilityIds.includes(suggestedModel)) {
+      // Pick from strategy steps instead, or fall back to best generator
+      if (strategy.steps?.length > 0) {
+        const firstNonUtility = strategy.steps.find(s => !utilityIds.includes(s.model));
+        if (firstNonUtility) suggestedModel = firstNonUtility.model;
+      }
+      // Still utility? Default to flux-2
+      if (utilityIds.includes(suggestedModel)) suggestedModel = 'flux-2';
+    }
+    
+    // Get alternative models — image models for editing, exclude utilities from alternatives
     const alternativeModels = Object.entries(MODEL_REGISTRY)
-      .filter(([id, model]) => model.hasAPI && id !== cdResult.selected_model)
+      .filter(([id, model]) => model.hasAPI && id !== suggestedModel && !utilityIds.includes(id))
       .slice(0, 2)
       .map(([id, model]) => ({
         id,
@@ -374,7 +388,7 @@ async function recommendModelForImprovement(strategy, audit) {
       }));
     
     return {
-      suggested_model: cdResult.selected_model,
+      suggested_model: suggestedModel,
       reasoning: cdResult.model_reasoning || `Recommended for ${strategy.strategy} action`,
       alternative_models: alternativeModels
     };
