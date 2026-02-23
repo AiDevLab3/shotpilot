@@ -91,6 +91,20 @@ export function GeneratePromptModal({
     const [savingField, setSavingField] = useState<string | null>(null);
     const [savedFields, setSavedFields] = useState<Set<string>>(new Set());
 
+    // Cost estimates per image by model
+    const MODEL_COSTS: Record<string, { cost: string; note?: string }> = {
+        'flux-2': { cost: '$0.03' },
+        'gpt-image-1.5': { cost: '$0.05' },
+        'grok-imagine': { cost: '$0.02', note: 'cheapest — great for iteration' },
+        'kling-image-v3': { cost: '$0.04' },
+        'nano-banana-pro': { cost: '$0.04' },
+        'seedream-4.5': { cost: '$0.03' },
+        'flux-kontext': { cost: '$0.03' },
+        'reve': { cost: '$0.03', note: 'edit only — needs input image' },
+        'topaz': { cost: '$0.02', note: 'upscale only' },
+        'midjourney': { cost: 'N/A', note: 'prompt-only — use in Discord/web' },
+    };
+
     const isVideoMode = modelType === 'video';
     const Icon = isVideoMode ? Clapperboard : Camera;
     const modelLabel = isVideoMode ? 'VIDEO MODEL' : 'STORYBOARD MODEL';
@@ -398,6 +412,30 @@ export function GeneratePromptModal({
                                                 borderRadius: '4px',
                                             }}>
                                                 {availableModels.find(m => m.name === model)?.capabilities || availableModels.find(m => m.name === model)?.description}
+                                            </div>
+                                        )}
+
+                                        {/* Cost estimate */}
+                                        {model && MODEL_COSTS[model] && (
+                                            <div style={{
+                                                marginTop: '8px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                                padding: '8px 12px',
+                                                backgroundColor: 'rgba(251, 191, 36, 0.08)',
+                                                border: '1px solid rgba(251, 191, 36, 0.2)',
+                                                borderRadius: '6px',
+                                            }}>
+                                                <span style={{ fontSize: '14px' }}>💰</span>
+                                                <span style={{ color: '#fbbf24', fontSize: '13px', fontWeight: 600 }}>
+                                                    {MODEL_COSTS[model].cost}/image
+                                                </span>
+                                                {MODEL_COSTS[model].note && (
+                                                    <span style={{ color: '#9ca3af', fontSize: '11px' }}>
+                                                        — {MODEL_COSTS[model].note}
+                                                    </span>
+                                                )}
                                             </div>
                                         )}
                                     </>

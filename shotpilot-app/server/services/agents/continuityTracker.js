@@ -2,21 +2,126 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { callGemini } from '../ai/shared.js';
+import { db } from '../../database.js';
+import { queryKB } from '../../rag/query-simple.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const KB_DIR = path.resolve(__dirname, '../../../../kb/condensed');
 
-// Lazy-load KB knowledge
-let _continuityKB = null;
+// Ensure continuity tables exist
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS character_bibles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER NOT NULL,
+      character_name TEXT NOT NULL,
+      bible_json TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(project_id, character_name)
+    );
+    
+    CREATE TABLE IF NOT EXISTS continuity_checks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER,
+      shot_id INTEGER,
+      scene_id INTEGER,
+      result_json TEXT NOT NULL,
+      recommendation TEXT,
+      continuity_score REAL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    
+    CREATE TABLE IF NOT EXISTS approved_references (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER NOT NULL,
+      shot_id INTEGER,
+      image_url TEXT NOT NULL,
+      description TEXT,
+      approved_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+} catch (err) {
+  console.warn('[continuity] Table creation warning:', err.message);
+}
+
+// Persistence helpers
+function saveCharacterBible(projectId, characterName, bible) {
+  const stmt = db.prepare(`
+    INSERT INTO character_bibles (project_id, character_name, bible_json, updated_at)
+    VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(project_id, character_name) DO UPDATE SET
+      bible_json = excluded.bible_json,
+      updated_at = CURRENT_TIMESTAMP
+  `);
+  stmt.run(projectId, characterName, JSON.stringify(bible));
+}
+
+function getCharacterBible(projectId, characterName) {
+  const row = db.prepare('SELECT bible_json FROM character_bibles WHERE project_id = ? AND character_name = ?').get(projectId, characterName);
+  return row ? JSON.parse(row.bible_json) : null;
+}
+
+function getAllCharacterBibles(projectId) {
+  const rows = db.prepare('SELECT character_name, bible_json FROM character_bibles WHERE project_id = ?').all(projectId);
+  return rows.map(r => ({ name: r.character_name, bible: JSON.parse(r.bible_json) }));
+}
+
+function saveContinuityCheck(projectId, shotId, sceneId, result) {
+  db.prepare(`
+    INSERT INTO continuity_checks (project_id, shot_id, scene_id, result_json, recommendation, continuity_score)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(projectId, shotId, sceneId, JSON.stringify(result), result.recommendation, result.continuity_score);
+}
+
+function getContinuityHistory(projectId, limit = 20) {
+  return db.prepare(`
+    SELECT * FROM continuity_checks WHERE project_id = ? ORDER BY created_at DESC LIMIT ?
+  `).all(projectId, limit).map(r => ({ ...r, result: JSON.parse(r.result_json) }));
+}
+
+function saveApprovedReference(projectId, shotId, imageUrl, description) {
+  db.prepare(`
+    INSERT INTO approved_references (project_id, shot_id, image_url, description)
+    VALUES (?, ?, ?, ?)
+  `).run(projectId, shotId, imageUrl, description);
+}
+
+function getApprovedReferences(projectId, limit = 10) {
+  return db.prepare(`
+    SELECT * FROM approved_references WHERE project_id = ? ORDER BY approved_at DESC LIMIT ?
+  `).all(projectId, limit);
+}
+
+// KB knowledge — tries RAG first, falls back to hardcoded files
 function getContinuityKnowledge() {
-  if (!_continuityKB) {
-    _continuityKB = {
+  try {
+    const realismChunks = queryKB('realism principles photographic quality', { category: 'principles' }, 5);
+    const consistencyChunks = queryKB('character consistency appearance tracking continuity', {}, 5);
+
+    if (realismChunks.length > 0 || consistencyChunks.length > 0) {
+      console.log(`[continuity] RAG loaded: ${realismChunks.length} realism, ${consistencyChunks.length} consistency chunks`);
+      return {
+        realismPrinciples: realismChunks.map(c => c.text).join('\n\n') || 'Standard photographic realism criteria.',
+        characterConsistency: consistencyChunks.map(c => c.text).join('\n\n') || 'Standard character consistency tracking.',
+      };
+    }
+  } catch (err) {
+    console.warn('[continuity] RAG query failed, falling back:', err.message);
+  }
+
+  try {
+    return {
       realismPrinciples: fs.readFileSync(path.join(KB_DIR, '01_Core_Realism_Principles.md'), 'utf-8'),
       characterConsistency: fs.readFileSync(path.join(KB_DIR, '03_Pack_Character_Consistency.md'), 'utf-8'),
     };
+  } catch {
+    return {
+      realismPrinciples: 'Evaluate photographic realism across all continuity dimensions.',
+      characterConsistency: 'Track face, body, costume, colors, and distinguishing features across shots.',
+    };
   }
-  return _continuityKB;
 }
 
 function buildContinuitySystemPrompt(styleProfile) {
@@ -129,7 +234,23 @@ Recommendation thresholds:
     maxOutputTokens: 4096,
   });
 
-  return JSON.parse(result);
+  const parsed = JSON.parse(result);
+  
+  // Persist the check result if we have context IDs
+  if (shotContext?.projectId || shotContext?.project_id) {
+    try {
+      saveContinuityCheck(
+        shotContext.projectId || shotContext.project_id,
+        shotContext.shotId || shotContext.shot_id || null,
+        shotContext.sceneId || shotContext.scene_id || null,
+        parsed
+      );
+    } catch (err) {
+      console.warn('[continuity] Failed to persist check:', err.message);
+    }
+  }
+
+  return parsed;
 }
 
 /**
@@ -138,7 +259,7 @@ Recommendation thresholds:
  * @param {string} characterName - Name of the character
  * @returns {object} Structured character profile
  */
-async function buildCharacterBible(characterImages = [], characterName = 'Unknown') {
+async function buildCharacterBible(characterImages = [], characterName = 'Unknown', projectId = null) {
   const parts = [];
 
   for (let i = 0; i < characterImages.length; i++) {
@@ -200,7 +321,30 @@ Respond with ONLY valid JSON:
     maxOutputTokens: 4096,
   });
 
-  return JSON.parse(result);
+  const parsed = JSON.parse(result);
+  
+  // Persist the character bible
+  if (projectId) {
+    try {
+      saveCharacterBible(projectId, characterName, parsed);
+      console.log(`[continuity] Persisted character bible: ${characterName} for project ${projectId}`);
+    } catch (err) {
+      console.warn('[continuity] Failed to persist character bible:', err.message);
+    }
+  }
+
+  return parsed;
 }
 
-export { checkContinuity, buildCharacterBible };
+export {
+  checkContinuity,
+  buildCharacterBible,
+  // Persistence exports
+  saveCharacterBible,
+  getCharacterBible,
+  getAllCharacterBibles,
+  saveContinuityCheck,
+  getContinuityHistory,
+  saveApprovedReference,
+  getApprovedReferences,
+};

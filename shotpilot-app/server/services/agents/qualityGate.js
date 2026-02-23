@@ -2,22 +2,46 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { callGemini } from '../ai/shared.js';
+import { queryKB, queryForStyle } from '../../rag/query-simple.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const KB_DIR = path.resolve(__dirname, '../../../../kb/condensed');
 
-// Lazy-load QA knowledge
-let _qaKB = null;
+// Lazy-load QA knowledge — tries RAG first, falls back to hardcoded files
 function getQAKnowledge() {
-  if (!_qaKB) {
-    _qaKB = {
+  // Try RAG-powered knowledge retrieval
+  try {
+    const realismChunks = queryKB('realism principles photographic quality', { category: 'principles' }, 5);
+    const qcChunks = queryKB('quality control image artifacts assessment scoring', { category: ['pack', 'quality'] }, 5);
+    const imageQCChunks = queryKB('image quality assessment realism score audit', {}, 5);
+
+    if (realismChunks.length > 0 || qcChunks.length > 0) {
+      console.log(`[QG] RAG loaded: ${realismChunks.length} realism, ${qcChunks.length} QC, ${imageQCChunks.length} image QC chunks`);
+      return {
+        realismPrinciples: realismChunks.map(c => c.text).join('\n\n') || 'Use standard photographic realism criteria.',
+        qualityControlPack: qcChunks.map(c => c.text).join('\n\n') || 'Standard quality control assessment.',
+        imageQCPack: imageQCChunks.map(c => c.text).join('\n\n') || 'Standard image quality assessment.',
+      };
+    }
+  } catch (err) {
+    console.warn('[QG] RAG query failed, falling back to hardcoded KB:', err.message);
+  }
+
+  // Fallback to hardcoded files
+  try {
+    return {
       realismPrinciples: fs.readFileSync(path.join(KB_DIR, '01_Core_Realism_Principles.md'), 'utf-8'),
       qualityControlPack: fs.readFileSync(path.join(KB_DIR, '03_Pack_Quality_Control.md'), 'utf-8'),
       imageQCPack: fs.readFileSync(path.join(KB_DIR, '03_Pack_Image_Quality_Control.md'), 'utf-8'),
     };
+  } catch {
+    return {
+      realismPrinciples: 'Evaluate photographic realism: skin texture, lighting physics, color naturalism, depth of field, entropy/imperfection.',
+      qualityControlPack: 'Score dimensions 1-10: realism, style match, AI artifacts, video readiness, reference suitability.',
+      imageQCPack: 'Check for: waxy skin, flat lighting, impossible geometry, text garbling, uniform HDR glow, plastic materials.',
+    };
   }
-  return _qaKB;
 }
 
 function buildQASystemPrompt() {

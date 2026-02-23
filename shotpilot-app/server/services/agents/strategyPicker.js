@@ -1,5 +1,6 @@
 import { callGemini } from '../ai/shared.js';
 import { MODEL_REGISTRY } from './creativeDirector.js';
+import { queryForModel, queryKB } from '../../rag/query-simple.js';
 
 /**
  * Strategy Picker - The brain of "Improve This"
@@ -91,6 +92,36 @@ If no action is needed, return:
 export async function pickStrategy(auditResult, currentModel, shotContext) {
   console.log('[strategyPicker] Analyzing audit results for improvement strategy');
 
+  // Enrich with RAG context about the current model and potential fix approaches
+  let ragContext = '';
+  try {
+    // Get model-specific knowledge for the current model
+    const modelRAGId = currentModel?.replace(/-/g, '_');
+    if (modelRAGId) {
+      const modelChunks = queryForModel(modelRAGId, ['editing', 'quality', 'limitations'], 5);
+      if (modelChunks.length > 0) {
+        ragContext += `\n## RAG: Current Model Knowledge (${currentModel})\n${modelChunks.map(c => c.text).join('\n')}\n`;
+      }
+    }
+
+    // Get general improvement technique knowledge
+    const issueTypes = [];
+    if (auditResult.ai_artifacts?.score < 7) issueTypes.push('artifact removal');
+    if (auditResult.realism?.score < 7) issueTypes.push('realism improvement skin texture');
+    if (auditResult.style_match?.score < 7) issueTypes.push('style matching color grading');
+    
+    if (issueTypes.length > 0) {
+      const techniqueChunks = queryKB(issueTypes.join(' '), { category: ['editing', 'quality', 'pack'] }, 5);
+      if (techniqueChunks.length > 0) {
+        ragContext += `\n## RAG: Improvement Techniques\n${techniqueChunks.map(c => c.text).join('\n')}\n`;
+      }
+    }
+    
+    if (ragContext) console.log('[strategyPicker] RAG context enriched with model + technique knowledge');
+  } catch (err) {
+    console.warn('[strategyPicker] RAG enrichment failed (non-critical):', err.message);
+  }
+
   const prompt = `## Current Quality Gate Audit Results
 ${JSON.stringify(auditResult, null, 2)}
 
@@ -100,7 +131,8 @@ ${currentModel} (${MODEL_REGISTRY[currentModel]?.name || 'Unknown'})
 ## Shot Context
 ${typeof shotContext === 'string' ? shotContext : JSON.stringify(shotContext, null, 2)}
 
-Analyze these results and determine the optimal improvement strategy. Focus on the specific issues identified and recommend the most effective approach to fix them.`;
+Analyze these results and determine the optimal improvement strategy. Focus on the specific issues identified and recommend the most effective approach to fix them.
+${ragContext}`;
 
   const result = await callGemini({
     parts: [{ text: prompt }],
