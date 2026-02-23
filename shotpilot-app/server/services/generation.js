@@ -778,6 +778,418 @@ export async function editNanoBanana(params) {
   }
 }
 
+/**
+ * Generate images via Grok Imagine (xAI via fal.ai)
+ */
+export async function generateGrokImagine(params) {
+  const {
+    prompt,
+    numImages = 4,
+    imageSize = 'landscape_16_9',
+    meta,
+  } = params;
+
+  console.log(`[generation:grok] Starting: ${numImages} images`);
+  const startTime = Date.now();
+
+  try {
+    const result = await fal.subscribe('xai/grok-imagine', {
+      input: {
+        prompt,
+        num_images: numImages,
+        image_size: imageSize,
+        output_format: 'jpeg',
+      },
+      onQueueUpdate: (u) => {
+        if (u.status === 'IN_PROGRESS') console.log(`[generation:grok] Processing...`);
+      },
+    });
+
+    const durationMs = Date.now() - startTime;
+    const imageUrls = result.data.images?.map(img => img.url) || [];
+    if (!imageUrls.length) throw new Error('No images in Grok response');
+    const images = await downloadImages(imageUrls, 'grok');
+    console.log(`[generation:grok] Done: ${images.length} images in ${(durationMs / 1000).toFixed(1)}s`);
+
+    setImmediate(() => {
+      try {
+        logApiCall({
+          provider: 'fal.ai', model: 'xai/grok-imagine', action: meta?.action || 'generate',
+          projectId: meta?.projectId, assetId: meta?.assetId,
+          inputTokens: 0, outputTokens: 0, imageCount: images.length, durationMs,
+          requestMeta: { prompt, numImages, imageSize },
+          responseMeta: { requestId: result.requestId, imageCount: images.length, revisedPrompt: result.data.revised_prompt }, error: null
+        });
+      } catch (err) { console.warn('[costs] Failed to log Grok call:', err.message); }
+    });
+
+    return { images, requestId: result.requestId, revisedPrompt: result.data.revised_prompt };
+  } catch (error) {
+    const durationMs = Date.now() - startTime;
+    setImmediate(() => {
+      try {
+        logApiCall({
+          provider: 'fal.ai', model: 'xai/grok-imagine', action: meta?.action || 'generate',
+          projectId: meta?.projectId, assetId: meta?.assetId,
+          inputTokens: 0, outputTokens: 0, imageCount: 0, durationMs,
+          requestMeta: { prompt, numImages }, responseMeta: null, error: error.message
+        });
+      } catch (err) { console.warn('[costs] Failed to log Grok error:', err.message); }
+    });
+    console.error(`[generation:grok] Failed: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * Generate images via Kling Image V3 (fal.ai)
+ */
+export async function generateKlingImageV3(params) {
+  const {
+    prompt,
+    numImages = 4,
+    imageSize = 'landscape_16_9',
+    referenceImages = [],
+    meta,
+  } = params;
+
+  console.log(`[generation:kling] Starting: ${numImages} images, refs=${referenceImages.length}`);
+  const startTime = Date.now();
+
+  try {
+    const input = {
+      prompt,
+      num_images: numImages,
+      image_size: imageSize,
+      output_format: 'jpeg',
+    };
+
+    // Handle reference images for Elements face control
+    if (referenceImages.length > 0) {
+      const refUrls = [];
+      for (const ref of referenceImages) {
+        const fullPath = path.join(__dirname, '../../', ref.image_url);
+        if (fs.existsSync(fullPath)) {
+          const buf = fs.readFileSync(fullPath);
+          refUrls.push({ url: `data:image/jpeg;base64,${buf.toString('base64')}` });
+        }
+      }
+      if (refUrls.length) input.reference_images = refUrls;
+    }
+
+    const result = await fal.subscribe('fal-ai/kling-image/v3', {
+      input,
+      onQueueUpdate: (u) => {
+        if (u.status === 'IN_PROGRESS') console.log(`[generation:kling] Processing...`);
+      },
+    });
+
+    const durationMs = Date.now() - startTime;
+    const imageUrls = result.data.images?.map(img => img.url) || [];
+    if (!imageUrls.length) throw new Error('No images in Kling response');
+    const images = await downloadImages(imageUrls, 'kling');
+    console.log(`[generation:kling] Done: ${images.length} images in ${(durationMs / 1000).toFixed(1)}s`);
+
+    setImmediate(() => {
+      try {
+        logApiCall({
+          provider: 'fal.ai', model: 'fal-ai/kling-image/v3', action: meta?.action || 'generate',
+          projectId: meta?.projectId, assetId: meta?.assetId,
+          inputTokens: 0, outputTokens: 0, imageCount: images.length, durationMs,
+          requestMeta: { prompt, numImages, imageSize, refCount: referenceImages.length },
+          responseMeta: { requestId: result.requestId, imageCount: images.length }, error: null
+        });
+      } catch (err) { console.warn('[costs] Failed to log Kling call:', err.message); }
+    });
+
+    return { images, requestId: result.requestId };
+  } catch (error) {
+    const durationMs = Date.now() - startTime;
+    setImmediate(() => {
+      try {
+        logApiCall({
+          provider: 'fal.ai', model: 'fal-ai/kling-image/v3', action: meta?.action || 'generate',
+          projectId: meta?.projectId, assetId: meta?.assetId,
+          inputTokens: 0, outputTokens: 0, imageCount: 0, durationMs,
+          requestMeta: { prompt, numImages }, responseMeta: null, error: error.message
+        });
+      } catch (err) { console.warn('[costs] Failed to log Kling error:', err.message); }
+    });
+    console.error(`[generation:kling] Failed: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * Generate images via Seedream (ByteDance via fal.ai)
+ */
+export async function generateSeedream(params) {
+  const {
+    prompt,
+    numImages = 4,
+    imageSize = 'landscape_16_9',
+    meta,
+  } = params;
+
+  console.log(`[generation:seedream] Starting: ${numImages} images`);
+  const startTime = Date.now();
+
+  try {
+    const result = await fal.subscribe('fal-ai/bytedance/seedream', {
+      input: {
+        prompt,
+        num_images: numImages,
+        image_size: imageSize,
+        output_format: 'jpeg',
+      },
+      onQueueUpdate: (u) => {
+        if (u.status === 'IN_PROGRESS') console.log(`[generation:seedream] Processing...`);
+      },
+    });
+
+    const durationMs = Date.now() - startTime;
+    const imageUrls = result.data.images?.map(img => img.url) || [];
+    if (!imageUrls.length) throw new Error('No images in Seedream response');
+    const images = await downloadImages(imageUrls, 'seedream');
+    console.log(`[generation:seedream] Done: ${images.length} images in ${(durationMs / 1000).toFixed(1)}s`);
+
+    setImmediate(() => {
+      try {
+        logApiCall({
+          provider: 'fal.ai', model: 'fal-ai/bytedance/seedream', action: meta?.action || 'generate',
+          projectId: meta?.projectId, assetId: meta?.assetId,
+          inputTokens: 0, outputTokens: 0, imageCount: images.length, durationMs,
+          requestMeta: { prompt, numImages, imageSize },
+          responseMeta: { requestId: result.requestId, imageCount: images.length }, error: null
+        });
+      } catch (err) { console.warn('[costs] Failed to log Seedream call:', err.message); }
+    });
+
+    return { images, requestId: result.requestId };
+  } catch (error) {
+    const durationMs = Date.now() - startTime;
+    setImmediate(() => {
+      try {
+        logApiCall({
+          provider: 'fal.ai', model: 'fal-ai/bytedance/seedream', action: meta?.action || 'generate',
+          projectId: meta?.projectId, assetId: meta?.assetId,
+          inputTokens: 0, outputTokens: 0, imageCount: 0, durationMs,
+          requestMeta: { prompt, numImages }, responseMeta: null, error: error.message
+        });
+      } catch (err) { console.warn('[costs] Failed to log Seedream error:', err.message); }
+    });
+    console.error(`[generation:seedream] Failed: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * Edit images via Reve (fal.ai) — surgical editor, edit mode
+ */
+export async function editReve(params) {
+  const {
+    prompt,
+    imagePath,
+    numImages = 4,
+    mode = 'edit', // 'edit' or 'remix'
+    meta,
+  } = params;
+
+  console.log(`[generation:reve] Starting ${mode}: ${numImages} variants`);
+
+  const fullPath = path.join(__dirname, '../../', imagePath);
+  if (!fs.existsSync(fullPath)) throw new Error(`Image not found: ${fullPath}`);
+
+  const imageBuffer = fs.readFileSync(fullPath);
+  const dataUri = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
+  const endpoint = mode === 'remix' ? 'fal-ai/reve/remix' : 'fal-ai/reve/edit';
+
+  const startTime = Date.now();
+  try {
+    const result = await fal.subscribe(endpoint, {
+      input: {
+        prompt,
+        image_url: dataUri,
+        num_images: numImages,
+        output_format: 'jpeg',
+      },
+      onQueueUpdate: (u) => {
+        if (u.status === 'IN_PROGRESS') console.log(`[generation:reve] Processing...`);
+      },
+    });
+
+    const durationMs = Date.now() - startTime;
+    const imageUrls = result.data.images?.map(img => img.url) || [];
+    if (!imageUrls.length) throw new Error('No images in Reve response');
+    const images = await downloadImages(imageUrls, `reve-${mode}`);
+    console.log(`[generation:reve] Done: ${images.length} variants in ${(durationMs / 1000).toFixed(1)}s`);
+
+    setImmediate(() => {
+      try {
+        logApiCall({
+          provider: 'fal.ai', model: endpoint, action: meta?.action || mode,
+          projectId: meta?.projectId, assetId: meta?.assetId,
+          inputTokens: 0, outputTokens: 0, imageCount: images.length, durationMs,
+          requestMeta: { prompt, imagePath, mode, numImages },
+          responseMeta: { requestId: result.requestId, imageCount: images.length }, error: null
+        });
+      } catch (err) { console.warn('[costs] Failed to log Reve call:', err.message); }
+    });
+
+    return { images, requestId: result.requestId };
+  } catch (error) {
+    const durationMs = Date.now() - startTime;
+    setImmediate(() => {
+      try {
+        logApiCall({
+          provider: 'fal.ai', model: endpoint, action: meta?.action || mode,
+          projectId: meta?.projectId, assetId: meta?.assetId,
+          inputTokens: 0, outputTokens: 0, imageCount: 0, durationMs,
+          requestMeta: { prompt, imagePath, mode }, responseMeta: null, error: error.message
+        });
+      } catch (err) { console.warn('[costs] Failed to log Reve error:', err.message); }
+    });
+    console.error(`[generation:reve] Failed: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * Generate via Flux Kontext (text-to-image generation mode)
+ */
+export async function generateFluxKontext(params) {
+  const {
+    prompt,
+    numImages = 1,
+    imageSize = 'landscape_16_9',
+    guidanceScale = 3.5,
+    meta,
+  } = params;
+
+  console.log(`[generation:kontext] Starting generation: ${numImages} images`);
+  const startTime = Date.now();
+
+  try {
+    const result = await fal.subscribe('fal-ai/flux-kontext', {
+      input: {
+        prompt,
+        num_images: numImages,
+        image_size: imageSize,
+        guidance_scale: guidanceScale,
+        output_format: 'jpeg',
+      },
+      onQueueUpdate: (u) => {
+        if (u.status === 'IN_PROGRESS') console.log(`[generation:kontext] Processing...`);
+      },
+    });
+
+    const durationMs = Date.now() - startTime;
+    const imageUrls = result.data.images?.map(img => img.url) || [];
+    if (!imageUrls.length) throw new Error('No images in Flux Kontext response');
+    const images = await downloadImages(imageUrls, 'kontext');
+    console.log(`[generation:kontext] Done: ${images.length} images in ${(durationMs / 1000).toFixed(1)}s`);
+
+    setImmediate(() => {
+      try {
+        logApiCall({
+          provider: 'fal.ai', model: 'fal-ai/flux-kontext', action: meta?.action || 'generate',
+          projectId: meta?.projectId, assetId: meta?.assetId,
+          inputTokens: 0, outputTokens: 0, imageCount: images.length, durationMs,
+          requestMeta: { prompt, numImages, imageSize, guidanceScale },
+          responseMeta: { requestId: result.requestId, imageCount: images.length }, error: null
+        });
+      } catch (err) { console.warn('[costs] Failed to log Kontext call:', err.message); }
+    });
+
+    return { images, requestId: result.requestId };
+  } catch (error) {
+    const durationMs = Date.now() - startTime;
+    setImmediate(() => {
+      try {
+        logApiCall({
+          provider: 'fal.ai', model: 'fal-ai/flux-kontext', action: meta?.action || 'generate',
+          projectId: meta?.projectId, assetId: meta?.assetId,
+          inputTokens: 0, outputTokens: 0, imageCount: 0, durationMs,
+          requestMeta: { prompt, numImages }, responseMeta: null, error: error.message
+        });
+      } catch (err) { console.warn('[costs] Failed to log Kontext error:', err.message); }
+    });
+    console.error(`[generation:kontext] Failed: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * Edit images via Flux Kontext (instruction-based editing)
+ */
+export async function editFluxKontext(params) {
+  const {
+    prompt,
+    imagePath,
+    numImages = 1,
+    guidanceScale = 3.5,
+    meta,
+  } = params;
+
+  console.log(`[generation:kontext-edit] Starting edit`);
+
+  const fullPath = path.join(__dirname, '../../', imagePath);
+  if (!fs.existsSync(fullPath)) throw new Error(`Image not found: ${fullPath}`);
+
+  const imageBuffer = fs.readFileSync(fullPath);
+  const dataUri = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
+
+  const startTime = Date.now();
+  try {
+    const result = await fal.subscribe('fal-ai/flux-kontext/edit', {
+      input: {
+        prompt,
+        image_url: dataUri,
+        num_images: numImages,
+        guidance_scale: guidanceScale,
+        output_format: 'jpeg',
+      },
+      onQueueUpdate: (u) => {
+        if (u.status === 'IN_PROGRESS') console.log(`[generation:kontext-edit] Processing...`);
+      },
+    });
+
+    const durationMs = Date.now() - startTime;
+    const imageUrls = result.data.images?.map(img => img.url) || [];
+    if (!imageUrls.length) throw new Error('No images in Flux Kontext edit response');
+    const images = await downloadImages(imageUrls, 'kontext-edit');
+    console.log(`[generation:kontext-edit] Done in ${(durationMs / 1000).toFixed(1)}s`);
+
+    setImmediate(() => {
+      try {
+        logApiCall({
+          provider: 'fal.ai', model: 'fal-ai/flux-kontext/edit', action: meta?.action || 'edit',
+          projectId: meta?.projectId, assetId: meta?.assetId,
+          inputTokens: 0, outputTokens: 0, imageCount: images.length, durationMs,
+          requestMeta: { prompt, imagePath, guidanceScale },
+          responseMeta: { requestId: result.requestId, imageCount: images.length }, error: null
+        });
+      } catch (err) { console.warn('[costs] Failed to log Kontext edit call:', err.message); }
+    });
+
+    return { images, requestId: result.requestId };
+  } catch (error) {
+    const durationMs = Date.now() - startTime;
+    setImmediate(() => {
+      try {
+        logApiCall({
+          provider: 'fal.ai', model: 'fal-ai/flux-kontext/edit', action: meta?.action || 'edit',
+          projectId: meta?.projectId, assetId: meta?.assetId,
+          inputTokens: 0, outputTokens: 0, imageCount: 0, durationMs,
+          requestMeta: { prompt, imagePath }, responseMeta: null, error: error.message
+        });
+      } catch (err) { console.warn('[costs] Failed to log Kontext edit error:', err.message); }
+    });
+    console.error(`[generation:kontext-edit] Failed: ${error.message}`);
+    throw error;
+  }
+}
+
 export async function generateImage(params) {
   const { model = 'flux-2', meta, ...otherParams } = params;
 
@@ -795,6 +1207,27 @@ export async function generateImage(params) {
     case 'nano-banana-pro':
     case 'nano':
       return generateNanoBanana({ ...otherParams, meta });
+    
+    case 'grok-imagine':
+    case 'grok':
+      return generateGrokImagine({ ...otherParams, meta });
+    
+    case 'kling-image-v3':
+    case 'kling':
+      return generateKlingImageV3({ ...otherParams, meta });
+    
+    case 'seedream-4.5':
+    case 'seedream':
+      return generateSeedream({ ...otherParams, meta });
+    
+    case 'flux-kontext':
+    case 'kontext':
+      return otherParams.imagePath
+        ? editFluxKontext({ ...otherParams, meta })
+        : generateFluxKontext({ ...otherParams, meta });
+    
+    case 'reve':
+      return editReve({ ...otherParams, meta });
     
     case 'midjourney':
     case 'higgsfield':
