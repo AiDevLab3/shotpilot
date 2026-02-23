@@ -414,6 +414,7 @@ export const AssetManagerPage: React.FC = () => {
                     loadAssets();
                   } catch (err: any) { console.error('Delete failed:', err); }
                 }}
+                projectScenes={projectScenes}
               />
             ))}
           </div>
@@ -480,7 +481,8 @@ const AssetCard: React.FC<{
   onAnalyze: () => void;
   onImageClick: () => void;
   onDelete: () => void;
-}> = ({ asset, isSelected, isAnalyzing, onSelect, onAnalyze, onImageClick, onDelete }) => {
+  projectScenes: { id: string; name: string }[];
+}> = ({ asset, isSelected, isAnalyzing, onSelect, onAnalyze, onImageClick, onDelete, projectScenes }) => {
   const [hovered, setHovered] = useState(false);
   const status = asset.status || 'unreviewed';
   const statusInfo = STATUS_COLORS[status] || STATUS_COLORS.unreviewed;
