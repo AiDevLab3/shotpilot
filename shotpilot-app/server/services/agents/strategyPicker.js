@@ -98,7 +98,7 @@ export async function pickStrategy(auditResult, currentModel, shotContext) {
     // Get model-specific knowledge for the current model
     const modelRAGId = currentModel?.replace(/-/g, '_');
     if (modelRAGId) {
-      const modelChunks = queryForModel(modelRAGId, ['editing', 'quality', 'limitations'], 5);
+      const modelChunks = queryForModel(modelRAGId, [], 5);
       if (modelChunks.length > 0) {
         ragContext += `\n## RAG: Current Model Knowledge (${currentModel})\n${modelChunks.map(c => c.text).join('\n')}\n`;
       }

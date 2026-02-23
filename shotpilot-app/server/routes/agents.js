@@ -479,12 +479,13 @@ export default function createAgentRoutes() {
       if (!shots.length) return res.json({ suggestions: [], message: 'No planned shots to match against' });
 
       // Get staged images (assigned to scene but not linked to shots)
+      // Note: scene_id may be stored as TEXT in project_images, so cast both ways
       const linkedUrls = db.prepare(`
         SELECT DISTINCT iv.image_url FROM image_variants iv
         JOIN shots s ON iv.shot_id = s.id WHERE s.scene_id = ?
       `).all(scene_id).map(r => r.image_url);
 
-      const allSceneImages = db.prepare('SELECT * FROM project_images WHERE scene_id = ?').all(scene_id);
+      const allSceneImages = db.prepare('SELECT * FROM project_images WHERE scene_id = ? OR scene_id = ?').all(scene_id, String(scene_id));
       const stagedImages = allSceneImages.filter(img => !linkedUrls.includes(img.image_url));
 
       if (!stagedImages.length) return res.json({ suggestions: [], message: 'No staged images to place' });

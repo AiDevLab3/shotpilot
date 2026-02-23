@@ -21,8 +21,21 @@ function queryKB(text, filters = {}, limit = 10) {
  * Fallback query using LIKE when FTS fails
  */
 function fallbackQuery(text, filters = {}, limit = 10) {
-  let whereClause = 'WHERE (text LIKE ? OR header LIKE ?)';
-  let params = [`%${text}%`, `%${text}%`];
+  // Split query into individual terms for OR matching (LIKE can't match multi-word phrases across the text)
+  const terms = text.split(/\s+/).filter(t => t.length > 2);
+  let termClauses;
+  let params;
+  
+  if (terms.length > 1) {
+    // Match any term in text or header
+    termClauses = terms.map(() => '(text LIKE ? OR header LIKE ?)').join(' OR ');
+    params = terms.flatMap(t => [`%${t}%`, `%${t}%`]);
+  } else {
+    termClauses = '(text LIKE ? OR header LIKE ?)';
+    params = [`%${text}%`, `%${text}%`];
+  }
+  
+  let whereClause = `WHERE (${termClauses})`;
   
   if (filters.model) {
     whereClause += ` AND model = ?`;
@@ -51,7 +64,7 @@ function fallbackQuery(text, filters = {}, limit = 10) {
     ORDER BY 
       CASE 
         WHEN header LIKE ? THEN 1 
-        WHEN text LIKE ? THEN 2 
+        WHEN text LIKE ? THEN 2
         ELSE 3 
       END,
       LENGTH(text)
@@ -59,7 +72,9 @@ function fallbackQuery(text, filters = {}, limit = 10) {
   `;
   
   // Build final params array: original params + ordering params + limit
-  const allParams = [...params, `%${text}%`, `%${text}%`, limit];
+  // Use first term for ordering relevance
+  const orderTerm = terms.length > 0 ? terms[0] : text;
+  const allParams = [...params, `%${orderTerm}%`, `%${orderTerm}%`, limit];
   
   const results = db.prepare(query).all(...allParams);
   
