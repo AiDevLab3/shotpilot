@@ -475,8 +475,16 @@ export default function createAgentRoutes() {
       if (!scene) return res.status(404).json({ error: 'Scene not found' });
 
       // Get planned shots for this scene
-      const shots = db.prepare('SELECT * FROM shots WHERE scene_id = ? ORDER BY order_index ASC').all(scene_id);
-      if (!shots.length) return res.json({ suggestions: [], message: 'No planned shots to match against' });
+      const allShots = db.prepare('SELECT * FROM shots WHERE scene_id = ? ORDER BY order_index ASC').all(scene_id);
+      if (!allShots.length) return res.json({ suggestions: [], message: 'No planned shots to match against' });
+
+      // Only consider shots that don't already have images
+      const emptyShots = allShots.filter(shot => {
+        const variants = db.prepare('SELECT id FROM image_variants WHERE shot_id = ? AND image_url IS NOT NULL').all(shot.id);
+        return variants.length === 0;
+      });
+      const shots = emptyShots;
+      if (!shots.length) return res.json({ suggestions: [], message: 'All shots already have images — nothing to suggest.' });
 
       // Get staged images (assigned to scene but not linked to shots)
       // Note: scene_id may be stored as TEXT in project_images, so cast both ways
