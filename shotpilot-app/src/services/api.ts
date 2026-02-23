@@ -543,7 +543,7 @@ export const createProjectImage = async (projectId: number, data: { image_url: s
     });
 };
 
-export const updateProjectImage = async (id: number, data: { title?: string; notes?: string; tags?: string }): Promise<ProjectImage> => {
+export const updateProjectImage = async (id: number, data: { title?: string; notes?: string; tags?: string; scene_id?: string | null }): Promise<ProjectImage> => {
     return apiCall(`/project-images/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),

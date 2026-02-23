@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import type { Project, Scene, Shot, ImageVariant, Character, ObjectItem, ProjectImage } from '../types/schema';
-import { getScenes, getShots, createShot, updateShot, deleteShot, updateScene, createScene, deleteScene, updateProject, fileToBase64, createImageVariant, getImageVariants, deleteImageVariant, getUserCredits, getCharacters, getObjects, getStagedImages } from '../services/api';
+import { getScenes, getShots, createShot, updateShot, deleteShot, updateScene, createScene, deleteScene, updateProject, fileToBase64, createImageVariant, getImageVariants, deleteImageVariant, getUserCredits, getCharacters, getObjects, getStagedImages, updateProjectImage } from '../services/api';
 import { useProjectContext } from '../components/ProjectLayout';
 import { Plus, Image as ImageIcon, Check, Video, Edit2, Trash2, ChevronDown, ChevronRight, FileText, Clock, Maximize2, Minimize2, Sparkles, Settings, Film } from 'lucide-react';
 import { StoryboardPanel } from '../components/StoryboardPanel';
-import { StagingArea } from '../components/StagingArea';
+import { StagingArea, getUnanalyzedImages } from '../components/StagingArea';
 import { ExpandedShotPanel } from '../components/ExpandedShotPanel';
 
 import { SuggestionOverlay } from '../components/SuggestionOverlay';
@@ -95,6 +95,9 @@ const ShotBoardPage: React.FC = () => {
     
     // Shot Chat state
     const [shotChatTarget, setShotChatTarget] = useState<{ shot: Shot; scene: Scene; context?: string } | null>(null);
+    
+    // Analysis warning dialog
+    const [analysisWarning, setAnalysisWarning] = useState<{ sceneId: number; unanalyzed: any[] } | null>(null);
 
     // Parse project frame_size to CSS aspect-ratio
     const frameAspectRatio = (() => {
@@ -323,6 +326,21 @@ const ShotBoardPage: React.FC = () => {
             console.error('Failed to get gap analysis:', err);
         } finally {
             setGapAnalysisLoading(prev => ({ ...prev, [sceneId]: false }));
+        }
+    };
+
+    // Remove image from staging (clear scene_id)
+    const handleRemoveFromStaging = async (image: any) => {
+        try {
+            await updateProjectImage(image.id, { scene_id: null });
+            // Refresh staged images for that scene
+            const sceneId = parseInt(image.scene_id);
+            if (sceneId) {
+                const stagedImages = await getStagedImages(sceneId);
+                setStagedImagesByScene(prev => ({ ...prev, [sceneId]: stagedImages }));
+            }
+        } catch (err) {
+            console.error('Failed to remove from staging:', err);
         }
     };
 
@@ -880,7 +898,19 @@ const ShotBoardPage: React.FC = () => {
 
                                         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             <span style={styles.shotCount}>{sceneShots.length} shots</span>
-                                            <button onClick={(e) => handleOpenShotPlan(scene, e)} style={{
+                                            <button onClick={(e) => {
+                                                // Check for unanalyzed staged images before designing shots
+                                                const staged = stagedImagesByScene[scene.id] || [];
+                                                if (staged.length > 0) {
+                                                    const unanalyzed = getUnanalyzedImages(staged);
+                                                    if (unanalyzed.length > 0) {
+                                                        e.stopPropagation();
+                                                        setAnalysisWarning({ sceneId: scene.id, unanalyzed });
+                                                        return;
+                                                    }
+                                                }
+                                                handleOpenShotPlan(scene, e);
+                                            }} style={{
                                 padding: '6px 14px',
                                 background: 'rgba(139, 92, 246, 0.15)',
                                 border: '1px solid rgba(139, 92, 246, 0.3)',
@@ -1052,6 +1082,7 @@ const ShotBoardPage: React.FC = () => {
                                             onImageClick={(image) => {
                                                 console.log('Staged image clicked:', image);
                                             }}
+                                            onRemoveImage={handleRemoveFromStaging}
                                         />
                                         
                                         {/* CD Suggestion Overlay */}
@@ -1475,6 +1506,88 @@ const ShotBoardPage: React.FC = () => {
                         shotId={readinessDialogueShotId}
                         readinessScore={readinessDialogueScore}
                     />
+                )}
+
+                {/* Analysis Warning Dialog */}
+                {analysisWarning && (
+                    <div style={{
+                        position: 'fixed',
+                        top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: 'rgba(0,0,0,0.6)',
+                        zIndex: 1200,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                    onClick={() => setAnalysisWarning(null)}
+                    >
+                        <div
+                            style={{
+                                backgroundColor: '#1e1e2e',
+                                border: '1px solid #374151',
+                                borderRadius: '12px',
+                                padding: '24px',
+                                maxWidth: '480px',
+                                width: '90%',
+                                boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                                <span style={{ fontSize: '24px' }}>⚠️</span>
+                                <h3 style={{ color: '#f59e0b', fontSize: '16px', fontWeight: 700, margin: 0 }}>
+                                    Unanalyzed Images Detected
+                                </h3>
+                            </div>
+                            <p style={{ color: '#d1d5db', fontSize: '13px', lineHeight: '1.6', marginBottom: '12px' }}>
+                                The AI designs shots based on image analysis data. <strong>{analysisWarning.unanalyzed.length} of your staged images</strong> haven't been analyzed yet, which means the CD will have limited information to work with.
+                            </p>
+                            <p style={{ color: '#9ca3af', fontSize: '12px', marginBottom: '20px' }}>
+                                For best results, analyze images first in the <strong>Asset Manager</strong>. Or proceed without — the CD will do its best with available metadata.
+                            </p>
+                            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                                <button
+                                    onClick={() => {
+                                        setAnalysisWarning(null);
+                                        // Navigate to Asset Manager (or trigger batch analysis)
+                                        // For now, just dismiss
+                                    }}
+                                    style={{
+                                        padding: '8px 16px',
+                                        backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                                        border: '1px solid rgba(245, 158, 11, 0.3)',
+                                        borderRadius: '6px',
+                                        color: '#fbbf24',
+                                        fontSize: '12px',
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    Go to Asset Manager
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        const sceneId = analysisWarning.sceneId;
+                                        setAnalysisWarning(null);
+                                        const scene = scenes.find(s => s.id === sceneId);
+                                        if (scene) handleOpenShotPlan(scene, null as any);
+                                    }}
+                                    style={{
+                                        padding: '8px 16px',
+                                        backgroundColor: '#8b5cf6',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        color: 'white',
+                                        fontSize: '12px',
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    Proceed Anyway
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 )}
 
                 {/* Shot Chat Panel */}
