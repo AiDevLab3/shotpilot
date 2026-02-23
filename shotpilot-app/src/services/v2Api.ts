@@ -45,25 +45,52 @@ function adaptAnalyzeResult(result: AnalyzeResult): AnalysisResult {
   const issues: string[] = [];
   if (audit.realism?.notes) issues.push(audit.realism.notes);
   if (audit.style_match?.notes) issues.push(audit.style_match.notes);
-  if (audit.ai_artifacts?.notes) issues.push(audit.ai_artifacts.notes);
+  if (audit.ai_artifacts?.notes && audit.ai_artifacts.score < 8) issues.push(audit.ai_artifacts.notes);
   
+  // Determine strategy from verdict
+  const strategy: 'edit' | 'regenerate' = verdict === 'REGENERATE' ? 'regenerate' : 'edit';
+  
+  // Get the primary recommended model — skip utility models (Topaz) as primary
+  let primaryModelId = rec.cd_recommendation?.suggested_model || '';
+  const utilityIds = ['topaz'];
+  
+  // If primary is a utility and we have strategy steps, use the first non-utility step's model
+  if (utilityIds.includes(primaryModelId) && rec.strategy?.steps?.length > 0) {
+    const firstNonUtility = rec.strategy.steps.find((s: any) => !utilityIds.includes(s.model));
+    if (firstNonUtility) primaryModelId = firstNonUtility.model;
+  }
+  
+  // Build alternatives — include Topaz as alternative for post-processing, not primary
+  const alts = (rec.cd_recommendation?.alternative_models || []).map((alt: any) => ({
+    modelId: alt.id,
+    modelName: alt.id,
+    strategy,
+    reasoning: alt.reasoning,
+  }));
+  
+  // If strategy has a Topaz upscale step, add it as an alternative
+  const topazStep = rec.strategy?.steps?.find((s: any) => s.model === 'topaz');
+  if (topazStep && !alts.find((a: any) => a.modelId === 'topaz')) {
+    alts.push({
+      modelId: 'topaz',
+      modelName: 'Topaz AI',
+      strategy: 'edit' as const,
+      reasoning: 'Post-processing: ' + (topazStep.instruction || 'Upscale after editing/regeneration'),
+    });
+  }
+
   return {
     verdict,
     score,
     diagnosis: audit.iteration_guidance || 'Analysis complete.',
     issues,
-    fixes: [],
+    fixes: rec.strategy?.steps?.map((s: any) => s.instruction) || [],
     recommendation: {
-      modelId: rec.cd_recommendation.suggested_model,
-      modelName: rec.cd_recommendation.suggested_model,
-      strategy: 'edit',
-      reasoning: rec.cd_recommendation.reasoning,
-      alternatives: rec.cd_recommendation.alternative_models.map(alt => ({
-        modelId: alt.id,
-        modelName: alt.id,
-        strategy: 'edit' as const,
-        reasoning: alt.reasoning,
-      })),
+      modelId: primaryModelId,
+      modelName: primaryModelId,
+      strategy,
+      reasoning: rec.cd_recommendation?.reasoning || '',
+      alternatives: alts,
     },
     styleMatch: audit.style_match?.score || 5,
     realism: audit.realism?.score || 5,

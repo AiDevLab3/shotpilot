@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, Sparkles, ExternalLink, Film, Image as ImageIcon, Wrench } from 'lucide-react';
+import { ChevronDown, ChevronUp, Sparkles, ExternalLink, Film, Image as ImageIcon, Wrench, Pencil } from 'lucide-react';
 import type { ModelInfo, ModelRecommendation } from '../../types/v2';
 
 interface ModelPickerProps {
@@ -7,7 +7,6 @@ interface ModelPickerProps {
   selectedModelId: string | null;
   recommendation: ModelRecommendation | null;
   onSelect: (modelId: string) => void;
-  
 }
 
 function ModelTag({ label, color }: { label: string; color?: string }) {
@@ -28,11 +27,11 @@ function CapabilityDots({ capabilities }: { capabilities: string[] }) {
     generate: '#10b981', edit: '#f59e0b', 'img2img': '#3b82f6',
     inpaint: '#8b5cf6', upscale: '#ec4899', 'character-consistency': '#06b6d4',
     'style-transfer': '#f97316', 'image-to-video': '#6366f1', 'text-to-video': '#14b8a6',
-    'background-removal': '#84cc16',
+    text: '#84cc16',
   };
   return (
     <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap' }}>
-      {capabilities.slice(0, 4).map(cap => (
+      {capabilities.slice(0, 5).map(cap => (
         <span key={cap} style={{
           fontSize: '8px', padding: '1px 4px', borderRadius: '3px',
           backgroundColor: `${capColors[cap] || '#71717a'}20`,
@@ -44,23 +43,24 @@ function CapabilityDots({ capabilities }: { capabilities: string[] }) {
 }
 
 export const ModelPicker: React.FC<ModelPickerProps> = ({
-  models, selectedModelId, recommendation, onSelect, 
+  models, selectedModelId, recommendation, onSelect,
 }) => {
   const [expanded, setExpanded] = useState(false);
-  const [filterType, setFilterType] = useState<'all' | 'image' | 'video' | 'utility'>('image');
 
   const recommendedId = recommendation?.modelId;
   const altIds = new Set(recommendation?.alternatives.map(a => a.modelId) || []);
-
-  const filteredModels = models.filter(m => {
-    if (filterType === 'all') return true;
-    return m.type === filterType;
-  });
-
-  const activeModels = filteredModels.filter(m => m.active);
-  const externalModels = filteredModels.filter(m => !m.active);
   const selectedModel = models.find(m => m.id === selectedModelId);
   const isRecommended = selectedModelId === recommendedId;
+
+  // Categorize models
+  const generatorModels = models.filter(m => m.type === 'image' && m.active && !m.hasEdit);
+  const editModels = models.filter(m => m.type === 'image' && m.active && m.hasEdit);
+  const utilityModels = models.filter(m => m.type === 'utility' && m.active);
+  const externalModels = models.filter(m => !m.active);
+  
+  // For "regenerate" verdict: primary = best generator, also show editors
+  // For "improve" verdict: primary = best editor, also show generators
+  const isRegenerate = recommendation?.strategy === 'regenerate';
 
   return (
     <div style={{
@@ -79,11 +79,11 @@ export const ModelPicker: React.FC<ModelPickerProps> = ({
             {selectedModel?.name || 'Choose a model'}
             {isRecommended && <ModelTag label="Recommended" />}
             {selectedModel && !selectedModel.active && <ModelTag label="Prompt Only" color="#71717a" />}
-            {selectedModel?.type === 'video' && <ModelTag label="Video" color="#6366f1" />}
+            {selectedModel?.type === 'utility' && <ModelTag label="Utility" color="#84cc16" />}
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#52525b', fontSize: '11px' }}>
-          {activeModels.length} models
+          {models.filter(m => m.active).length} models
         </div>
         {expanded ? <ChevronUp size={18} color="#71717a" /> : <ChevronDown size={18} color="#71717a" />}
       </div>
@@ -99,34 +99,14 @@ export const ModelPicker: React.FC<ModelPickerProps> = ({
 
       {/* Expanded model list */}
       {expanded && (
-        <div>
-          {/* Type filter tabs */}
-          <div style={{
-            display: 'flex', gap: '0', borderBottom: '1px solid #27272a',
-          }}>
-            {(['image', 'video', 'utility', 'all'] as const).map(type => (
-              <button key={type} onClick={() => setFilterType(type)} style={{
-                flex: 1, padding: '8px', border: 'none', fontSize: '11px', fontWeight: 600,
-                cursor: 'pointer', textTransform: 'capitalize',
-                backgroundColor: filterType === type ? 'rgba(139, 92, 246, 0.1)' : 'transparent',
-                color: filterType === type ? '#a78bfa' : '#71717a',
-                borderBottom: filterType === type ? '2px solid #8b5cf6' : '2px solid transparent',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-              }}>
-                {type === 'image' && <ImageIcon size={12} />}
-                {type === 'video' && <Film size={12} />}
-                {type === 'utility' && <Wrench size={12} />}
-                {type}
-              </button>
-            ))}
-          </div>
-
-          <div style={{ maxHeight: '400px', overflowY: 'auto', padding: '8px 12px' }}>
-            {/* Recommended */}
-            {recommendedId && filteredModels.some(m => m.id === recommendedId) && (
+        <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+          <div style={{ padding: '8px 12px' }}>
+            
+            {/* Primary Recommendation */}
+            {recommendedId && models.find(m => m.id === recommendedId) && (
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, color: '#8b5cf6', textTransform: 'uppercase', padding: '4px 4px 8px', letterSpacing: '0.05em' }}>
-                  ⭐ Recommended
+                  ⭐ {isRegenerate ? 'Recommended for Regeneration' : 'Recommended'}
                 </div>
                 {renderModelRow(models.find(m => m.id === recommendedId)!, selectedModelId, recommendation?.reasoning || '', onSelect, setExpanded)}
               </div>
@@ -136,28 +116,68 @@ export const ModelPicker: React.FC<ModelPickerProps> = ({
             {recommendation && recommendation.alternatives.length > 0 && (
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, color: '#71717a', textTransform: 'uppercase', padding: '8px 4px 8px', letterSpacing: '0.05em' }}>
-                  Alternatives
+                  Also Consider
                 </div>
                 {recommendation.alternatives.map(alt => {
                   const model = models.find(m => m.id === alt.modelId);
-                  if (!model || !filteredModels.includes(model)) return null;
+                  if (!model) return null;
                   return renderModelRow(model, selectedModelId, alt.reasoning, onSelect, setExpanded);
                 })}
               </div>
             )}
 
-            {/* All models */}
-            <div>
-              <div style={{ fontSize: '10px', fontWeight: 700, color: '#71717a', textTransform: 'uppercase', padding: '8px 4px 8px', letterSpacing: '0.05em' }}>
-                All {filterType !== 'all' ? filterType : ''} Models {filterType !== 'all' ? `(${activeModels.length})` : `(${filteredModels.length})`}
+            {/* Edit Models section (when regenerate is recommended, show editors as option) */}
+            {isRegenerate && editModels.length > 0 && (
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', padding: '8px 4px 8px', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Pencil size={10} /> Or Edit Instead
+                </div>
+                {editModels
+                  .filter(m => m.id !== recommendedId && !altIds.has(m.id))
+                  .map(model => renderModelRow(model, selectedModelId, '', onSelect, setExpanded))
+                }
               </div>
-              {activeModels
-                .filter(m => m.id !== recommendedId && !altIds.has(m.id))
+            )}
+
+            {/* Generator Models section (when edit is recommended, show generators as option) */}
+            {!isRegenerate && generatorModels.length > 0 && (
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase', padding: '8px 4px 8px', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <ImageIcon size={10} /> Or Regenerate
+                </div>
+                {generatorModels
+                  .filter(m => m.id !== recommendedId && !altIds.has(m.id))
+                  .map(model => renderModelRow(model, selectedModelId, '', onSelect, setExpanded))
+                }
+              </div>
+            )}
+
+            {/* All Image Models */}
+            <div>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: '#71717a', textTransform: 'uppercase', padding: '8px 4px 8px', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <ImageIcon size={10} /> All Image Models
+              </div>
+              {models
+                .filter(m => m.type === 'image' && m.active && m.id !== recommendedId && !altIds.has(m.id))
+                .filter(m => isRegenerate ? !editModels.includes(m) : !generatorModels.includes(m))
                 .map(model => renderModelRow(model, selectedModelId, '', onSelect, setExpanded))
               }
             </div>
 
-            {/* External models */}
+            {/* Post-Processing / Utility */}
+            {utilityModels.length > 0 && (
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#84cc16', textTransform: 'uppercase', padding: '8px 4px 8px', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Wrench size={10} /> Post-Processing
+                </div>
+                {utilityModels
+                  .filter(m => m.id !== recommendedId && !altIds.has(m.id))
+                  .map(model => renderModelRow(model, selectedModelId, model.type === 'utility' ? 'Use after editing/regeneration for final upscale' : '', onSelect, setExpanded))
+                }
+              </div>
+            )}
+
+            {/* External / Prompt Only */}
             {externalModels.length > 0 && (
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, color: '#71717a', textTransform: 'uppercase', padding: '8px 4px 8px', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -199,6 +219,7 @@ function renderModelRow(
         {!model.active && <ModelTag label="External" color="#71717a" />}
         {model.type === 'video' && <ModelTag label="Video" color="#6366f1" />}
         {model.type === 'utility' && <ModelTag label="Utility" color="#84cc16" />}
+        {model.hasEdit && <ModelTag label="Edit" color="#f59e0b" />}
       </div>
       {/* Capabilities */}
       <div style={{ marginTop: '4px' }}>
