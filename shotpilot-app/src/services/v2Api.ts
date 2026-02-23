@@ -248,7 +248,7 @@ export async function generateImage(params: {
   });
 }
 
-// Generate expert prompt for a model (LEGACY)
+// Generate expert prompt for a model
 export async function getExpertPrompt(params: {
   modelId: string;
   strategy: 'edit' | 'regenerate';
@@ -256,11 +256,32 @@ export async function getExpertPrompt(params: {
   sourceImageUrl?: string;
   userNotes?: string;
 }): Promise<{ prompt: string; modelSyntaxNotes: string }> {
-  return request('/api/v2/prompt', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
+  try {
+    // Use new agents endpoint
+    const result = await request<{ prompt: string; notes: string }>('/api/agents/generate-prompt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model_id: params.modelId,
+        shot_context: `${params.analysisResult.diagnosis || ''} ${params.userNotes || ''}`.trim(),
+        analysis: params.analysisResult,
+        strategy: params.strategy,
+      }),
+    });
+    
+    return {
+      prompt: result.prompt,
+      modelSyntaxNotes: result.notes,
+    };
+  } catch (error) {
+    // Fallback to legacy endpoint
+    console.warn('[getExpertPrompt] New endpoint failed, falling back to legacy:', error);
+    return request('/api/v2/prompt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+  }
 }
 
 // Upscale via Topaz

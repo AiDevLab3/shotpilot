@@ -194,10 +194,10 @@ async function analyzeAndRecommend(imageBase64, shotContext, projectId) {
     console.log('[orchestrator:analyzeAndRecommend] Quality gate audit');
     const audit = await auditImage(imageBase64, shotContext, styleProfile);
     
-    // Step 2: Determine verdict based on QG results
+    // Step 2: Determine verdict based on QG results (overall_score is 1-10 scale)
     let verdict = 'approve';
-    if (audit.overall_score < 85 || audit.recommendation !== 'approve') {
-      verdict = audit.overall_score < 60 ? 'regenerate' : 'improve';
+    if (audit.overall_score < 8.0 || audit.recommendation !== 'approve') {
+      verdict = audit.overall_score < 4.0 ? 'regenerate' : 'improve';
     }
     
     // Step 3: Strategy Picker analyzes issues and recommends improvements
@@ -367,6 +367,7 @@ async function recommendModelForImprovement(strategy, audit) {
     // Never recommend a utility model (Topaz) as primary for generate/edit
     const utilityIds = ['topaz'];
     let suggestedModel = cdResult.selected_model;
+    let reasoning = cdResult.model_reasoning || `Recommended for ${strategy.strategy} action`;
     
     if (utilityIds.includes(suggestedModel)) {
       // Pick from strategy steps instead, or fall back to best generator
@@ -376,6 +377,12 @@ async function recommendModelForImprovement(strategy, audit) {
       }
       // Still utility? Default to flux-2
       if (utilityIds.includes(suggestedModel)) suggestedModel = 'flux-2';
+      
+      // Update reasoning to match the new model selection
+      const modelInfo = MODEL_REGISTRY[suggestedModel];
+      if (modelInfo) {
+        reasoning = `${modelInfo.name} selected for ${strategy.strategy} - ${modelInfo.strengths.join(', ')}`;
+      }
     }
     
     // Get alternative models — image models for editing, exclude utilities from alternatives
@@ -389,7 +396,7 @@ async function recommendModelForImprovement(strategy, audit) {
     
     return {
       suggested_model: suggestedModel,
-      reasoning: cdResult.model_reasoning || `Recommended for ${strategy.strategy} action`,
+      reasoning: reasoning,
       alternative_models: alternativeModels
     };
   } catch (error) {

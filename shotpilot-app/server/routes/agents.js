@@ -25,6 +25,9 @@ export default function createAgentRoutes() {
   router.get('/api/agents/models', (req, res) => {
     const registry = getModelRegistry();
     
+    // Hardcoded edit capability map (Bug 3 fix)
+    const editModels = new Set(['flux-kontext', 'gpt-image-1.5', 'nano-banana-pro', 'reve']);
+    
     // Infer model type from characteristics
     const inferType = (m) => {
       if (m.name.toLowerCase().includes('topaz')) return 'utility';
@@ -56,7 +59,7 @@ export default function createAgentRoutes() {
       type: inferType(m),
       provider: id.includes('gpt') ? 'openai' : id.includes('midjourney') ? 'external' : 'fal',
       capabilities: inferCapabilities(m),
-      hasEdit: m.strengths?.some(s => /edit|surgical/.test(s.toLowerCase())) || false,
+      hasEdit: editModels.has(id),
     }));
     res.json({ models, profiles: listStyleProfiles() });
   });
@@ -381,6 +384,74 @@ export default function createAgentRoutes() {
       res.json(result);
     } catch (err) {
       console.error('[agents/import-image] Error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  /**
+   * POST /api/agents/generate-prompt
+   * Body: { model_id, shot_context, analysis (the current GradeCard analysis), strategy }
+   * Returns: { prompt, notes }
+   */
+  router.post('/api/agents/generate-prompt', async (req, res) => {
+    try {
+      const { model_id, shot_context, analysis, strategy } = req.body;
+      if (!model_id) {
+        return res.status(400).json({ error: 'model_id is required' });
+      }
+      if (!analysis) {
+        return res.status(400).json({ error: 'analysis is required' });
+      }
+      
+      // Get model info from registry
+      const registry = getModelRegistry();
+      const modelInfo = registry[model_id];
+      if (!modelInfo) {
+        return res.status(400).json({ error: `Unknown model: ${model_id}` });
+      }
+      
+      // Route to appropriate specialist based on modelId
+      let prompt = '';
+      let notes = '';
+      
+      if (modelInfo.specialistModule) {
+        try {
+          // Get the specialist and generate prompt
+          const mod = await import(`../services/agents/specialists/${modelInfo.specialistModule}.js`);
+          const specialist = mod.generatePrompt;
+          
+          // Create a brief from the shot context and analysis
+          const brief = shot_context || 'Improve image quality';
+          const styleProfile = null; // Could load from project if needed
+          const projectContext = null; // Could load from project if needed
+          
+          const specialistResult = await specialist(brief, styleProfile, projectContext);
+          prompt = specialistResult.final_prompt || specialistResult.prompt || brief;
+          
+          // Generate notes about the model and strategy
+          notes = `Generated for ${modelInfo.name} using ${modelInfo.specialistModule} specialist. `;
+          if (strategy) {
+            notes += `Strategy: ${strategy}. `;
+          }
+          if (modelInfo.strengths) {
+            notes += `Model strengths: ${modelInfo.strengths.join(', ')}.`;
+          }
+          
+        } catch (specialistError) {
+          console.warn(`[agents/generate-prompt] Specialist error for ${model_id}:`, specialistError.message);
+          // Fallback to basic prompt
+          prompt = shot_context || 'Improve image quality and composition';
+          notes = `Fallback prompt generated (specialist ${modelInfo.specialistModule} failed). Model: ${modelInfo.name}.`;
+        }
+      } else {
+        // No specialist module - generate basic prompt
+        prompt = shot_context || 'Improve image quality and composition';
+        notes = `Basic prompt generated for ${modelInfo.name}. No specialist module available.`;
+      }
+      
+      res.json({ prompt, notes });
+    } catch (err) {
+      console.error('[agents/generate-prompt] Error:', err);
       res.status(500).json({ error: err.message });
     }
   });

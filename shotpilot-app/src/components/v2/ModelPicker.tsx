@@ -152,14 +152,19 @@ export const ModelPicker: React.FC<ModelPickerProps> = ({
               </div>
             )}
 
-            {/* All Image Models */}
+            {/* All Image Models - show any active image models not already shown */}
             <div>
               <div style={{ fontSize: '10px', fontWeight: 700, color: '#71717a', textTransform: 'uppercase', padding: '8px 4px 8px', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <ImageIcon size={10} /> All Image Models
               </div>
               {models
                 .filter(m => m.type === 'image' && m.active && m.id !== recommendedId && !altIds.has(m.id))
-                .filter(m => isRegenerate ? !editModels.includes(m) : !generatorModels.includes(m))
+                .filter(m => {
+                  // Don't show models that are already in the "Or Edit Instead" or "Or Regenerate" sections
+                  if (isRegenerate && editModels.includes(m)) return false;
+                  if (!isRegenerate && generatorModels.includes(m)) return false;
+                  return true;
+                })
                 .map(model => renderModelRow(model, selectedModelId, '', onSelect, setExpanded))
               }
             </div>

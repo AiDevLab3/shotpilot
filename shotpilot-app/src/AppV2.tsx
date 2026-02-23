@@ -11,7 +11,7 @@ const Header: React.FC = () => (
     <span style={{ fontSize: '16px', fontWeight: 800, color: '#e4e4e7', letterSpacing: '-0.02em' }}>
       Shot<span style={{ color: '#8b5cf6' }}>Pilot</span>
     </span>
-    <span style={{ fontSize: '11px', color: '#52525b', marginLeft: '8px', fontWeight: 600 }}>v2</span>
+    <span style={{ fontSize: '11px', color: '#52525b', marginLeft: '8px', fontWeight: 600 }}>v3</span>
   </div>
 );
 

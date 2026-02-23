@@ -193,7 +193,7 @@ export const Workbench: React.FC = () => {
         {/* Right: Controls panel */}
         <div style={{
           flex: '1 1 50%', display: 'flex', flexDirection: 'column',
-          gap: '12px', minWidth: 0, overflowY: 'auto',
+          gap: '12px', minWidth: 0, minHeight: 0, overflowY: 'auto',
           paddingRight: '4px',
         }}>
           {/* Error banner */}
