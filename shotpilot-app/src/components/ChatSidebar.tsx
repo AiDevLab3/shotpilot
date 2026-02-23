@@ -460,6 +460,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                                         key={imgIdx}
                                         src={url}
                                         alt={`Reference ${imgIdx + 1}`}
+                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                         style={{
                                             maxWidth: (msg.imageUrls?.length || 1) > 1 ? 'calc(50% - 2px)' : '100%',
                                             maxHeight: '200px',

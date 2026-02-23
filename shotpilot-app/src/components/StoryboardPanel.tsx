@@ -149,7 +149,7 @@ export const StoryboardPanel: React.FC<StoryboardPanelProps> = ({
             fontSize: '10px',
             fontWeight: 'bold',
           }}>
-            {auditScore}/10
+            {auditScore}%
           </div>
         )}
       </div>

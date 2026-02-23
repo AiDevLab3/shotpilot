@@ -940,6 +940,7 @@ const ShotBoardPage: React.FC = () => {
                                                     gap: '12px',
                                                     overflowX: 'auto',
                                                     paddingBottom: '8px',
+                                                    paddingRight: '16px',
                                                     scrollbarWidth: 'thin',
                                                     scrollbarColor: '#374151 #1f2937',
                                                 }}>
