@@ -22,6 +22,8 @@ interface StagingAreaProps {
   stagedImages: ProjectImage[];
   onImageClick?: (image: ProjectImage) => void;
   onRemoveImage?: (image: ProjectImage) => void;
+  onSuggestPlacements?: () => void;
+  suggestionsLoading?: boolean;
 }
 
 export const StagingArea: React.FC<StagingAreaProps> = ({ 
@@ -29,6 +31,8 @@ export const StagingArea: React.FC<StagingAreaProps> = ({
   stagedImages, 
   onImageClick,
   onRemoveImage,
+  onSuggestPlacements,
+  suggestionsLoading,
 }) => {
   const [isExpanded, setIsExpanded] = useState(stagedImages.length > 0);
   const [hoveredId, setHoveredId] = useState<number | null>(null);
@@ -122,6 +126,31 @@ export const StagingArea: React.FC<StagingAreaProps> = ({
             }}>
               ⚠️ {unanalyzedCount} not analyzed
             </span>
+          )}
+          {onSuggestPlacements && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onSuggestPlacements();
+              }}
+              disabled={suggestionsLoading}
+              style={{
+                padding: '3px 10px',
+                backgroundColor: suggestionsLoading ? 'rgba(139, 92, 246, 0.25)' : 'rgba(139, 92, 246, 0.15)',
+                border: '1px solid rgba(139, 92, 246, 0.3)',
+                borderRadius: '4px',
+                color: '#a78bfa',
+                fontSize: '11px',
+                fontWeight: 600,
+                cursor: suggestionsLoading ? 'wait' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                opacity: suggestionsLoading ? 0.7 : 1,
+              }}
+            >
+              ✨ {suggestionsLoading ? 'Analyzing...' : 'Suggest Placements'}
+            </button>
           )}
         </div>
       </div>

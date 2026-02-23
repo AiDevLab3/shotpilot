@@ -252,17 +252,6 @@ const ShotBoardPage: React.FC = () => {
         }
     };
 
-    // Auto-trigger suggestions when both staged images and shots are available
-    useEffect(() => {
-        for (const sceneId of expandedScenes) {
-            const staged = stagedImagesByScene[sceneId] || [];
-            const shots = shotsByScene[sceneId] || [];
-            if (staged.length > 0 && shots.length > 0 && !suggestionsByScene[sceneId] && !suggestionsLoading[sceneId]) {
-                handleRequestSuggestions(sceneId);
-            }
-        }
-    }, [stagedImagesByScene, shotsByScene, expandedScenes]);
-
     // CD Suggestions handlers
     const handleRequestSuggestions = async (sceneId: number) => {
         setSuggestionsLoading(prev => ({ ...prev, [sceneId]: true }));
@@ -371,12 +360,6 @@ const ShotBoardPage: React.FC = () => {
             try {
                 const stagedImages = await getStagedImages(sceneId);
                 setStagedImagesByScene(prev => ({ ...prev, [sceneId]: stagedImages }));
-                
-                // Auto-request suggestions if there are staged images and planned shots
-                const sceneShots = shotsByScene[sceneId] || [];
-                if (stagedImages.length > 0 && sceneShots.length > 0 && !suggestionsByScene[sceneId]) {
-                    handleRequestSuggestions(sceneId);
-                }
             } catch (error) {
                 console.error(`Failed to load staged images for scene ${sceneId}:`, error);
                 setStagedImagesByScene(prev => ({ ...prev, [sceneId]: [] }));
@@ -386,17 +369,10 @@ const ShotBoardPage: React.FC = () => {
 
     const expandAll = async () => {
         setExpandedScenes(scenes.map(s => s.id));
-        // Load staged images for all scenes
         for (const scene of scenes) {
             try {
                 const stagedImages = await getStagedImages(scene.id);
                 setStagedImagesByScene(prev => ({ ...prev, [scene.id]: stagedImages }));
-                
-                // Auto-trigger suggestions if applicable
-                const sceneShots = shotsByScene[scene.id] || [];
-                if (stagedImages.length > 0 && sceneShots.length > 0 && !suggestionsByScene[scene.id]) {
-                    handleRequestSuggestions(scene.id);
-                }
             } catch (err) {
                 console.error(`Failed to load staged images for scene ${scene.id}:`, err);
             }
@@ -1083,6 +1059,8 @@ const ShotBoardPage: React.FC = () => {
                                                 console.log('Staged image clicked:', image);
                                             }}
                                             onRemoveImage={handleRemoveFromStaging}
+                                            onSuggestPlacements={() => handleRequestSuggestions(scene.id)}
+                                            suggestionsLoading={suggestionsLoading[scene.id]}
                                         />
                                         
                                         {/* CD Suggestion Overlay */}
