@@ -488,7 +488,14 @@ const ShotBoardPage: React.FC = () => {
         if (confirm('Delete this scene and all its shots?')) {
             try {
                 await deleteScene(sceneId);
-                setScenes(prev => prev.filter(s => s.id !== sceneId));
+                // Reindex remaining scenes to sequential order
+                const remaining = scenes.filter(s => s.id !== sceneId);
+                const reindexed = remaining.map((s, i) => ({ ...s, order_index: i + 1 }));
+                setScenes(reindexed);
+                // Update order_index in DB for each remaining scene
+                for (const s of reindexed) {
+                    await updateScene(s.id, { order_index: s.order_index } as any).catch(() => {});
+                }
             } catch (err) { console.error(err); }
         }
     };

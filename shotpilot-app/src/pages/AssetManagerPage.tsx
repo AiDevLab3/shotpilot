@@ -179,6 +179,7 @@ export const AssetManagerPage: React.FC = () => {
   const [pollTimer, setPollTimer] = useState<ReturnType<typeof setInterval> | null>(null);
   const [costSummary, setCostSummary] = useState<CostSummary | null>(null);
   const [costLoading, setCostLoading] = useState(false);
+  const [projectScenes, setProjectScenes] = useState<{ id: string; name: string }[]>([]);
 
   const loadAssets = useCallback(async () => {
     try {
@@ -205,6 +206,16 @@ export const AssetManagerPage: React.FC = () => {
 
   useEffect(() => { loadAssets(); }, [loadAssets]);
   useEffect(() => { loadCostSummary(); }, [loadCostSummary]);
+  useEffect(() => {
+    import('../services/api').then(({ getScenes }) => {
+      getScenes(projectId).then((scenes: any[]) => {
+        setProjectScenes(scenes.map((s: any) => ({
+          id: String(s.id),
+          name: `${s.order_index}: ${s.name}`,
+        })));
+      }).catch(err => console.error('[AssetManager] Failed to load scenes:', err));
+    });
+  }, [projectId]);
 
   // Cleanup poll timer
   useEffect(() => () => { if (pollTimer) clearInterval(pollTimer); }, [pollTimer]);
@@ -422,6 +433,7 @@ export const AssetManagerPage: React.FC = () => {
             }}
             onCostRefresh={loadCostSummary}
             projectAssets={assets}
+            projectScenes={projectScenes}
             onDelete={async () => {
               if (!confirm(`Delete "${selectedAsset.title || 'Asset #' + selectedAsset.id}"? This also removes its iterations.`)) return;
               try {
@@ -568,7 +580,8 @@ const DetailPanel: React.FC<{
   onCostRefresh: () => void;
   onDelete: () => void;
   projectAssets: Asset[];
-}> = ({ asset, isAnalyzing, onAnalyze, onStatusChange, onSceneAssign, onClose, onImageClick, onAssetUpdate, onCostRefresh, onDelete, projectAssets }) => {
+  projectScenes: { id: string; name: string }[];
+}> = ({ asset, isAnalyzing, onAnalyze, onStatusChange, onSceneAssign, onClose, onImageClick, onAssetUpdate, onCostRefresh, onDelete, projectAssets, projectScenes }) => {
   let analysis: any = null;
   let existingPlan: RefinementPlan | null = null;
   try { analysis = asset.analysis_json ? JSON.parse(typeof asset.analysis_json === 'string' ? asset.analysis_json : JSON.stringify(asset.analysis_json)) : null; } catch {}
@@ -815,15 +828,7 @@ const DetailPanel: React.FC<{
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const SCENES = [
-    { id: 'scene-1', name: '1: Crisis Discovery' },
-    { id: 'scene-2', name: '2: The Signal' },
-    { id: 'scene-3', name: '3: Astrodome Reveal' },
-    { id: 'scene-4', name: '4: Tactical Pursuit' },
-    { id: 'scene-5', name: '5: The Arrival' },
-    { id: 'scene-6', name: '6: The Deployment' },
-    { id: 'scene-7', name: '7: The Resolution' },
-  ];
+  const SCENES = projectScenes;
 
   return (
     <div style={s.detailPanel}>
