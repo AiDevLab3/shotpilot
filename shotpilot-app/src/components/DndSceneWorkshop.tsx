@@ -139,7 +139,8 @@ const DroppableShotCard: React.FC<{
   const [editText, setEditText] = useState(shot.description || '');
 
   const mainImage = imageVariants.find(v => v.image_url);
-  const auditScore = mainImage?.audit_score || shot.readiness_percentage || shot.quality_percentage || 0;
+  // Only show score badge when there's an actual image with audit data
+  const auditScore = mainImage ? (mainImage.audit_score || 0) : 0;
   const scoreBadgeColor = auditScore >= 80 ? '#10b981' : auditScore >= 50 ? '#f59e0b' : '#ef4444';
 
   const { isOver: isDropOver, setNodeRef } = useDroppable({
