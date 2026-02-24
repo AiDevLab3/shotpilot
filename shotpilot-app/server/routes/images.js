@@ -273,16 +273,49 @@ export default function createImageRoutes({
     router.post('/api/shots/:id/images', (req, res) => {
         const { id } = req.params;
         const data = req.body;
-        const stmt = db.prepare(`
-            INSERT INTO image_variants (shot_id, image_url, prompt_used, status)
-            VALUES (@shotId, @image_url, @prompt_used, @status)
-        `);
         const sanitize = (val) => val === undefined ? null : val;
+
+        // If asset_id provided, pull analysis data from project_images
+        let auditData = sanitize(data.audit_data) || null;
+        let auditScore = sanitize(data.audit_score) || null;
+        let assetId = sanitize(data.asset_id) || null;
+        
+        if (assetId && !auditData) {
+            const asset = db.prepare('SELECT analysis_json FROM project_images WHERE id = ?').get(assetId);
+            if (asset?.analysis_json) {
+                auditData = asset.analysis_json;
+                try {
+                    const parsed = JSON.parse(asset.analysis_json);
+                    auditScore = parsed.overall_score || parsed.pipeline_score || parsed.realism_score || null;
+                } catch {}
+            }
+        } else if (!assetId && data.image_url) {
+            // Try to find matching project_image by URL to auto-link
+            const asset = db.prepare('SELECT id, analysis_json FROM project_images WHERE image_url = ?').get(data.image_url);
+            if (asset) {
+                assetId = asset.id;
+                if (asset.analysis_json && !auditData) {
+                    auditData = asset.analysis_json;
+                    try {
+                        const parsed = JSON.parse(asset.analysis_json);
+                        auditScore = parsed.overall_score || parsed.pipeline_score || parsed.realism_score || null;
+                    } catch {}
+                }
+            }
+        }
+
+        const stmt = db.prepare(`
+            INSERT INTO image_variants (shot_id, image_url, prompt_used, status, asset_id, audit_data, audit_score)
+            VALUES (@shotId, @image_url, @prompt_used, @status, @assetId, @auditData, @auditScore)
+        `);
         const info = stmt.run({
             shotId: id,
             image_url: sanitize(data.image_url),
             prompt_used: sanitize(data.prompt_used),
-            status: 'generated'
+            status: 'generated',
+            assetId,
+            auditData,
+            auditScore,
         });
         res.json({ id: info.lastInsertRowid });
     });

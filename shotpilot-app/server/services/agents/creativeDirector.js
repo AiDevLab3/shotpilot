@@ -207,9 +207,21 @@ async function suggestPlacements(shots, stagedImages, sceneContext, projectConte
     if (img.analysis_json) {
       try {
         const a = JSON.parse(img.analysis_json);
+        // Content description
         if (a.summary) desc += ` — ${a.summary}`;
-        if (a.detected_shot_type) desc += ` [detected: ${a.detected_shot_type}]`;
+        if (a.detected_shot_type) desc += ` [detected shot type: ${a.detected_shot_type}]`;
         if (a.detected_mood) desc += ` [mood: ${a.detected_mood}]`;
+        // Extract composition/framing info from technical breakdown
+        if (a.subject_category) desc += ` [subject: ${a.subject_category}]`;
+        if (a.technical_breakdown) {
+          const tb = a.technical_breakdown;
+          if (tb.strengths?.length) desc += ` [strengths: ${tb.strengths.slice(0, 3).join('; ')}]`;
+          if (tb.weaknesses?.length) desc += ` [weaknesses: ${tb.weaknesses.slice(0, 2).join('; ')}]`;
+        }
+        // Extract framing cues from improvement suggestions
+        if (a.improvement_suggestions?.length) {
+          desc += ` [notes: ${a.improvement_suggestions.slice(0, 2).join('; ')}]`;
+        }
       } catch {}
     }
     if (img.tags) desc += ` [tags: ${img.tags}]`;
@@ -234,9 +246,17 @@ ${imageDescriptions}
 - Only suggest a match if you're reasonably confident (>50%)
 - An image can only match ONE shot
 - A shot can only receive ONE image suggestion
-- If an image doesn't match any shot well, skip it
+- If an image doesn't match any shot well, skip it — it's BETTER to skip than to misplace
 - Confidence is 0-100 (100 = perfect match)
-- Consider shot type, composition, mood, subject matter, camera angle
+
+## CRITICAL — Shot Type Must Match Framing
+This is the most important rule. Shot type describes the FRAMING of the camera:
+- WIDE SHOT / ESTABLISHING = shows the full environment, characters are small in frame
+- MEDIUM SHOT = character from waist up, some environment visible  
+- CLOSE-UP / DETAIL SHOT = tight framing on face, hands, or specific object
+- EXTREME CLOSE-UP = very tight — just eyes, a keyhole, a button
+
+A close-up image CANNOT go in a wide shot slot and vice versa. Match the FRAMING first, then consider subject, mood, and composition. If the framing doesn't match, confidence should be below 30 regardless of subject match.
 
 ## Output
 Return ONLY valid JSON array:
