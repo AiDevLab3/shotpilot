@@ -384,9 +384,9 @@ export const DndSceneWorkshop: React.FC<DndSceneWorkshopProps> = ({
     }
 
     // Shot reorder
-    if (activeType === 'shot-sortable' && overId.startsWith('sortable-shot-')) {
+    if (activeType === 'shot-sortable' && overShotId) {
       const activeShot = active.data.current?.shot;
-      if (activeShot && overShotId && activeShot.id !== overShotId) {
+      if (activeShot && activeShot.id !== overShotId) {
         const oldIndex = shots.findIndex(s => s.id === activeShot.id);
         const newIndex = shots.findIndex(s => s.id === overShotId);
         if (oldIndex !== -1 && newIndex !== -1) {
