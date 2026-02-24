@@ -247,12 +247,17 @@ export default function createAIRoutes({
     router.post('/api/scenes/:sceneId/shot-plan', requireAuth, async (req, res) => {
         try {
             const { sceneId } = req.params;
+            const { mode = 'full' } = req.body || {}; // 'full' = replace, 'add' = complement existing
 
             const scene = db.prepare('SELECT * FROM scenes WHERE id = ?').get(sceneId);
             if (!scene) return res.status(404).json({ error: 'Scene not found' });
 
             const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(scene.project_id);
             const existingShots = db.prepare('SELECT * FROM shots WHERE scene_id = ? ORDER BY order_index ASC').all(sceneId);
+
+            // Get script content for scene-specific context
+            const conversation = db.prepare('SELECT script_content FROM conversations WHERE project_id = ? ORDER BY id DESC LIMIT 1').get(scene.project_id);
+            const scriptContent = conversation?.script_content || '';
 
             let kbContent = '';
             try {
@@ -265,11 +270,11 @@ export default function createAIRoutes({
             }
 
             const plan = await generateShotPlan({
-                scene, project, existingShots, kbContent,
+                scene, project, existingShots, kbContent, mode, scriptContent,
             });
 
             logAIFeatureUsage(db, req.session.userId, 'shot_planning', sceneId);
-            res.json({ ...plan, kbFilesUsed: ['03_Pack_Motion_Readiness.md', '03_Pack_Spatial_Composition.md', '01_Core_Realism_Principles.md'] });
+            res.json({ ...plan, mode, existingShotCount: existingShots.length, kbFilesUsed: ['03_Pack_Motion_Readiness.md', '03_Pack_Spatial_Composition.md', '01_Core_Realism_Principles.md'] });
         } catch (error) {
             console.error('Shot plan error:', error);
             res.status(500).json({ error: error.message });

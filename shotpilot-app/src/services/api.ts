@@ -317,9 +317,10 @@ export const getCharacterSuggestions = async (projectId: number, character: { na
 };
 
 // Phase 3.3: Scene shot planning
-export const getShotPlan = async (sceneId: number): Promise<ShotPlan> => {
+export const getShotPlan = async (sceneId: number, mode: 'full' | 'add' = 'full'): Promise<ShotPlan> => {
     const res = await apiCall(`/scenes/${sceneId}/shot-plan`, {
         method: 'POST',
+        body: JSON.stringify({ mode }),
     });
     return res;
 };

@@ -8,6 +8,7 @@ interface ShotPlanningPanelProps {
     onClose: () => void;
     sceneId: number;
     sceneName: string;
+    existingShotCount?: number;
     onCreateShots: (shots: Array<{
         shot_number: string;
         shot_type: string;
@@ -16,7 +17,7 @@ interface ShotPlanningPanelProps {
         focal_length?: string;
         description: string;
         blocking?: string;
-    }>) => void;
+    }>, replaceExisting?: boolean) => void;
 }
 
 export const ShotPlanningPanel: React.FC<ShotPlanningPanelProps> = ({
@@ -24,24 +25,27 @@ export const ShotPlanningPanel: React.FC<ShotPlanningPanelProps> = ({
     onClose,
     sceneId,
     sceneName,
+    existingShotCount = 0,
     onCreateShots,
 }) => {
     const [shotPlan, setShotPlan] = useState<ShotPlan | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
+    const [mode, setMode] = useState<'full' | 'add' | null>(null);
 
-    const loadShotPlan = useCallback(async () => {
+    const loadShotPlan = useCallback(async (planMode: 'full' | 'add') => {
         setLoading(true);
         setError(null);
         setShotPlan(null);
         setSelectedIndices(new Set());
+        setMode(planMode);
         try {
-            const plan = await getShotPlan(sceneId);
+            const plan = await getShotPlan(sceneId, planMode);
             setShotPlan(plan);
             // Select all shots by default
             if (plan.shots && plan.shots.length > 0) {
-                setSelectedIndices(new Set(plan.shots.map((_, i) => i)));
+                setSelectedIndices(new Set(plan.shots.map((_: any, i: number) => i)));
             }
         } catch (err: any) {
             setError(err.message || 'Failed to generate shot plan');
@@ -52,9 +56,16 @@ export const ShotPlanningPanel: React.FC<ShotPlanningPanelProps> = ({
 
     useEffect(() => {
         if (isOpen) {
-            loadShotPlan();
+            // If no existing shots, go straight to full plan
+            if (existingShotCount === 0) {
+                loadShotPlan('full');
+            } else {
+                // Show mode selection
+                setMode(null);
+                setShotPlan(null);
+            }
         }
-    }, [isOpen, loadShotPlan]);
+    }, [isOpen, existingShotCount, loadShotPlan]);
 
     const toggleSelection = (index: number) => {
         setSelectedIndices(prev => {
@@ -72,8 +83,8 @@ export const ShotPlanningPanel: React.FC<ShotPlanningPanelProps> = ({
         if (!shotPlan || selectedIndices.size === 0) return;
 
         const selected = shotPlan.shots
-            .filter((_, i) => selectedIndices.has(i))
-            .map((shot) => ({
+            .filter((_: any, i: number) => selectedIndices.has(i))
+            .map((shot: any) => ({
                 shot_number: shot.shot_number,
                 shot_type: shot.shot_type,
                 camera_angle: shot.camera_angle,
@@ -83,7 +94,7 @@ export const ShotPlanningPanel: React.FC<ShotPlanningPanelProps> = ({
                 blocking: shot.blocking,
             }));
 
-        onCreateShots(selected);
+        onCreateShots(selected, mode === 'full');
         onClose();
     };
 
@@ -113,7 +124,34 @@ export const ShotPlanningPanel: React.FC<ShotPlanningPanelProps> = ({
 
                 {/* Body */}
                 <div style={styles.body}>
-                    {loading ? (
+                    {/* Mode selection when scene already has shots */}
+                    {!mode && existingShotCount > 0 && !loading ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '24px 0' }}>
+                            <p style={{ color: '#9ca3af', fontSize: '14px', textAlign: 'center', margin: 0 }}>
+                                This scene already has <strong style={{ color: '#f3f4f6' }}>{existingShotCount} shots</strong>. What would you like to do?
+                            </p>
+                            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                                <button onClick={() => loadShotPlan('full')} style={{
+                                    padding: '12px 24px', backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                                    border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px',
+                                    color: '#f87171', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', minWidth: '180px',
+                                }}>
+                                    <span>🔄 Start Fresh</span>
+                                    <span style={{ fontSize: '11px', color: '#9ca3af', fontWeight: 400 }}>Replace all {existingShotCount} shots with a new plan</span>
+                                </button>
+                                <button onClick={() => loadShotPlan('add')} style={{
+                                    padding: '12px 24px', backgroundColor: 'rgba(139, 92, 246, 0.15)',
+                                    border: '1px solid rgba(139, 92, 246, 0.3)', borderRadius: '8px',
+                                    color: '#a78bfa', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', minWidth: '180px',
+                                }}>
+                                    <span>➕ Add More Shots</span>
+                                    <span style={{ fontSize: '11px', color: '#9ca3af', fontWeight: 400 }}>Keep existing, suggest additions</span>
+                                </button>
+                            </div>
+                        </div>
+                    ) : loading ? (
                         <div style={styles.loadingState}>
                             <Loader2 size={24} className="spin" color="#8b5cf6" />
                             <span style={styles.loadingText}>
@@ -123,7 +161,7 @@ export const ShotPlanningPanel: React.FC<ShotPlanningPanelProps> = ({
                     ) : error ? (
                         <div style={styles.errorState}>
                             <p style={styles.errorText}>{error}</p>
-                            <button onClick={loadShotPlan} style={styles.retryBtn}>
+                            <button onClick={() => loadShotPlan(mode || 'full')} style={styles.retryBtn}>
                                 <Sparkles size={14} />
                                 Retry
                             </button>
@@ -245,7 +283,7 @@ export const ShotPlanningPanel: React.FC<ShotPlanningPanelProps> = ({
                             }}
                         >
                             <Plus size={14} />
-                            Create Selected Shots
+                            {mode === 'full' && existingShotCount > 0 ? `Replace with ${selectedCount} Shots` : `Create ${selectedCount} Shots`}
                         </button>
                     )}
                 </div>

@@ -724,12 +724,28 @@ const ShotBoardPage: React.FC = () => {
         setIsShotPlanOpen(true);
     };
 
-    const handleCreatePlannedShots = async (shots: Array<{ shot_number: string; shot_type: string; camera_angle?: string; camera_movement?: string; focal_length?: string; description: string; blocking?: string }>) => {
+    const handleCreatePlannedShots = async (shots: Array<{ shot_number: string; shot_type: string; camera_angle?: string; camera_movement?: string; focal_length?: string; description: string; blocking?: string }>, replaceExisting?: boolean) => {
         if (!shotPlanSceneId) return;
-        for (const shot of shots) {
-            await createShot(shotPlanSceneId, shot);
+        
+        // If replacing, delete all existing shots first
+        if (replaceExisting) {
+            const existingShots = shotsByScene[shotPlanSceneId] || [];
+            for (const existing of existingShots) {
+                await deleteShot(existing.id);
+            }
         }
-        refreshSceneShots(shotPlanSceneId);
+        
+        // Create new shots with correct sequential numbering
+        const existingCount = replaceExisting ? 0 : (shotsByScene[shotPlanSceneId] || []).length;
+        for (let i = 0; i < shots.length; i++) {
+            const shot = shots[i];
+            await createShot(shotPlanSceneId, {
+                ...shot,
+                shot_number: String(existingCount + i + 1),
+            });
+        }
+        
+        await refreshSceneShots(shotPlanSceneId);
         setIsShotPlanOpen(false);
     };
 
@@ -928,16 +944,6 @@ const ShotBoardPage: React.FC = () => {
                                         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             <span style={styles.shotCount}>{sceneShots.length} shots</span>
                                             <button onClick={(e) => {
-                                                // Check for unanalyzed staged images before designing shots
-                                                const staged = stagedImagesByScene[scene.id] || [];
-                                                if (staged.length > 0) {
-                                                    const unanalyzed = getUnanalyzedImages(staged);
-                                                    if (unanalyzed.length > 0) {
-                                                        e.stopPropagation();
-                                                        setAnalysisWarning({ sceneId: scene.id, unanalyzed });
-                                                        return;
-                                                    }
-                                                }
                                                 handleOpenShotPlan(scene, e);
                                             }} style={{
                                 padding: '6px 14px',
@@ -1485,6 +1491,7 @@ const ShotBoardPage: React.FC = () => {
                         onClose={() => setIsShotPlanOpen(false)}
                         sceneId={shotPlanSceneId}
                         sceneName={shotPlanSceneName}
+                        existingShotCount={(shotsByScene[shotPlanSceneId] || []).length}
                         onCreateShots={handleCreatePlannedShots}
                     />
                 )}
