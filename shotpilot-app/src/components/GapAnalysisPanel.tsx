@@ -80,7 +80,7 @@ export const GapAnalysisPanel: React.FC<GapAnalysisPanelProps> = ({
           <div style={{
             width: '100%',
             height: '6px',
-            backgroundColor: '#27272a',
+            backgroundColor: '#374151',
             borderRadius: '3px',
             overflow: 'hidden',
           }}>
