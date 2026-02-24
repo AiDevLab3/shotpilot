@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import type { Project, Scene, Shot, ImageVariant, Character, ObjectItem, ProjectImage } from '../types/schema';
-import { getScenes, getShots, createShot, updateShot, deleteShot, updateScene, createScene, deleteScene, updateProject, fileToBase64, createImageVariant, getImageVariants, deleteImageVariant, getUserCredits, getCharacters, getObjects, getStagedImages, updateProjectImage } from '../services/api';
+import { getScenes, getShots, createShot, updateShot, deleteShot, updateScene, createScene, deleteScene, updateProject, fileToBase64, createImageVariant, getImageVariants, deleteImageVariant, getUserCredits, getCharacters, getObjects, getStagedImages, updateProjectImage, reorderShots, removeImageFromShot } from '../services/api';
 import { useProjectContext } from '../components/ProjectLayout';
 import { Plus, Image as ImageIcon, Check, Video, Edit2, Trash2, ChevronDown, ChevronRight, FileText, Clock, Maximize2, Minimize2, Sparkles, Settings, Film } from 'lucide-react';
 import { StoryboardPanel } from '../components/StoryboardPanel';
 import { StagingArea, getUnanalyzedImages } from '../components/StagingArea';
+import { DndSceneWorkshop } from '../components/DndSceneWorkshop';
 import { ExpandedShotPanel } from '../components/ExpandedShotPanel';
 
 import { SuggestionOverlay } from '../components/SuggestionOverlay';
@@ -21,7 +22,7 @@ import { ReadinessBadge } from '../components/ReadinessBadge';
 import { ShotPlanningPanel } from '../components/ShotPlanningPanel';
 import { ReadinessDialogue } from '../components/ReadinessDialogue';
 import { ImageLightbox } from '../components/ImageLightbox';
-import { MentionTextarea, MentionEntity } from '../components/MentionTextarea';
+import { MentionTextarea, type MentionEntity } from '../components/MentionTextarea';
 
 // Specialized Dropdown Option Component
 const DropdownOption = ({
@@ -326,6 +327,50 @@ const ShotBoardPage: React.FC = () => {
         }
     };
 
+    // DnD: Assign staged image to shot
+    const handleDndAssignImage = async (imageId: number, imageUrl: string, shotId: number) => {
+        await createImageVariant(shotId, imageUrl, 'manual-assign');
+        // Find which scene this shot belongs to and refresh
+        for (const [sceneId, shots] of Object.entries(shotsByScene)) {
+            if (shots.find(s => s.id === shotId)) {
+                await refreshSceneShots(Number(sceneId));
+                const stagedImages = await getStagedImages(Number(sceneId));
+                setStagedImagesByScene(prev => ({ ...prev, [Number(sceneId)]: stagedImages }));
+                break;
+            }
+        }
+    };
+
+    // DnD: Remove image from shot (back to staging)
+    const handleDndRemoveImage = async (shotId: number, variantId: number) => {
+        await removeImageFromShot(shotId, variantId);
+        for (const [sceneId, shots] of Object.entries(shotsByScene)) {
+            if (shots.find(s => s.id === shotId)) {
+                await refreshSceneShots(Number(sceneId));
+                const stagedImages = await getStagedImages(Number(sceneId));
+                setStagedImagesByScene(prev => ({ ...prev, [Number(sceneId)]: stagedImages }));
+                break;
+            }
+        }
+    };
+
+    // DnD: Reorder shots
+    const handleDndReorder = async (sceneId: number, shotIds: number[]) => {
+        const updated = await reorderShots(sceneId, shotIds);
+        setShotsByScene(prev => ({ ...prev, [sceneId]: updated }));
+    };
+
+    // DnD: Update shot description inline
+    const handleDndUpdateDescription = async (shotId: number, description: string) => {
+        await updateShot(shotId, { description });
+        for (const [sceneId, shots] of Object.entries(shotsByScene)) {
+            if (shots.find(s => s.id === shotId)) {
+                await refreshSceneShots(Number(sceneId));
+                break;
+            }
+        }
+    };
+
     // Remove image from staging (clear scene_id)
     const handleRemoveFromStaging = async (image: any) => {
         try {
@@ -533,7 +578,7 @@ const ShotBoardPage: React.FC = () => {
         }
     };
 
-    const handleDeleteImage = async (imageId: number, shotId: number, e?: React.MouseEvent) => {
+    const _handleDeleteImage = async (imageId: number, shotId: number, e?: React.MouseEvent) => {
         if (e) e.stopPropagation();
         if (confirm("Delete this image?")) {
             await deleteImageVariant(imageId);
@@ -646,7 +691,7 @@ const ShotBoardPage: React.FC = () => {
         if (!projectId) return;
         try {
             await updateProject(projectId, projectFormData);
-            setProject(prev => prev ? { ...prev, ...projectFormData } : prev);
+            if (project) setProject({ ...project, ...projectFormData } as any);
             handleCloseProjectModal();
         } catch (error) {
             console.error("Failed to save project", error);
@@ -689,7 +734,7 @@ const ShotBoardPage: React.FC = () => {
     };
 
     // Phase 3.4: Readiness Dialogue handlers
-    const handleOpenReadinessDialogue = (shotId: number, score: number) => {
+    const _handleOpenReadinessDialogue = (shotId: number, score: number) => {
         setReadinessDialogueShotId(shotId);
         setReadinessDialogueScore(score);
         setIsReadinessDialogueOpen(true);
@@ -952,124 +997,62 @@ const ShotBoardPage: React.FC = () => {
 
                                 {isExpanded && (
                                     <div style={styles.contentArea}>
-                                        {/* Storyboard Strip */}
-                                        <div style={{
-                                            marginBottom: '20px'
-                                        }}>
-                                            {sceneShots.length === 0 ? (
-                                                <button 
-                                                    onClick={() => handleOpenModal(scene.id)} 
-                                                    style={{ 
-                                                        width: '100%',
-                                                        border: '2px dashed #4b5563', 
-                                                        background: 'rgba(55, 65, 81, 0.3)', 
-                                                        justifyContent: 'center', 
-                                                        alignItems: 'center', 
-                                                        minHeight: '120px', 
-                                                        color: '#9ca3af', 
-                                                        cursor: 'pointer', 
-                                                        display: 'flex',
-                                                        flexDirection: 'column', 
-                                                        gap: '12px', 
-                                                        transition: 'all 0.2s ease',
-                                                        borderRadius: '8px',
-                                                    }} 
-                                                    onMouseEnter={(e) => { 
-                                                        e.currentTarget.style.borderColor = '#60a5fa'; 
-                                                        e.currentTarget.style.color = '#60a5fa'; 
-                                                        e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)'; 
-                                                    }} 
-                                                    onMouseLeave={(e) => { 
-                                                        e.currentTarget.style.borderColor = '#4b5563'; 
-                                                        e.currentTarget.style.color = '#9ca3af'; 
-                                                        e.currentTarget.style.background = 'rgba(55, 65, 81, 0.3)'; 
-                                                    }}
-                                                >
-                                                    <Plus size={32} />
-                                                    <span style={{ fontSize: '14px', fontWeight: '500' }}>Add First Shot</span>
-                                                </button>
-                                            ) : (
-                                                <div style={{
-                                                    display: 'flex',
-                                                    gap: '12px',
-                                                    overflowX: 'auto',
-                                                    paddingBottom: '8px',
-                                                    paddingRight: '16px',
-                                                    scrollbarWidth: 'thin',
-                                                    scrollbarColor: '#374151 #1f2937',
-                                                }}>
-                                                    {getFilteredShots(sceneShots).map((shot) => {
-                                                        const allVariants = shotImages[shot.id] || [];
-                                                        const imageVariants = allVariants.filter(v => v.image_url);
-                                                        
-                                                        return (
-                                                            <StoryboardPanel
-                                                                key={shot.id}
-                                                                shot={shot}
-                                                                scene={scene}
-                                                                imageVariants={imageVariants}
-                                                                onPanelClick={(shot) => {
-                                                                    setExpandedShotId(expandedShotId === shot.id ? null : shot.id);
-                                                                }}
-                                                                onGenerate={(shot, type) => {
-                                                                    setGenerateModalShot(shot);
-                                                                    setGenerateModalSceneId(scene.id);
-                                                                    setGenerateModalType(type);
-                                                                    setIsGenerateModalOpen(true);
-                                                                }}
-                                                                frameAspectRatio={frameAspectRatio}
-                                                            />
-                                                        );
-                                                    })}
-                                                    
-                                                    {/* Add new shot button */}
-                                                    <button
-                                                        onClick={() => handleOpenModal(scene.id)}
-                                                        style={{
-                                                            width: '60px',
-                                                            height: '150px',
-                                                            backgroundColor: '#18181b',
-                                                            border: '1px dashed #3f3f46',
-                                                            borderRadius: '8px',
-                                                            display: 'flex',
-                                                            flexDirection: 'column',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            cursor: 'pointer',
-                                                            color: '#9ca3af',
-                                                            transition: 'all 0.2s ease',
-                                                            flexShrink: 0,
-                                                            gap: '8px',
-                                                        }}
-                                                        onMouseEnter={(e) => {
-                                                            e.currentTarget.style.borderColor = '#60a5fa';
-                                                            e.currentTarget.style.color = '#60a5fa';
-                                                            e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
-                                                        }}
-                                                        onMouseLeave={(e) => {
-                                                            e.currentTarget.style.borderColor = '#3f3f46';
-                                                            e.currentTarget.style.color = '#9ca3af';
-                                                            e.currentTarget.style.backgroundColor = '#18181b';
-                                                        }}
-                                                    >
-                                                        <Plus size={20} />
-                                                        <span style={{ fontSize: '10px', fontWeight: '600' }}>ADD</span>
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
+                                        {/* DnD Scene Workshop — storyboard + staging with drag & drop */}
+                                        {sceneShots.length === 0 ? (
+                                            <button 
+                                                onClick={() => handleOpenModal(scene.id)} 
+                                                style={{ 
+                                                    width: '100%', border: '2px dashed #4b5563', 
+                                                    background: 'rgba(55, 65, 81, 0.3)', justifyContent: 'center', 
+                                                    alignItems: 'center', minHeight: '120px', color: '#9ca3af', 
+                                                    cursor: 'pointer', display: 'flex', flexDirection: 'column', 
+                                                    gap: '12px', transition: 'all 0.2s ease', borderRadius: '8px',
+                                                }} 
+                                                onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#60a5fa'; e.currentTarget.style.color = '#60a5fa'; }} 
+                                                onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#4b5563'; e.currentTarget.style.color = '#9ca3af'; }}
+                                            >
+                                                <Plus size={32} />
+                                                <span style={{ fontSize: '14px', fontWeight: '500' }}>Add First Shot</span>
+                                            </button>
+                                        ) : (
+                                            <DndSceneWorkshop
+                                                scene={scene}
+                                                shots={getFilteredShots(sceneShots)}
+                                                shotImages={shotImages}
+                                                stagedImages={stagedImagesByScene[scene.id] || []}
+                                                frameAspectRatio={frameAspectRatio}
+                                                onAssignImageToShot={handleDndAssignImage}
+                                                onRemoveImageFromShot={handleDndRemoveImage}
+                                                onUnstageImage={handleRemoveFromStaging}
+                                                onReorderShots={handleDndReorder}
+                                                onUpdateShotDescription={handleDndUpdateDescription}
+                                                onShotClick={(shot) => setExpandedShotId(expandedShotId === shot.id ? null : shot.id)}
+                                                onGenerate={(shot, type) => {
+                                                    setGenerateModalShot(shot);
+                                                    setGenerateModalSceneId(scene.id);
+                                                    setGenerateModalType(type);
+                                                    setIsGenerateModalOpen(true);
+                                                }}
+                                            />
+                                        )}
                                         
-                                        {/* Staging Area */}
-                                        <StagingArea
-                                            sceneId={scene.id}
-                                            stagedImages={stagedImagesByScene[scene.id] || []}
-                                            onImageClick={(image) => {
-                                                console.log('Staged image clicked:', image);
-                                            }}
-                                            onRemoveImage={handleRemoveFromStaging}
-                                            onSuggestPlacements={() => handleRequestSuggestions(scene.id)}
-                                            suggestionsLoading={suggestionsLoading[scene.id]}
-                                        />
+                                        {/* Suggest Placements button (when staging has images) */}
+                                        {(stagedImagesByScene[scene.id] || []).length > 0 && (
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+                                                <button
+                                                    onClick={() => handleRequestSuggestions(scene.id)}
+                                                    disabled={suggestionsLoading[scene.id]}
+                                                    style={{
+                                                        padding: '4px 12px',
+                                                        backgroundColor: suggestionsLoading[scene.id] ? 'rgba(139,92,246,0.25)' : 'rgba(139,92,246,0.15)',
+                                                        border: '1px solid rgba(139,92,246,0.3)',
+                                                        borderRadius: '4px', color: '#a78bfa',
+                                                        fontSize: '11px', fontWeight: 600, cursor: suggestionsLoading[scene.id] ? 'wait' : 'pointer',
+                                                        opacity: suggestionsLoading[scene.id] ? 0.7 : 1,
+                                                    }}
+                                                >✨ {suggestionsLoading[scene.id] ? 'Analyzing fit...' : 'Suggest Placements'}</button>
+                                            </div>
+                                        )}
                                         
                                         {/* CD Suggestion Overlay */}
                                         {(suggestionsLoading[scene.id] || (suggestionsByScene[scene.id] || []).length > 0) && (
@@ -1135,7 +1118,7 @@ const ShotBoardPage: React.FC = () => {
                                                     delete next[scene.id];
                                                     return next;
                                                 })}
-                                                onGenerateShot={(shotId, modelId) => {
+                                                onGenerateShot={(shotId, _modelId) => {
                                                     if (shotId) {
                                                         const shot = sceneShots.find(s => s.id === shotId);
                                                         if (shot) {
@@ -1167,7 +1150,7 @@ const ShotBoardPage: React.FC = () => {
                                                     delete next[scene.id];
                                                     return next;
                                                 })}
-                                                onFixShot={(shotId, action, model, instruction) => {
+                                                onFixShot={(shotId, _action, _model, _instruction) => {
                                                     const shot = sceneShots.find(s => s.id === shotId);
                                                     if (shot) {
                                                         setGenerateModalShot(shot);
@@ -1209,7 +1192,7 @@ const ShotBoardPage: React.FC = () => {
                                                                 headers: { 'Content-Type': 'application/json' },
                                                                 body: JSON.stringify({})
                                                             });
-                                                            const planResult = await planResponse.json();
+                                                            await planResponse.json();
                                                             
                                                             // Generate improved version using the plan
                                                             const genResponse = await fetch(`/api/assets/${asset.id}/generate`, {

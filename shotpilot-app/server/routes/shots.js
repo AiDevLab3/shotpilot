@@ -207,5 +207,33 @@ export default function createShotRoutes({ db, sanitize, calculateCompleteness }
         res.json({ success: true });
     });
 
+    // Reorder shots in a scene
+    router.put('/api/scenes/:id/shots/reorder', (req, res) => {
+        const { id } = req.params;
+        const { shot_ids } = req.body;
+        if (!Array.isArray(shot_ids)) return res.status(400).json({ error: 'shot_ids array required' });
+
+        const reorder = db.transaction(() => {
+            shot_ids.forEach((shotId, index) => {
+                db.prepare('UPDATE shots SET order_index = ?, shot_number = ? WHERE id = ? AND scene_id = ?')
+                    .run(index + 1, String(index + 1), shotId, id);
+            });
+        });
+        reorder();
+
+        const updated = db.prepare('SELECT * FROM shots WHERE scene_id = ? ORDER BY order_index ASC').all(id);
+        res.json(updated);
+    });
+
+    // Remove image from shot (delete image_variant, return image to staging)
+    router.delete('/api/shots/:shotId/images/:variantId', (req, res) => {
+        const { shotId, variantId } = req.params;
+        const variant = db.prepare('SELECT * FROM image_variants WHERE id = ? AND shot_id = ?').get(variantId, shotId);
+        if (!variant) return res.status(404).json({ error: 'Image variant not found' });
+
+        db.prepare('DELETE FROM image_variants WHERE id = ?').run(variantId);
+        res.json({ success: true, removed: variant });
+    });
+
     return router;
 }

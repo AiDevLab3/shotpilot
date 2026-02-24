@@ -189,8 +189,8 @@ export const VariantCard: React.FC<VariantCardProps> = ({ variant, onDelete }) =
                 setVariantStatus('needs-refinement');
             }
             // Check for 3-strike model pivot suggestion
-            if (result.model_pivot_suggestion) {
-                setModelPivotSuggestion(result.model_pivot_suggestion.message);
+            if ((result as any).model_pivot_suggestion) {
+                setModelPivotSuggestion((result as any).model_pivot_suggestion.message);
             }
         } catch (err: any) {
             setError(err.message || 'Audit failed');

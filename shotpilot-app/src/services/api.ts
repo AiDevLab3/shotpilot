@@ -550,6 +550,17 @@ export const updateProjectImage = async (id: number, data: { title?: string; not
     });
 };
 
+export const reorderShots = async (sceneId: number, shotIds: number[]): Promise<Shot[]> => {
+    return apiCall(`/scenes/${sceneId}/shots/reorder`, {
+        method: 'PUT',
+        body: JSON.stringify({ shot_ids: shotIds }),
+    });
+};
+
+export const removeImageFromShot = async (shotId: number, variantId: number): Promise<void> => {
+    await apiCall(`/shots/${shotId}/images/${variantId}`, { method: 'DELETE' });
+};
+
 export const deleteProjectImage = async (id: number): Promise<void> => {
     await apiCall(`/project-images/${id}`, { method: 'DELETE' });
 };

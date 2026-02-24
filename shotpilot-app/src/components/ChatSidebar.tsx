@@ -170,22 +170,23 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 content: responseText,
                 projectUpdates: result.projectUpdates,
                 scriptUpdates: result.scriptUpdates,
-                createdCharacters: result.createdCharacters,
-                createdObjects: result.createdObjects,
-                updatedCharacters: result.updatedCharacters,
-                updatedObjects: result.updatedObjects,
-                createdScenes: result.createdScenes,
-            };
+                ...(result as any).createdCharacters && { createdCharacters: (result as any).createdCharacters },
+                ...(result as any).createdObjects && { createdObjects: (result as any).createdObjects },
+                ...(result as any).updatedCharacters && { updatedCharacters: (result as any).updatedCharacters },
+                ...(result as any).updatedObjects && { updatedObjects: (result as any).updatedObjects },
+                ...(result as any).createdScenes && { createdScenes: (result as any).createdScenes },
+            } as any;
             store.addMessage(projectId, assistantMsg);
 
             // Notify entity pages to refresh their grids
-            if (result.createdObjects?.length || result.updatedObjects?.length) {
+            const r = result as any;
+            if (r.createdObjects?.length || r.updatedObjects?.length) {
                 window.dispatchEvent(new CustomEvent('objectsChanged'));
             }
-            if (result.createdCharacters?.length || result.updatedCharacters?.length) {
+            if (r.createdCharacters?.length || r.updatedCharacters?.length) {
                 window.dispatchEvent(new CustomEvent('charactersChanged'));
             }
-            if (result.createdScenes?.length) {
+            if (r.createdScenes?.length) {
                 window.dispatchEvent(new CustomEvent('scenesChanged'));
             }
 
