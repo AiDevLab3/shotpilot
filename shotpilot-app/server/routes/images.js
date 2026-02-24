@@ -6,6 +6,19 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Extract a 0-100 score from analysis JSON, normalizing 0-10 scales
+function extractScoreFromAnalysis(analysisJson) {
+    try {
+        const parsed = JSON.parse(analysisJson);
+        // Check for already-normalized scores first
+        if (parsed.overall_score && parsed.overall_score > 10) return parsed.overall_score;
+        // These are 0-10 scale — normalize to 0-100
+        const rawScore = parsed.overall_score || parsed.pipeline_score || parsed.realism_score || null;
+        if (rawScore !== null && rawScore <= 10) return Math.round(rawScore * 10);
+        return rawScore;
+    } catch { return null; }
+}
+
 export default function createImageRoutes({
     db, requireAuth, checkCredits, upload,
     holisticImageAudit, loadKBForModel, loadKBForModelViaRAG, readKBFile,
@@ -275,31 +288,30 @@ export default function createImageRoutes({
         const data = req.body;
         const sanitize = (val) => val === undefined ? null : val;
 
-        // If asset_id provided, pull analysis data from project_images
+        // Explicitly passed audit_score takes priority (e.g. CD suggestion confidence)
         let auditData = sanitize(data.audit_data) || null;
         let auditScore = sanitize(data.audit_score) || null;
         let assetId = sanitize(data.asset_id) || null;
+        const hasExplicitScore = auditScore !== null;
         
+        // Auto-link to project_image and pull analysis data
         if (assetId && !auditData) {
             const asset = db.prepare('SELECT analysis_json FROM project_images WHERE id = ?').get(assetId);
             if (asset?.analysis_json) {
                 auditData = asset.analysis_json;
-                try {
-                    const parsed = JSON.parse(asset.analysis_json);
-                    auditScore = parsed.overall_score || parsed.pipeline_score || parsed.realism_score || null;
-                } catch {}
+                if (!hasExplicitScore) {
+                    auditScore = extractScoreFromAnalysis(asset.analysis_json);
+                }
             }
         } else if (!assetId && data.image_url) {
-            // Try to find matching project_image by URL to auto-link
             const asset = db.prepare('SELECT id, analysis_json FROM project_images WHERE image_url = ?').get(data.image_url);
             if (asset) {
                 assetId = asset.id;
                 if (asset.analysis_json && !auditData) {
                     auditData = asset.analysis_json;
-                    try {
-                        const parsed = JSON.parse(asset.analysis_json);
-                        auditScore = parsed.overall_score || parsed.pipeline_score || parsed.realism_score || null;
-                    } catch {}
+                    if (!hasExplicitScore) {
+                        auditScore = extractScoreFromAnalysis(asset.analysis_json);
+                    }
                 }
             }
         }

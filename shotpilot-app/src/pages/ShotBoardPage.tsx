@@ -279,8 +279,10 @@ const ShotBoardPage: React.FC = () => {
             const image = (stagedImagesByScene[sceneId] || []).find(img => img.id === suggestion.image_id);
             if (!image) return;
             
-            // Link the image to the shot
-            await createImageVariant(suggestion.shot_id, image.image_url, 'CD suggestion');
+            // Link the image to the shot with the CD's confidence score
+            await createImageVariant(suggestion.shot_id, image.image_url, 'CD suggestion', {
+                audit_score: suggestion.confidence,
+            });
             
             // Remove from suggestions
             setSuggestionsByScene(prev => ({

@@ -233,14 +233,13 @@ export const getImageVariants = async (shotId: number): Promise<ImageVariant[]> 
     return apiCall(`/shots/${shotId}/images`);
 };
 
-export const createImageVariant = async (shotId: number, imageUrl: string, prompt: string = ''): Promise<void> => {
-    // Note: imageUrl here is essentially the 'reference' path from the upload
-    // In local version we passed Base64, now we pass the URL path
+export const createImageVariant = async (shotId: number, imageUrl: string, prompt: string = '', options?: { audit_score?: number }): Promise<void> => {
     await apiCall(`/shots/${shotId}/images`, {
         method: 'POST',
         body: JSON.stringify({
             image_url: imageUrl,
-            prompt_used: prompt
+            prompt_used: prompt,
+            ...(options?.audit_score !== undefined && { audit_score: options.audit_score }),
         })
     });
 };
