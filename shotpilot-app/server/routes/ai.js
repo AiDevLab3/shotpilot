@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { filterByMentions } from '../utils/mentionParser.js';
 import { callGemini } from '../services/ai/shared.js';
+import { compile as ragCompile } from '../services/ai/ragCompiler.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -989,15 +990,12 @@ export default function createAIRoutes({
 
                 const readiness = calculateCompleteness(project, scene, shot);
                 
-                // Create shot context for RAG pack selection
-                const shotContext = `${shot.description || ''} ${shot.shot_type || ''} ${shot.camera_angle || ''} ${scene.mood_tone || ''} ${characters.map(c => c.name).join(' ')}`.trim();
-                const kbContent = loadKBForModelViaRAG(modelName, shotContext);
-
-                const result = await generatePrompt({
+                // Use RAG-powered compiler for expert prompt generation
+                const result = await ragCompile({
                     project, scene, shot,
                     characters, objects,
-                    modelName, kbContent,
-                    qualityTier: readiness.tier
+                    targetModel: modelName,
+                    qualityTier: readiness.tier,
                 });
 
                 const insertResult = db.prepare(`

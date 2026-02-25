@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import type { AIModel, Shot, Scene, Project } from '../types/schema';
-import { X, Sparkles, Loader2, Copy, Check, Clapperboard, Camera, ChevronDown, ChevronUp, Save } from 'lucide-react';
-import { getAvailableModels, generatePrompt, checkShotReadiness, updateShot, updateScene, updateProject } from '../services/api';
+import { X, Sparkles, Loader2, Copy, Check, Clapperboard, Camera, ChevronDown, ChevronUp, Save, Image as ImageIcon } from 'lucide-react';
+import { getAvailableModels, generatePrompt, checkShotReadiness, updateShot, updateScene, updateProject, createImageVariant } from '../services/api';
 
 interface MissingField {
     field: string;
@@ -90,6 +90,8 @@ export function GeneratePromptModal({
     const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
     const [savingField, setSavingField] = useState<string | null>(null);
     const [savedFields, setSavedFields] = useState<Set<string>>(new Set());
+    const [generatingImage, setGeneratingImage] = useState(false);
+    const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
 
     // Cost estimates per image by model
     const MODEL_COSTS: Record<string, { cost: string; note?: string }> = {
@@ -127,6 +129,8 @@ export function GeneratePromptModal({
             setLoading(true);
             setShowGaps(false);
             setFieldValues({});
+            setGeneratingImage(false);
+            setGeneratedImageUrl(null);
             setSavedFields(new Set());
             fetchData();
         }
@@ -221,6 +225,62 @@ export function GeneratePromptModal({
             navigator.clipboard.writeText(result.prompt);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
+        }
+    };
+
+    const handleGenerateImage = async () => {
+        if (!result?.prompt || !model) return;
+        setGeneratingImage(true);
+        setError(null);
+        try {
+            const res = await fetch('/api/agents/generate-with-audit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    description: result.prompt,
+                    model_preference: model,
+                    project_id: String(project.id),
+                    scene_id: String(scene.id),
+                }),
+            });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || `Generation failed (${res.status})`);
+            }
+            const data = await res.json();
+
+            if (data.generated_image) {
+                // Save image as a project asset and create variant for this shot
+                const saveRes = await fetch('/api/agents/import-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        image: data.generated_image,
+                        source_model: data.model_used,
+                        source_prompt: data.prompt_used,
+                        project_id: String(project.id),
+                    }),
+                });
+                const saveData = await saveRes.json();
+                
+                if (saveData.image_url) {
+                    // Link to shot
+                    await createImageVariant(shot.id, saveData.image_url, data.prompt_used || '', {
+                        audit_score: data.audit?.overall_score ? Math.round(data.audit.overall_score * 10) : undefined,
+                    });
+                    setGeneratedImageUrl(saveData.image_url);
+                    if (onGenerated) onGenerated();
+                }
+            } else if (data.recommendation?.verdict === 'manual_generation_required') {
+                setError(`${data.recommendation.message}. The prompt has been generated above — copy and use it manually.`);
+            } else {
+                throw new Error('No image returned from generation');
+            }
+        } catch (err: any) {
+            console.error('Image generation error:', err);
+            setError(err.message || 'Failed to generate image');
+        } finally {
+            setGeneratingImage(false);
         }
     };
 
@@ -466,8 +526,21 @@ export function GeneratePromptModal({
                     ) : (
                         /* Result View */
                         <>
+                            {/* Generated image preview */}
+                            {generatedImageUrl && (
+                                <div style={{ marginBottom: '16px', textAlign: 'center' as const }}>
+                                    <img src={generatedImageUrl} alt="Generated" style={{
+                                        maxWidth: '100%', maxHeight: '300px', borderRadius: '8px',
+                                        border: '1px solid #374151',
+                                    }} />
+                                    <div style={{ fontSize: '12px', color: '#10b981', marginTop: '8px', fontWeight: 600 }}>
+                                        ✅ Image generated and assigned to Shot {shot.shot_number}
+                                    </div>
+                                </div>
+                            )}
+
                             <div style={styles.formGroup}>
-                                <label style={styles.label}>Generated Prompt</label>
+                                <label style={styles.label}>Generated Prompt ({result.modelName})</label>
                                 <div style={styles.promptBox}>
                                     {result.prompt}
                                 </div>
@@ -483,8 +556,30 @@ export function GeneratePromptModal({
                                 </div>
                             )}
 
+                            {error && <div style={styles.error}>{error}</div>}
+
                             <div style={styles.footer}>
-                                <button onClick={onClose} style={{ ...styles.generateBtn, backgroundColor: '#2563eb' }}>Done</button>
+                                {!generatedImageUrl && (
+                                    <button
+                                        onClick={handleGenerateImage}
+                                        disabled={generatingImage}
+                                        style={{
+                                            ...styles.generateBtn,
+                                            backgroundColor: generatingImage ? '#4b5563' : '#8b5cf6',
+                                            cursor: generatingImage ? 'not-allowed' : 'pointer',
+                                            marginRight: '8px',
+                                        }}
+                                    >
+                                        {generatingImage ? (
+                                            <><Loader2 size={16} className="spin" /> Generating Image...</>
+                                        ) : (
+                                            <><ImageIcon size={16} /> Generate Image</>
+                                        )}
+                                    </button>
+                                )}
+                                <button onClick={onClose} style={{ ...styles.generateBtn, backgroundColor: generatedImageUrl ? '#10b981' : '#2563eb' }}>
+                                    {generatedImageUrl ? 'Done' : 'Close'}
+                                </button>
                             </div>
                         </>
                     )}
