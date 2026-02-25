@@ -62,14 +62,16 @@ npm run dev
 - **Scene Manager**: Drag-and-drop shot planning with AI-designed shots, coverage analysis, and cohesion checks
 - **Asset Manager**: Complete image library with version control and iteration chains
 
-### 🎥 Cinematic Realism Knowledge Base
-The biggest problem in AI-generated imagery isn't creativity — it's realism. Every AI model produces telltale artifacts: plastic-looking skin, impossible lighting physics, HDR glow, uncanny symmetry, depth-of-field inconsistencies. ShotPilot's RAG-indexed knowledge base (1,229 chunks) includes deep research on:
-- **Anti-artifact techniques** (154 chunks) — Identifying and eliminating the "AI look" at the prompt level
-- **Lighting physics** (342 chunks) — Motivated light sources, proper key-to-fill ratios, color temperature consistency
-- **Material realism** (116 chunks) — Skin rendering, fabric behavior, surface properties
-- **Camera & lens behavior** (191 chunks) — Focal length characteristics, depth of field, real optics simulation
+### 🎥 Cinematic Realism Engine
+The biggest problem in AI-generated imagery isn't creativity — it's realism. Every AI model produces telltale artifacts: plastic-looking skin, impossible lighting physics, HDR glow, uncanny symmetry, depth-of-field inconsistencies. ShotPilot attacks this problem at every stage of the pipeline:
 
-This knowledge is automatically loaded into prompts via contextual RAG queries — when you're generating a close-up, ShotPilot pulls in skin rendering and portrait lighting expertise. When you're doing an establishing shot, it loads spatial composition and environmental depth techniques.
+- **Prompt compilation**: The RAG Compiler automatically injects anti-artifact language, realism lock blocks, and filmic entropy instructions into every generated prompt — "avoid CGI, plastic skin, HDR glow, waxy texture" plus model-specific countermeasures. Core realism principles are loaded on every single generation, not just when you ask for it.
+- **Contextual technique loading**: When generating a close-up, the compiler pulls in skin texture, portrait lighting, and facial realism chunks. Wide/establishing shots load spatial composition and environmental depth techniques. This is automatic based on shot type, mood, and lighting context.
+- **Quality Gate scoring**: Every image is analyzed across 6 dimensions including dedicated realism and AI artifact scores. The gate loads realism principles and quality control packs from the KB to judge against professional standards — if a reference image "looks CGI," it flags it because downstream generations inherit and amplify that flaw.
+- **Strategy Picker remediation**: When realism scores are low, the Strategy Picker maps specific issues to specific fixes — waxy skin → GPT Image edit for pore texture, flat lighting → re-generate with adjusted prompt, AI artifacts → targeted cleanup with the right editing model.
+- **Prompt refinement loop**: When an image scores below threshold, the Refiner surgically adjusts only the weak dimensions while preserving what scored well — anchored to realism principles from the KB.
+
+This isn't a feature bolted on top. Cinematic realism is embedded in the compilation, analysis, remediation, and refinement stages — it's the engineering backbone of the entire generation pipeline.
 
 ### 🤖 AI Expert System
 - **Creative Director Agent**: Interprets vision and selects optimal models
