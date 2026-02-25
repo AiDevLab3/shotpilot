@@ -12,7 +12,7 @@ While other AI tools give you generic results, ShotPilot combines:
 - **Cinematic realism expertise** — 250K+ words of anti-artifact research tackling the #1 problem in AI imagery: making it look real, not "AI-generated." Plastic skin, HDR glow, uncanny lighting — we've documented every failure mode and how to fix it.
 - **Expert model specialists** — handcrafted prompts for 9 API-connected models (FLUX, GPT Image, Grok, Kling, Seedream, Reve, Kontext, Nano Banana, Topaz) + Midjourney prompt generation
 - **6-dimension quality analysis** — Physics, Style, Lighting, Clarity, Objects, Character consistency
-- **AI-collaborative workflow** — Create scripts, characters, objects, and shot plans through natural language conversation with AI experts, or upload your own
+- **AI-assisted creation** — Build character bibles and object libraries through AI chat assistants that suggest descriptions, generate reference prompts, and refine details. Import scripts and plan shots with Creative Director guidance.
 - **User-in-the-loop control** — AI recommends, you decide, transparent cost tracking
 
 ## Quick Start
@@ -56,21 +56,20 @@ npm run dev
 ## Core Features
 
 ### 🎬 Professional Workflow
-- **Creative Director**: Collaborate with AI to develop scripts, define visual style, plan cinematography — or upload your own
-- **Character Bible**: Create characters through conversation or upload reference photos, with consistent identity tracking
-- **Object Library**: Build props, vehicles, locations through AI collaboration or import your own references
+- **Creative Director**: Import your script, define visual style and cinematography, collaborate with AI via chat sidebar
+- **Character Bible**: Create characters with AI assistant that suggests descriptions, generates reference prompts, and analyzes uploaded photos
+- **Object Library**: Build props, vehicles, locations with AI assistant for descriptions, prompts, and reference image analysis
 - **Scene Manager**: Drag-and-drop shot planning with AI-designed shots, coverage analysis, and cohesion checks
 - **Asset Manager**: Complete image library with version control and iteration chains
 
-### 🎥 Cinematic Realism Engine
-The biggest problem in AI-generated imagery isn't creativity — it's realism. Every AI model produces telltale artifacts: plastic-looking skin, impossible lighting physics, HDR glow, uncanny symmetry, depth-of-field inconsistencies. ShotPilot's knowledge base contains extensive research on:
-- **Anti-artifact techniques** — Identifying and eliminating the "AI look" at the prompt level
-- **Lighting physics** — Motivated light sources, proper key-to-fill ratios, color temperature consistency
-- **Material realism** — Skin subsurface scattering, fabric behavior, metal reflectivity
-- **Camera simulation** — Lens characteristics, sensor noise, depth of field that matches real optics
-- **Continuity preservation** — Maintaining realism across edits and iterations without introducing new artifacts
+### 🎥 Cinematic Realism Knowledge Base
+The biggest problem in AI-generated imagery isn't creativity — it's realism. Every AI model produces telltale artifacts: plastic-looking skin, impossible lighting physics, HDR glow, uncanny symmetry, depth-of-field inconsistencies. ShotPilot's RAG-indexed knowledge base (1,229 chunks) includes deep research on:
+- **Anti-artifact techniques** (154 chunks) — Identifying and eliminating the "AI look" at the prompt level
+- **Lighting physics** (342 chunks) — Motivated light sources, proper key-to-fill ratios, color temperature consistency
+- **Material realism** (116 chunks) — Skin rendering, fabric behavior, surface properties
+- **Camera & lens behavior** (191 chunks) — Focal length characteristics, depth of field, real optics simulation
 
-This isn't generic prompt enhancement. It's the difference between "a photo of a detective" and an image that could pass for a frame from a Fincher film.
+This knowledge is automatically loaded into prompts via contextual RAG queries — when you're generating a close-up, ShotPilot pulls in skin rendering and portrait lighting expertise. When you're doing an establishing shot, it loads spatial composition and environmental depth techniques.
 
 ### 🤖 AI Expert System
 - **Creative Director Agent**: Interprets vision and selects optimal models
