@@ -2,19 +2,18 @@
 
 **AI Cinematography Copilot for Professional Filmmaking**
 
-Transform your creative vision into cinematic imagery with 250,000+ words of film industry expertise, 10+ AI model specialists, and professional quality analysis.
+Transform your creative vision into cinematic imagery with 250,000+ words of film industry expertise, 10 AI model specialists, and professional quality analysis.
 
-![ShotPilot Interface](docs/images/shotpilot-main-interface.png)
-*The main Scene Workshop interface showing drag-and-drop shot planning with quality scores*
+<!-- Screenshots coming soon -->
 
 ## What Makes ShotPilot Different
 
 While other AI tools give you generic results, ShotPilot combines:
-- **250K+ word cinematography knowledge base** with contextual RAG queries
-- **Expert model specialists** - handcrafted prompts for FLUX, Midjourney, GPT Image, and 7 others
-- **6-dimension quality analysis** - Physics, Style, Lighting, Clarity, Objects, Character consistency  
-- **Professional workflow** - Script → Characters → Scenes → Shots with full context preservation
-- **User-in-the-loop control** - AI recommends, you decide, transparent cost tracking
+- **Cinematic realism expertise** — 250K+ words of anti-artifact research tackling the #1 problem in AI imagery: making it look real, not "AI-generated." Plastic skin, HDR glow, uncanny lighting — we've documented every failure mode and how to fix it.
+- **Expert model specialists** — handcrafted prompts for 9 API-connected models (FLUX, GPT Image, Grok, Kling, Seedream, Reve, Kontext, Nano Banana, Topaz) + Midjourney prompt generation
+- **6-dimension quality analysis** — Physics, Style, Lighting, Clarity, Objects, Character consistency
+- **AI-collaborative workflow** — Create scripts, characters, objects, and shot plans through natural language conversation with AI experts, or upload your own
+- **User-in-the-loop control** — AI recommends, you decide, transparent cost tracking
 
 ## Quick Start
 
@@ -57,11 +56,21 @@ npm run dev
 ## Core Features
 
 ### 🎬 Professional Workflow
-- **Creative Director**: Script analysis and visual style development
-- **Character Bible**: Reference photos with consistent identity tracking
-- **Object Library**: Props, vehicles, locations with visual references  
-- **Scene Manager**: Drag-and-drop shot planning with coverage analysis
-- **Asset Manager**: Complete image library with version control
+- **Creative Director**: Collaborate with AI to develop scripts, define visual style, plan cinematography — or upload your own
+- **Character Bible**: Create characters through conversation or upload reference photos, with consistent identity tracking
+- **Object Library**: Build props, vehicles, locations through AI collaboration or import your own references
+- **Scene Manager**: Drag-and-drop shot planning with AI-designed shots, coverage analysis, and cohesion checks
+- **Asset Manager**: Complete image library with version control and iteration chains
+
+### 🎥 Cinematic Realism Engine
+The biggest problem in AI-generated imagery isn't creativity — it's realism. Every AI model produces telltale artifacts: plastic-looking skin, impossible lighting physics, HDR glow, uncanny symmetry, depth-of-field inconsistencies. ShotPilot's knowledge base contains extensive research on:
+- **Anti-artifact techniques** — Identifying and eliminating the "AI look" at the prompt level
+- **Lighting physics** — Motivated light sources, proper key-to-fill ratios, color temperature consistency
+- **Material realism** — Skin subsurface scattering, fabric behavior, metal reflectivity
+- **Camera simulation** — Lens characteristics, sensor noise, depth of field that matches real optics
+- **Continuity preservation** — Maintaining realism across edits and iterations without introducing new artifacts
+
+This isn't generic prompt enhancement. It's the difference between "a photo of a detective" and an image that could pass for a frame from a Fincher film.
 
 ### 🤖 AI Expert System
 - **Creative Director Agent**: Interprets vision and selects optimal models
@@ -71,8 +80,6 @@ npm run dev
 - **RAG Compiler**: Contextual knowledge loading for each shot
 
 ### 📊 Quality Analysis
-![Quality Analysis Example](docs/images/quality-gate-analysis.png)
-*6-dimension quality analysis with specific improvement recommendations*
 
 **Analyzed Dimensions:**
 - **Physics**: Lighting consistency, shadow accuracy, depth of field realism
@@ -83,8 +90,6 @@ npm run dev
 - **Character**: Facial consistency, identity preservation, wardrobe continuity
 
 ### 🎯 Scene Workshop
-![Scene Workshop Interface](docs/images/scene-workshop-dnd.png)
-*Drag-and-drop interface for assigning images to shots with automatic quality scoring*
 
 **Key Features:**
 - **Visual Storyboard**: Horizontal shot sequence with thumbnails and scores
@@ -317,7 +322,7 @@ For technical implementation details, see:
 ✅ Complete agent system with RAG integration  
 ✅ Professional Scene Workshop with drag-and-drop  
 ✅ 6-dimension quality analysis  
-✅ 7 working model APIs + 3 prompt-only  
+✅ 9 working model APIs + Midjourney prompt generation  
 ✅ Character and object reference system
 
 ### Next Release (v1.1) - Q2 2024
