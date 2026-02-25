@@ -247,6 +247,105 @@ User Request
 └─────────────────┘    └───────────────────┘
 ```
 
+## Cinematic Realism Engine
+
+The Cinematic Realism Engine is the core technical differentiator of ShotPilot. It's not a single component — it's a cross-cutting concern wired into every stage of the generation pipeline. The goal: eliminate the "AI look" (plastic skin, HDR glow, impossible lighting, uncanny symmetry) at every point where it can be introduced or caught.
+
+### Pipeline Integration Points
+
+```
+┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐
+│  RAG Compiler     │    │  Quality Gate     │    │  Strategy Picker  │
+│                  │    │                  │    │                  │
+│ • Realism Lock   │    │ • Realism score  │    │ • Issue → model  │
+│   Block injected │───▶│   (dedicated     │───▶│   mapping        │
+│ • Anti-artifact  │    │   dimension)     │    │ • waxy skin →    │
+│   language       │    │ • AI artifact    │    │   GPT Image edit │
+│ • Filmic entropy │    │   score          │    │ • flat lighting → │
+│ • Context packs  │    │ • Reference      │    │   re-prompt      │
+│   (skin, spatial,│    │   screening for  │    │ • artifacts →    │
+│   lighting)      │    │   CGI inheritance│    │   targeted fix   │
+└──────────────────┘    └──────────────────┘    └──────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Prompt Refiner                                │
+│  Surgical fixes: only weak realism dimensions modified          │
+│  Strong scores preserved — anchored to KB realism principles    │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Stage 1: Prompt Compilation (`ragCompiler.js`)
+Every prompt compiled by ShotPilot includes:
+- **Core realism principles** — Always loaded via `queryKB('realism core principles anti-artifact')`, regardless of shot type
+- **Realism Lock Block** — Hardcoded in system instruction: "avoid CGI, plastic skin, HDR glow, hyper-detailed, 8K clarity, waxy texture"
+- **Filmic entropy** — Required: "natural grain, motivated lighting with physical sources, micro-imperfections"
+- **Contextual technique packs** — `buildContextKeywords()` analyzes shot type and loads relevant expertise:
+  - Close-up → `['close-up', 'detail', 'facial', 'texture']` → skin rendering, portrait lighting
+  - Wide/establishing → `['spatial', 'composition', 'environment', 'depth']` → environmental realism
+  - Noir/dark mood → `['noir', 'contrast', 'shadow']` → chiaroscuro techniques
+  - Any shot with characters → `['character', 'face', 'identity', 'consistency']` → identity preservation
+
+### Stage 2: Quality Gate Analysis (`qualityGate.js`)
+The Quality Gate loads three KB sections for every analysis:
+- `realismPrinciples` — Core photographic realism criteria
+- `qualityControlPack` — Professional scoring standards
+- `imageQCPack` — Specific artifact detection (waxy skin, flat lighting, impossible geometry, text garbling, uniform HDR glow, plastic materials)
+
+Dedicated scoring dimensions:
+- `realism` (1-10) — Overall photographic realism
+- `ai_artifacts` (1-10, inverted: 10 = no artifacts) — Synthetic look detection
+
+The reference screener (`screenReference()`) is especially aggressive — a CGI-looking reference image poisons every downstream generation, so it targets 8.5+/10 realism.
+
+### Stage 3: Strategy Picker Remediation (`strategyPicker.js`)
+When realism or artifact scores are below threshold, the picker queries RAG for model-specific fix techniques:
+```javascript
+if (auditResult.ai_artifacts?.score < 7) issueTypes.push('artifact removal');
+if (auditResult.realism?.score < 7) issueTypes.push('realism improvement skin texture');
+```
+
+Hardcoded remediation map:
+- Waxy/plastic skin → Edit with GPT Image 1.5 or Nano Banana Pro
+- Flat lighting → Re-generate with lighting-specific prompt revision
+- AI artifacts → GPT Image 1.5 targeted cleanup or re-generate
+- Composition issues → Re-generate (can't fix composition in editing)
+
+### Stage 4: Prompt Refinement (`ragCompiler.refine()`)
+Loads realism KB, identifies weak vs strong dimensions from audit, surgically fixes only what's broken. Preserves high-scoring aspects — if lighting scored 9/10, lighting language is untouched.
+
+## Cross-Model Translation Matrix
+
+The Translation Matrix solves a fundamental problem: every AI model interprets the same creative intent differently. "Golden hour lighting" requires hex color values for FLUX 2, natural language with `--style raw` for Midjourney, and conversational description for GPT Image.
+
+### How It Works
+
+The RAG Compiler loads translation chunks in step 6 of `loadKBViaRAG()`:
+```javascript
+// 6. Translation matrix (how to convert generic concepts to this model's language)
+const translationChunks = queryForModel(modelId, ['translation'], 5);
+if (translationChunks.length === 0) {
+    // Fallback: general translation knowledge
+    const generalTranslation = queryKB('translation matrix model syntax', { category: 'translation' }, 5);
+}
+```
+
+### What's Indexed (21 chunks)
+
+Translation tables mapping cinematography concepts across all supported models:
+
+| Concept | FLUX 2 | Midjourney | GPT Image |
+|---------|--------|------------|-----------|
+| Golden hour | `"lighting": "#FFA500"` JSON | `golden hour lighting --s 250 --style raw` | "Shot during golden hour with warm directional sunlight" |
+| Shallow DOF | `"camera": "85mm f/1.4"` | `shallow depth of field, bokeh --v 7` | "Background softly blurred, subject in sharp focus" |
+| Film noir | `"mood": "noir", "lighting": "#000000/#FFA500"` | `film noir, high contrast, chiaroscuro --style raw` | "Classic noir lighting with hard shadows and motivated light sources" |
+
+### When Translation Fires
+
+- **Every generation**: Translation matrix is loaded as one of the 6 standard RAG sections
+- **Model switching**: When Strategy Picker recommends a different model for a fix, the compiler automatically translates the creative intent to the new model's syntax
+- **Consistency across models**: Same project can use FLUX for wide shots and GPT Image for close-ups while maintaining visual coherence through translated parameters
+
 ## RAG Pipeline Architecture
 
 ### Knowledge Base Structure

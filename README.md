@@ -9,9 +9,10 @@ Transform your creative vision into cinematic imagery with 250,000+ words of fil
 ## What Makes ShotPilot Different
 
 While other AI tools give you generic results, ShotPilot combines:
-- **Cinematic realism expertise** — 250K+ words of anti-artifact research tackling the #1 problem in AI imagery: making it look real, not "AI-generated." Plastic skin, HDR glow, uncanny lighting — we've documented every failure mode and how to fix it.
-- **Expert model specialists** — handcrafted prompts for 9 API-connected models (FLUX, GPT Image, Grok, Kling, Seedream, Reve, Kontext, Nano Banana, Topaz) + Midjourney prompt generation
-- **6-dimension quality analysis** — Physics, Style, Lighting, Clarity, Objects, Character consistency
+- **Cinematic Realism Engine** — Not a feature, the backbone. Anti-artifact language, realism lock blocks, and filmic entropy injected into every prompt. Realism scored as a dedicated dimension on every image. Failures mapped to specific model fixes. [Deep dive →](docs/ARCHITECTURE.md#cinematic-realism-engine)
+- **Cross-Model Translation Matrix** — Every AI model speaks a different language. ShotPilot automatically translates your creative intent (golden hour, shallow DOF, film noir) into the exact syntax each model needs. Switch models mid-project without losing visual coherence. [Deep dive →](docs/ARCHITECTURE.md#cross-model-translation-matrix)
+- **Expert model specialists** — Handcrafted prompts for 9 API-connected models (FLUX, GPT Image, Grok, Kling, Seedream, Reve, Kontext, Nano Banana, Topaz) + Midjourney prompt generation
+- **Quality analysis with remediation** — Multi-dimension scoring including dedicated realism and AI artifact detection, with intelligent strategy picking that maps specific issues to specific model fixes
 - **AI-assisted creation** — Build character bibles and object libraries through AI chat assistants that suggest descriptions, generate reference prompts, and refine details. Import scripts and plan shots with Creative Director guidance.
 - **User-in-the-loop control** — AI recommends, you decide, transparent cost tracking
 

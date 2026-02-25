@@ -40,19 +40,36 @@ ShotPilot is an AI cinematography copilot that transforms any filmmaker's creati
 
 ## Why ShotPilot Is Different
 
-### 1. Deep Domain Expertise
-We've embedded 250,000+ words of film industry knowledge into every prompt. Where other tools offer generic "prompt enhancement," ShotPilot understands f-stops, lighting ratios, lens choices, and film terminology. It's the difference between asking a random person to help with your photography vs. hiring a professional cinematographer.
+### 1. Cinematic Realism Engine
+This is the core of ShotPilot. The #1 problem with AI-generated imagery isn't creativity—it's that everything looks fake. Plastic skin, HDR glow, impossible lighting, uncanny symmetry. Every AI tool produces these artifacts, and no amount of prompt tweaking fixes them if you don't understand *why* they happen.
 
-### 2. Model Specialization
-Each AI model has unique strengths—FLUX 2 excels at photorealism, Midjourney at aesthetic excellence, GPT Image at character consistency. ShotPilot has handcrafted expert prompts for 10+ models, written as if each model's own engineers were describing optimal use. You get the best of every model instead of generic one-size-fits-all prompts.
+ShotPilot embeds cinematic realism into every stage of the pipeline—not as an optional filter, but as the engineering backbone:
 
-### 3. Professional Quality Analysis
-While other tools give simple pass/fail feedback, ShotPilot provides 6-dimension analysis: Physics, Style, Lighting, Clarity, Objects, and Character consistency. It tells you not just "this needs work" but specifically "the key-to-fill lighting ratio suggests harsh midday sun while your background shows golden hour—switch to motivated lighting for realism."
+- **Prompt Compilation**: Every generated prompt automatically includes anti-artifact language, realism lock blocks, and filmic entropy instructions. The system injects "avoid CGI, plastic skin, HDR glow, waxy texture" plus model-specific countermeasures before you even see the prompt.
+- **Contextual Knowledge Loading**: Close-up? The compiler loads skin texture, portrait lighting, and facial realism expertise. Wide shot? Spatial composition and environmental depth. This happens automatically based on shot type, mood, and lighting.
+- **Quality Analysis**: The Quality Gate scores every image on dedicated realism and AI artifact dimensions, using KB-loaded realism principles. If a reference image looks CGI, it flags it—because downstream generations inherit and amplify that flaw.
+- **Intelligent Remediation**: When realism scores are low, the Strategy Picker maps specific failures to specific fixes: waxy skin → GPT Image edit for pore texture, flat lighting → re-generate with adjusted prompt, AI artifacts → targeted cleanup with the right editing model.
+- **Surgical Refinement**: The prompt refiner fixes only weak dimensions while preserving what scored well—always anchored to realism principles from the knowledge base.
 
-### 4. Project-Wide Continuity
+This is built on 250,000+ words of research into why AI images fail at realism and how to fix it at the prompt level, the analysis level, and the remediation level.
+
+### 2. Cross-Model Translation Matrix
+Every AI model speaks a different language. "Cinematic lighting" means something completely different to FLUX 2 (hex color values in JSON) vs. Midjourney (natural language with --style raw) vs. GPT Image (conversational description). The same creative intent produces wildly different results depending on how you phrase it for each model.
+
+ShotPilot's Translation Matrix solves this. It maps cinematography concepts—golden hour lighting, shallow depth of field, film noir contrast—to the exact syntax each model needs. When you switch from FLUX to Midjourney mid-project, or when the Strategy Picker recommends a different model for a specific fix, the translation happens automatically. Your creative vision stays consistent even as the underlying model changes.
+
+This includes 21 indexed translation chunks covering common lighting scenarios, camera techniques, and style parameters across all 10 supported models.
+
+### 3. Model Specialization
+Each AI model has unique strengths—FLUX 2 excels at photorealism, Midjourney at aesthetic excellence, GPT Image at character consistency. ShotPilot has handcrafted expert prompts for 10 models, written as if each model's own engineers were describing optimal use. You get the best of every model instead of generic one-size-fits-all prompts.
+
+### 4. Professional Quality Analysis
+While other tools give simple pass/fail feedback, ShotPilot provides multi-dimension analysis including dedicated realism and AI artifact scores. It tells you not just "this needs work" but specifically "the key-to-fill lighting ratio suggests harsh midday sun while your background shows golden hour—switch to motivated lighting for realism."
+
+### 5. Project-Wide Continuity
 ShotPilot remembers everything—your characters, scenes, style preferences, even which shots work well together. It maintains context across your entire production so shot 47 still matches shot 3, even weeks later.
 
-### 5. User-in-the-Loop Control
+### 6. User-in-the-Loop Control
 Unlike automated AI systems, ShotPilot puts you in control. AI recommends, you decide. Every generation is a conscious decision with full cost transparency. You're not surrendering creative control—you're augmenting your expertise.
 
 ## The Core Workflow
