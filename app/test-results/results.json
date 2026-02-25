@@ -1,0 +1,92 @@
+{
+  "timestamp": "2026-02-06T06:11:10.517Z",
+  "total_tests": 16,
+  "passed": 14,
+  "failed": 0,
+  "skipped": 2,
+  "duration": "0.3s",
+  "results": [
+    {
+      "test": "Login with test user",
+      "status": "PASSED",
+      "duration": "0.1s"
+    },
+    {
+      "test": "Credit badge — GET /user/credits",
+      "status": "PASSED",
+      "duration": "0.0s"
+    },
+    {
+      "test": "Model selector — GET /models",
+      "status": "PASSED",
+      "duration": "0.0s"
+    },
+    {
+      "test": "Setup — Get project and scene",
+      "status": "PASSED",
+      "duration": "0.0s"
+    },
+    {
+      "test": "Create draft-tier shot (minimal fields)",
+      "status": "PASSED",
+      "duration": "0.0s"
+    },
+    {
+      "test": "Create production-tier shot (many fields)",
+      "status": "PASSED",
+      "duration": "0.0s"
+    },
+    {
+      "test": "Quality check — draft shot returns draft tier",
+      "status": "PASSED",
+      "duration": "0.0s"
+    },
+    {
+      "test": "Quality check — production shot returns production tier",
+      "status": "PASSED",
+      "duration": "0.0s"
+    },
+    {
+      "test": "Recommendations — POST /shots/:id/get-recommendations",
+      "status": "SKIPPED",
+      "duration": "0.0s",
+      "reason": "Gemini API unreachable (no external network)"
+    },
+    {
+      "test": "Accept recommendation — PATCH shot field",
+      "status": "PASSED",
+      "duration": "0.0s"
+    },
+    {
+      "test": "Generate prompt — POST /shots/:id/generate-prompt",
+      "status": "SKIPPED",
+      "duration": "0.0s",
+      "reason": "Gemini API unreachable (no external network)"
+    },
+    {
+      "test": "Simulate variant — direct DB insert (Gemini unavailable)",
+      "status": "PASSED",
+      "duration": "0.0s"
+    },
+    {
+      "test": "Credit deduction — verify credit tracking",
+      "status": "PASSED",
+      "duration": "0.0s"
+    },
+    {
+      "test": "Variant list — GET /shots/:id/variants",
+      "status": "PASSED",
+      "duration": "0.0s"
+    },
+    {
+      "test": "Variant delete — DELETE /variants/:id",
+      "status": "PASSED",
+      "duration": "0.0s"
+    },
+    {
+      "test": "Cleanup — delete test shots",
+      "status": "PASSED",
+      "duration": "0.0s"
+    }
+  ]
+}

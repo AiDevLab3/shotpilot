@@ -1,204 +1,366 @@
-# Cine-AI Knowledge Base & ShotPilot
+# ShotPilot
 
-**Professional AI Filmmaking Knowledge Base + Cinematography Prompt Generation Application**
+**AI Cinematography Copilot for Professional Filmmaking**
 
-Version: 9.0 (February 2026)  
-KB Content: ~250,000 words (condensed to ~18K tokens for AI consumption)  
-Application: ShotPilot - Expert Cinematography Prompt Generator  
-**Current Milestone:** 🚀 Sprint 1 Complete - Production-Ready Core Features
+Transform your creative vision into cinematic imagery with 250,000+ words of film industry expertise, 10+ AI model specialists, and professional quality analysis.
 
----
+![ShotPilot Interface](docs/images/shotpilot-main-interface.png)
+*The main Scene Workshop interface showing drag-and-drop shot planning with quality scores*
 
-## 🎯 What is This Repository?
+## What Makes ShotPilot Different
 
-This repository contains two interconnected projects:
+While other AI tools give you generic results, ShotPilot combines:
+- **250K+ word cinematography knowledge base** with contextual RAG queries
+- **Expert model specialists** - handcrafted prompts for FLUX, Midjourney, GPT Image, and 7 others
+- **6-dimension quality analysis** - Physics, Style, Lighting, Clarity, Objects, Character consistency  
+- **Professional workflow** - Script → Characters → Scenes → Shots with full context preservation
+- **User-in-the-loop control** - AI recommends, you decide, transparent cost tracking
 
-### 1. **Cine-AI Knowledge Base** (250K+ Words)
-A comprehensive collection of professional cinematography knowledge, model-specific prompting guides, and AI filmmaking best practices. The knowledge base serves as the foundation for AI-powered filmmaking tools.
+## Quick Start
 
-**Content Includes:**
-- 5 Core Cinematography Packs (Realism, Character Consistency, Quality Control, Motion, Spatial Composition)
-- 23+ Model-Specific Prompting Guides (image + video generation)
-- Professional cinematography principles and film references
-- Quality diagnostic frameworks and troubleshooting guides
+### Prerequisites
+- Node.js 18+ and npm
+- Environment variables for AI services:
+  - `GEMINI_API_KEY` (Google AI Studio)
+  - `FALAI_API_KEY` (fal.ai for FLUX, Grok, etc.)
+  - `OPENAI_API_KEY` (GPT Image 1.5)
 
-### 2. **ShotPilot Application** (Beta - Launch Ready)
-An AI-powered cinematography prompt generation tool that transforms the 250K-word knowledge base into actionable, context-aware prompts for AI image/video generation.
+### Installation
 
-**ShotPilot differentiates from generic "AI prompt optimizers" through:**
-- 250K+ word cinematography knowledge base (condensed to 18K tokens)
-- Complete project context persistence (Project → Scene → Shot → Character)
-- Model-specific prompt optimization (7 supported models)
-- Expert-level quality diagnostics with film references
-- Professional cinematography language and equipment recommendations
+```bash
+# Clone the repository
+git clone https://github.com/AiDevLab3/shotpilot-v2.git
+cd shotpilot-v2
 
----
+# Install dependencies
+cd shotpilot-app
+npm install
 
-## 🎬 ShotPilot: Expert Cinematography Prompt Generator
+# Set up environment
+cp .env.example .env
+# Edit .env with your API keys
 
-### **Product Versions**
-
-**ShotPilot Lite** (Beta Launch Target)
-- ✅ **ALL FEATURES** (AI collaboration, quality systems, script management, everything)
-- ✅ **7 Curated AI Models** (Higgsfield, VEO 3.1, Midjourney, Kling 2.6, Kling 3.0, GPT Image, Nano Banana Pro)
-- 🎯 Target: Serious AI filmmakers and content creators
-- 💰 Pricing: To be determined based on beta feedback
-
-**ShotPilot Full** (Future Release)
-- ✅ **ALL FEATURES** (identical to Lite)
-- ✅ **22+ AI Models** (Lite's 7 + 15 additional models)
-- 🎯 Target: Professional studios and production teams
-- 💰 Pricing: Premium tier with expanded model library
-
-**CRITICAL:** The ONLY difference between Lite and Full is model count, not feature limitations. Lite is a complete, professional-grade product with curated models.
-
----
-
-## 🚀 Sprint 1 Achievements (February 2026)
-
-Sprint 1 focused on stabilizing the core platform and preparing the backend for video generation capabilities.
-
-### **Key Deliverables**
-- ✅ **5 Critical Bugs Fixed:** Resolved quality score inflation, focal length conflicts, and UI rendering issues.
-- ✅ **Quality Score System:** Implemented on-the-fly weighted calculation (80/20 algorithm) with <1ms latency.
-- ✅ **Model Selection UI:** New dropdown in prompt generation modal separating Image vs. Video workflows.
-- ✅ **Kling 3.0 Integration:** Added full multi-shot knowledge base for the latest video model.
-- ✅ **Production Stability:** All features merged to `main` and verified.
-
-### **Current Model Lineup (7 Models)**
-
-**Image Generation (Available Now):**
-1. **Higgsfield Cinema Studio** - Photorealistic humans & natural lighting
-2. **Midjourney** - Artistic & stylized imagery
-3. **GPT Image (DALL-E 3)** - Text interpretation & creative concepts
-4. **Nano Banana Pro** - Natural language image editing & generation
-
-**Video Generation (Backend Ready - UI Coming Phase 2):**
-1. **VEO 3.1** - Advanced cinematography & camera movement
-2. **Kling 2.6** - Fast iteration & consistency
-3. **Kling 3.0** - Multi-shot intelligence & 15s duration (NEW)
-
----
-
-## 📚 Knowledge Base Structure
-
-### **Current Organization (Sprint 1)**
-
-The knowledge base exists in two forms:
-
-#### **1. Full Knowledge Base** (`kb/` folder)
-250,000+ words of cinematography expertise organized into:
-- **5 Core Packs** (Universal constraints and best practices)
-- **23+ Model Guides** (Model-specific syntax and capabilities)
-- **Examples & Templates** (Copy-paste starting points)
-
-**Location:** `kb/packs/`, `kb/models/`, `kb/examples/`
-
-#### **2. Condensed Knowledge Base** (`shotpilot-app/kb/`)
-Optimized for AI consumption - 13 files, ~18K tokens:
-
-| File | Tokens | Purpose |
-|------|--------|---------|
-| 01_Core_Realism_Principles.md | ~1,600 | Foundation cinematography rules |
-| 02_Model_[7 models].md | ~1,300-2,900 | Model-specific syntax guides (inc. Kling 3.0) |
-| 03_Pack_[4 packs].md | ~820-2,430 | Specialized guidance (character, motion, quality, spatial) |
-| 04_Translation_Matrix.md | ~1,750 | Cross-model conversion |
-
-**Total:** ~18,092 tokens (1.8% of Gemini 1M context limit)  
-**Headroom:** 98.2% available for expansion
-
-**Loading Patterns:**
-- Quality check: ~5-6K tokens (Core + Quality + Character + Spatial)
-- Prompt generation: ~8-12K tokens (Core + Model + Quality + Character + Motion + Spatial + Translation)
-
-**Cost Per Operation (Gemini 3.0 Flash):**
-- Quality check: ~$0.0005
-- Prompt generation: ~$0.001
-- 1,000 prompts: ~$1.00
-
----
-
-## 🏗️ Repository Structure
-```
-cine-ai-knowledge-base/
-├── kb/                                   # FULL KNOWLEDGE BASE (250K+ words)
-│   ├── packs/                           # 5 core cinematography packs
-│   ├── models/                          # 23+ model-specific guides
-│   │   ├── kling_3_0/                   # NEW
-│   │   ├── ...
-│   ├── index/
-│   └── examples/
-│
-├── shotpilot-app/                       # SHOTPILOT APPLICATION
-│   ├── kb/                              # CONDENSED KB (18K tokens)
-│   │   ├── models/                      # Model stubs
-│   │   │   └── kling-3.0.md             # NEW
-│   │   ├── ...
-│   ├── server/                          # Backend (Express + SQLite)
-│   │   └── services/kbLoader.js         # Model registry
-│   ├── src/                             # Frontend (React + TypeScript)
-│   │   └── components/                  # UI Components (GeneratePromptModal)
-│   └── README.md                        # App-specific documentation
-│
-├── app_spec/                            # Application specifications
-├── AGENTS.md                            # Agentic Film Crew concept
-├── PRODUCTION_WORKFLOW.md               # Production workflow overview
-├── CONCEPT_PITCH.md                     # Project vision
-├── PHASE_2C_TO_3_HANDOFF.md            # Historic handoff doc
-└── README.md                            # This file
+# Initialize database and start server
+npm run dev
 ```
 
+### First Project Setup
+
+1. **Open ShotPilot**: Navigate to `http://localhost:3000`
+2. **Create Project**: Set your visual style, mood, and cinematography approach  
+3. **Add Characters**: Upload reference photos and descriptions for consistent identity
+4. **Script Import**: Paste your screenplay or treatment for context
+5. **Scene Planning**: Break script into scenes with specific requirements
+6. **Shot Design**: Use the Creative Director to plan individual shots
+7. **Generate & Review**: Create images with AI, analyze quality, and iterate
+
+## Core Features
+
+### 🎬 Professional Workflow
+- **Creative Director**: Script analysis and visual style development
+- **Character Bible**: Reference photos with consistent identity tracking
+- **Object Library**: Props, vehicles, locations with visual references  
+- **Scene Manager**: Drag-and-drop shot planning with coverage analysis
+- **Asset Manager**: Complete image library with version control
+
+### 🤖 AI Expert System
+- **Creative Director Agent**: Interprets vision and selects optimal models
+- **Quality Gate**: 6-dimension analysis with actionable feedback
+- **Strategy Picker**: Intelligent improvement recommendations
+- **Model Specialists**: Expert prompts for 10+ different AI models
+- **RAG Compiler**: Contextual knowledge loading for each shot
+
+### 📊 Quality Analysis
+![Quality Analysis Example](docs/images/quality-gate-analysis.png)
+*6-dimension quality analysis with specific improvement recommendations*
+
+**Analyzed Dimensions:**
+- **Physics**: Lighting consistency, shadow accuracy, depth of field realism
+- **Style**: Aesthetic coherence with project visual identity  
+- **Lighting**: Professional cinematography principles and motivated sources
+- **Clarity**: Technical image quality and sharpness appropriateness
+- **Objects**: Prop accuracy, environmental consistency, logical placement
+- **Character**: Facial consistency, identity preservation, wardrobe continuity
+
+### 🎯 Scene Workshop
+![Scene Workshop Interface](docs/images/scene-workshop-dnd.png)
+*Drag-and-drop interface for assigning images to shots with automatic quality scoring*
+
+**Key Features:**
+- **Visual Storyboard**: Horizontal shot sequence with thumbnails and scores
+- **Staging Area**: Unassigned images ready for placement
+- **Gap Analysis**: "What's Missing?" identifies incomplete coverage  
+- **Cohesion Check**: "Look Consistent?" verifies visual continuity
+- **Contextual Chat**: Per-shot AI consultation for refinements
+
+## Supported AI Models
+
+| Model | Type | API | Strengths |
+|-------|------|-----|-----------|
+| **FLUX.2** | Generator | ✅ fal.ai | Physics-based realism, JSON prompts, hex colors |
+| **Midjourney V7** | Generator | 🔄 Prompt-only | Aesthetic excellence, photographer approach |  
+| **GPT Image 1.5** | Editor/Generator | ✅ OpenAI | World knowledge, text rendering, identity preservation |
+| **Grok Imagine** | Generator | ✅ fal.ai | Dramatic aesthetics, film stock emulation |
+| **Kling Image V3** | Generator | ✅ fal.ai | Elements face control, series generation |
+| **Nano Banana Pro** | Editor | ✅ fal.ai | Thinking model, 14 references, conversational |
+| **Reve** | Editor | ✅ fal.ai | Surgical edits, 4 variants, no masking |
+| **Seedream 4.5** | Generator | ✅ fal.ai | SOTA typography, multi-image consistency |
+| **FLUX Kontext** | Editor | ✅ fal.ai | Instruction-based editing, guidance control |
+| **Topaz AI** | Utility | ✅ fal.ai | Post-processing, upscaling up to 6x |
+
+## Tech Stack
+
+### Backend
+- **Runtime**: Node.js 18+ with ES modules
+- **Framework**: Express.js with TypeScript support
+- **Database**: SQLite with better-sqlite3 (WAL mode)
+- **Knowledge Base**: FTS5 full-text search with 1,229 indexed chunks
+- **AI Integration**: Google Gemini (analysis), fal.ai (generation), OpenAI (GPT Image)
+
+### Frontend  
+- **Framework**: React 18 with TypeScript
+- **Routing**: React Router with nested layouts
+- **State Management**: Zustand with localStorage persistence
+- **Styling**: Tailwind CSS with custom components
+- **Drag & Drop**: @dnd-kit for Scene Workshop interactions
+- **Image Handling**: Lazy loading with intersection observers
+
+### Data Architecture
+- **RAG System**: 250K+ words indexed via SQLite FTS5
+- **Project Context**: Hierarchical style inheritance (Project → Scene → Shot)
+- **Image Versioning**: Parent/child relationships for iteration tracking
+- **Quality Tracking**: 6-dimension scoring with improvement recommendations
+
+## Development
+
+### Project Structure
+```
+shotpilot-v2/
+├── shotpilot-app/              # Main application
+│   ├── src/                    # React frontend
+│   │   ├── components/         # Reusable UI components
+│   │   ├── pages/              # Route-level components  
+│   │   ├── services/           # API clients and utilities
+│   │   └── types/              # TypeScript definitions
+│   ├── server/                 # Express backend
+│   │   ├── services/           # Business logic
+│   │   │   ├── agents/         # AI agent system
+│   │   │   └── ai/             # RAG compiler and shared AI utilities
+│   │   ├── routes/             # API endpoints
+│   │   └── middleware/         # Auth, credits, error handling
+│   ├── tests/                  # Test suites
+│   └── data/                   # SQLite database
+├── kb/                         # Knowledge base (condensed for AI)
+├── docs/                       # Documentation
+│   ├── VISION.md               # Product vision and roadmap  
+│   └── ARCHITECTURE.md         # Technical architecture
+└── README.md                   # This file
+```
+
+### Available Scripts
+
+```bash
+# Development server (frontend + backend)
+npm run dev
+
+# Build for production
+npm run build
+
+# Run tests
+npm test
+
+# Database operations
+npm run db:reset          # Reset to clean state
+npm run db:migrate        # Run schema updates  
+npm run rag:reindex       # Rebuild knowledge base index
+
+# Code quality
+npm run lint              # ESLint + TypeScript checks
+npm run type-check        # TypeScript validation only
+npm run format            # Prettier code formatting
+```
+
+### Environment Configuration
+
+Create `.env` in the `shotpilot-app/` directory:
+
+```bash
+# Required: Google Gemini for analysis and orchestration
+GEMINI_API_KEY=your_gemini_key_here
+GEMINI_MODEL=gemini-3-flash-preview
+
+# Required: fal.ai for most image generation models  
+FALAI_API_KEY=your_falai_key_here
+
+# Optional: OpenAI for GPT Image 1.5
+OPENAI_API_KEY=your_openai_key_here
+
+# Optional: Server configuration
+PORT=3000
+BIND_HOST=0.0.0.0
+NODE_ENV=development
+```
+
+### Testing
+
+ShotPilot includes comprehensive test coverage:
+
+**Automated Tests:**
+```bash
+# Full test suite (18 tests, ~25 seconds)
+npm run test
+
+# Specific test categories
+npm run test:smoke        # API endpoints and core functionality
+npm run test:ui           # React component testing  
+npm run test:agents       # AI agent system validation
+```
+
+**Visual Testing:**
+```bash
+# Playwright browser automation
+npx playwright install   # First-time setup
+npm run test:visual       # Screenshot-based UI testing
+```
+
+**Manual Testing Checklist:**
+- [ ] Project creation and style profile setup
+- [ ] Character upload and reference image handling  
+- [ ] Scene planning with Creative Director integration
+- [ ] Drag-and-drop shot assignment in Scene Workshop
+- [ ] Quality Gate analysis with 6-dimension scoring
+- [ ] Image generation with multiple models
+- [ ] User-in-the-loop improvement workflow
+
+## API Documentation
+
+### Core Endpoints
+
+**Project Management:**
+- `GET /api/projects` - List all projects
+- `POST /api/projects` - Create new project
+- `PUT /api/projects/:id` - Update project settings
+- `DELETE /api/projects/:id` - Delete project and all assets
+
+**Scene & Shot Management:**
+- `GET /api/scenes/:projectId` - Get scenes for project
+- `POST /api/shots` - Create shot in scene  
+- `PUT /api/shots/:id` - Update shot details
+- `DELETE /api/shots/:id` - Remove shot (preserves images)
+
+**AI Agent System:**
+- `POST /api/agents/analyze` - Quality Gate analysis of uploaded image
+- `POST /api/agents/generate-prompt` - Creative Director prompt generation  
+- `POST /api/agents/generate-with-audit` - Single generation + quality analysis
+- `POST /api/agents/execute-improvement` - User-chosen improvement execution
+
+**RAG Knowledge Base:**
+- `GET /api/v2/rag/status` - Knowledge base statistics
+- `POST /api/v2/rag/query` - General knowledge queries
+- `POST /api/v2/rag/query/model` - Model-specific knowledge retrieval
+
+## Contributing
+
+### Development Setup
+1. Fork the repository
+2. Create feature branch: `git checkout -b feature/amazing-feature`
+3. Install dependencies: `cd shotpilot-app && npm install`
+4. Set up environment variables (see above)
+5. Start development server: `npm run dev`
+
+### Code Standards
+- **TypeScript**: Strict mode enabled, all new code must be typed
+- **React**: Functional components with hooks, avoid class components
+- **Styling**: Tailwind CSS classes, custom CSS only when necessary
+- **API**: RESTful endpoints with consistent error handling
+- **Database**: Prepared statements only, no string concatenation
+- **AI Services**: All API calls must include cost tracking and error handling
+
+### Commit Guidelines
+- **Format**: `type(scope): description`
+- **Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+- **Scope**: `agents`, `ui`, `api`, `rag`, `db`
+- **Examples**:
+  - `feat(agents): add character consistency tracking`
+  - `fix(ui): resolve scene workshop drag-and-drop issues`
+  - `docs(readme): update API endpoint documentation`
+
+### Pull Request Process
+1. Update documentation for any API changes
+2. Add tests for new features  
+3. Run full test suite: `npm test`
+4. Update CHANGELOG.md with notable changes
+5. Request review from maintainers
+
+## Architecture Deep Dive
+
+For technical implementation details, see:
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Complete system architecture
+- **[VISION.md](docs/VISION.md)** - Product vision and business model
+- **API Reference** - Interactive API docs at `/api/docs` (when running)
+
+### Key Architectural Decisions
+
+**Multi-Agent Design**: Specialized AI agents (Creative Director, Quality Gate, Strategy Picker) rather than monolithic AI for better domain expertise and modularity.
+
+**RAG-Powered Knowledge**: 250K+ words of cinematography expertise accessible via contextual queries instead of static prompt templates.
+
+**User-in-the-Loop**: No automated improvement loops - user controls every generation decision for cost transparency and creative control.
+
+**Hierarchical Styling**: Project → Scene → Shot style inheritance allows consistency with scene-specific variation.
+
+**Immutable Image History**: Parent/child relationships preserve full edit history while tracking costs and improvements.
+
+## Roadmap
+
+### Current Version (v1.0)
+✅ Complete agent system with RAG integration  
+✅ Professional Scene Workshop with drag-and-drop  
+✅ 6-dimension quality analysis  
+✅ 7 working model APIs + 3 prompt-only  
+✅ Character and object reference system
+
+### Next Release (v1.1) - Q2 2024
+🔄 Complete API integration for all 10 models  
+🔄 Character consistency tracking with database persistence  
+🔄 Demo mode with pre-loaded showcase projects  
+🔄 Team collaboration features and approval workflows
+
+### Future Releases (v2.0+)
+📋 Video generation workflow with motion analysis  
+📋 Custom model fine-tuning integration  
+📋 Mobile companion app for on-set reference  
+📋 Educational platform integration for film schools
+
+## Support
+
+### Documentation
+- **Getting Started**: See Quick Start section above
+- **API Reference**: Available at `/api/docs` when running locally  
+- **Architecture Guide**: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- **Product Vision**: [docs/VISION.md](docs/VISION.md)
+
+### Community
+- **GitHub Issues**: Bug reports and feature requests
+- **Discussions**: Architecture questions and use case sharing
+- **Discord**: Real-time community support (coming soon)
+
+### Professional Support  
+For production deployments, custom integrations, or training:
+- **Email**: support@shotpilot.ai
+- **Consulting**: Custom knowledge bases and workflow optimization
+- **Training**: Team workshops on cinematography AI workflows
+
+## License
+
+**Development License**: This version is for development and evaluation purposes.
+
+**Commercial Licensing**: Contact licensing@shotpilot.ai for production use licensing.
+
+The knowledge base content represents significant research into AI model optimization and cinematography principles. Commercial use requires appropriate licensing agreements.
+
 ---
 
-## � Technical Specifications
+**Built with ❤️ for filmmakers who want to maintain creative control while leveraging AI expertise.**
 
-### **ShotPilot Tech Stack**
-**Frontend:** React 18, TypeScript, Vite, Tailwind CSS  
-**Backend:** Node.js, Express, SQLite, Gemini 3.0 Flash  
-**AI Logic:** On-the-fly quality weighting (80/20 split), Dynamic KB loading
-
-### **Sprint 1 Improvements**
-- **Quality Score:** Recalculated live on backend request (<1ms) to prevent UI staleness.
-- **Model Filtering:** UI now intelligently separates Image models from Video models based on `type` field.
-- **Data Integrity:** Fixed gaps in shot numbering and focal length definitions.
-
----
-
-## � Quick Start
-
-### **For ShotPilot Users**
-1. Navigate to `shotpilot-app/` directory
-2. Follow installation instructions in `shotpilot-app/README.md`
-3. Run `npm run dev` to start the application
-4. Use "Generate Prompt" to see the new Model Selection UI
-
-### **For Developers**
-1. Review `app_spec/SHOTBOARD_SCHEMA_v1.md` for data structures
-2. Check `shotpilot-app/kb/` for condensed KB format
-3. See `shotpilot-app/audit_reports/` for optimization history
-
----
-
-## � Version History
-
-**v9.0 (February 2026)** - Sprint 1 Complete
-- **New Feature:** Model Selection UI with Image/Video filtering.
-- **New Content:** Kling 3.0 Knowledge Base (Multi-Shot Intelligence).
-- **Fix:** Quality Score system fully operational/stabilized.
-- **Core:** 5 critical bugs resolved and merged to main.
-
-**v8.0 (February 2026)** - Phase 2C Complete / KB Reorg
-- Reorganized into kb/ structure.
-- Validated with 5-test protocol.
-
-**v7.0 (February 2026)** - Initial ShotPilot Development
-- Created ShotPilot application foundation.
-- Condensed KB for AI consumption.
-
----
-
-## 📞 Contact & Support
-**ShotPilot Beta:** Launch preparation in progress  
-**Current Phase:** Sprint 2 (Video Generation UI)  
-**Last Updated:** February 2026  
-**Repository:** Cine-AI Knowledge Base & ShotPilot
+*ShotPilot transforms your creative vision into professional imagery through deep cinematography knowledge, not generic AI prompting.*
