@@ -33,3 +33,5 @@ shotpilot-app/uploads/
 .env
 *.env.local
 compiler/.env.backup
+test-results/
+app/test-results/
