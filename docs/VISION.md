@@ -135,7 +135,7 @@ When you're working on a close-up shot, ShotPilot automatically loads knowledge 
 🔄 **Collaboration Features**: Team workspaces and approval workflows  
 
 ### Medium-Term
-📋 **Video Generation**: Extend expertise to motion and camera movement  
+📋 **Video Generation Pipeline**: Motion Agent architecture already designed with support for Veo 3.1, Sora 2, Kling O1 Edit, Wan 2.6, and other video models. Extends the same approach that works for images: model-specific expert prompts, physics-based camera moves (dolly, pan, tilt), temporal consistency tracking to prevent character identity drift across frames, and a shared Production State protocol so the video pipeline inherits all context from the image pipeline — optical specs, character bibles, style DNA. KB already includes 11 video model prompting mastery guides. [Full spec →](VIDEO-PIPELINE.md)  
 📋 **Advanced Analytics**: Shot composition scoring and improvement suggestions  
 📋 **Custom Model Integration**: Support for fine-tuned character models  
 📋 **Mobile Companion**: On-set reference and continuity checking  

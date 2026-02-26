@@ -334,7 +334,7 @@ For technical implementation details, see:
 🔄 Team collaboration features and approval workflows
 
 ### Future Releases (v2.0+)
-📋 Video generation workflow with motion analysis  
+📋 Video generation pipeline — Motion Agent architecture designed, 11 video model KB guides written, shared Production State protocol for seamless image-to-video handoff  
 📋 Custom model fine-tuning integration  
 📋 Mobile companion app for on-set reference  
 📋 Educational platform integration for film schools
