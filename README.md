@@ -327,7 +327,7 @@ For technical implementation details, see:
 ✅ 9 working model APIs + Midjourney prompt generation  
 ✅ Character and object reference system
 
-### Next Release (v1.1) - Q2 2024
+### Next Release (v1.1)
 🔄 Complete API integration for all 10 models  
 🔄 Character consistency tracking with database persistence  
 🔄 Demo mode with pre-loaded showcase projects  

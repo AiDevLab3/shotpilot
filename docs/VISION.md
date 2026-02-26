@@ -128,19 +128,19 @@ When you're working on a close-up shot, ShotPilot automatically loads knowledge 
 ✅ **Quality Analysis**: 6-dimension holistic image auditing  
 ✅ **RAG Compiler**: Context-aware prompt generation with multimodal references  
 
-### Near-Term (Next 3 Months)
+### Near-Term
 🔄 **Complete API Integration**: In-app generation for all supported models  
 🔄 **Character Persistence**: Full database-backed continuity tracking  
 🔄 **Demo Mode**: Pre-loaded examples to showcase capabilities  
 🔄 **Collaboration Features**: Team workspaces and approval workflows  
 
-### Medium-Term (6-12 Months)
+### Medium-Term
 📋 **Video Generation**: Extend expertise to motion and camera movement  
 📋 **Advanced Analytics**: Shot composition scoring and improvement suggestions  
 📋 **Custom Model Integration**: Support for fine-tuned character models  
 📋 **Mobile Companion**: On-set reference and continuity checking  
 
-### Long-Term Vision (12+ Months)
+### Long-Term Vision
 🚀 **AI Cinematographer**: Full scene composition and lighting design  
 🚀 **Real-time Feedback**: Live guidance during actual filming  
 🚀 **Educational Platform**: Film school integration and learning paths  
