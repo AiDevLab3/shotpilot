@@ -47,12 +47,11 @@ npm run dev
 ### First Project Setup
 
 1. **Open ShotPilot**: Navigate to `http://localhost:3000`
-2. **Create Project**: Set your visual style, mood, and cinematography approach  
-3. **Add Characters**: Upload reference photos and descriptions for consistent identity
-4. **Script Import**: Paste your screenplay or treatment for context
-5. **Scene Planning**: Break script into scenes with specific requirements
-6. **Shot Design**: Use the Creative Director to plan individual shots
-7. **Generate & Review**: Create images with AI, analyze quality, and iterate
+2. **Create Project**: Define your visual style, mood, and cinematography approach — or collaborate with the AI Creative Director to develop it
+3. **Add Characters**: Upload reference photos or build character bibles through the AI assistant
+4. **Script Development**: Paste your screenplay or develop one through Creative Director conversation
+5. **Scene Planning**: Break script into scenes with AI-assisted shot design
+6. **Generate & Review**: Create images with AI, analyze quality for cinematic realism, and iterate
 
 ## Core Features
 
@@ -75,7 +74,7 @@ The biggest problem in AI-generated imagery isn't creativity — it's realism. E
 This isn't a feature bolted on top. Cinematic realism is embedded in the compilation, analysis, remediation, and refinement stages — it's the engineering backbone of the entire generation pipeline.
 
 ### 🤖 AI Expert System
-- **Creative Director Agent**: Interprets vision and selects optimal models
+- **Creative Director Agent**: Interprets vision and recommends optimal models
 - **Quality Gate**: 6-dimension analysis with actionable feedback
 - **Strategy Picker**: Intelligent improvement recommendations
 - **Model Specialists**: Expert prompts for 10+ different AI models
