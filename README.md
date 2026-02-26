@@ -2,7 +2,7 @@
 
 **AI Cinematography Copilot for Professional Filmmaking**
 
-Transform your creative vision into cinematic imagery with 250,000+ words of film industry expertise, 10 AI model specialists, and professional quality analysis.
+Transform your creative vision into cinematic imagery. 250,000+ words of cinematography research — distilled into 1,229 RAG-optimized chunks for sub-50ms retrieval — powering 10 AI model specialists and professional quality analysis.
 
 <!-- Screenshots coming soon -->
 
@@ -133,7 +133,7 @@ This isn't a feature bolted on top. Cinematic realism is embedded in the compila
 - **Image Handling**: Lazy loading with intersection observers
 
 ### Data Architecture
-- **RAG System**: 250K+ words indexed via SQLite FTS5
+- **RAG System**: 250K+ words of research distilled into 1,229 chunks across 7 categories, indexed via SQLite FTS5
 - **Project Context**: Hierarchical style inheritance (Project → Scene → Shot)
 - **Image Versioning**: Parent/child relationships for iteration tracking
 - **Quality Tracking**: 6-dimension scoring with improvement recommendations
@@ -310,7 +310,7 @@ For technical implementation details, see:
 
 **Multi-Agent Design**: Specialized AI agents (Creative Director, Quality Gate, Strategy Picker) rather than monolithic AI for better domain expertise and modularity.
 
-**RAG-Powered Knowledge**: 250K+ words of cinematography expertise accessible via contextual queries instead of static prompt templates.
+**RAG-Powered Knowledge**: 250K+ words of cinematography research, distilled into 1,229 optimized chunks across 7 categories (principles, model syntax, technique packs, failure modes, tips, style, translation). Contextual queries load only what's relevant per shot — not the full corpus.
 
 **User-in-the-Loop**: No automated improvement loops - user controls every generation decision for cost transparency and creative control.
 
