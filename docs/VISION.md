@@ -75,20 +75,22 @@ Unlike automated AI systems, ShotPilot puts you in control. AI recommends, you d
 ## The Core Workflow
 
 ### Phase 1: Foundation (Creative Director)
-- **Script Input**: Upload your screenplay or treatment
-- **Project DNA**: Define visual style, mood, cinematography approach
-- **Character Bible**: Upload reference photos and detailed descriptions
-- **Object Library**: Key props, vehicles, locations with reference images
+*Every element below can be uploaded directly or built from scratch through conversation with the AI Creative Director.*
+- **Script Development**: Screenplay, treatment, or concept
+- **Project DNA**: Visual style, mood, cinematography approach
+- **Character Bible**: Reference photos and detailed descriptions
+- **Object Library**: Props, vehicles, locations with reference images
 
 ### Phase 2: Pre-Production (Scene Manager)
+*The AI Creative Director assists with scene organization, shot design, and coverage planning.*
 - **Scene Breakdown**: Organize script into manageable scenes
-- **Shot Planning**: Define camera angles, movements, compositions per scene
+- **Shot Planning**: AI-designed camera angles, movements, and compositions per scene
 - **Coverage Analysis**: Identify gaps in your visual coverage
 - **Cohesion Check**: Ensure shots will cut together seamlessly
 
 ### Phase 3: Production (Asset Manager + Agents)
 - **Intelligent Generation**: AI selects optimal model and crafts expert prompts
-- **Quality Gate**: 6-dimension analysis of every generated image
+- **Quality Gate**: Multi-dimension analysis of every generated image for style and cinematic realism consistency
 - **Iterative Improvement**: Targeted fixes based on specific quality issues
 - **Character Tracking**: Automatic consistency verification across all shots
 
