@@ -51,7 +51,7 @@ ShotPilot embeds cinematic realism into every stage of the pipeline—not as an 
 - **Intelligent Remediation**: When realism scores are low, the Strategy Picker maps specific failures to specific fixes: waxy skin → GPT Image edit for pore texture, flat lighting → re-generate with adjusted prompt, AI artifacts → targeted cleanup with the right editing model.
 - **Surgical Refinement**: The prompt refiner fixes only weak dimensions while preserving what scored well—always anchored to realism principles from the knowledge base.
 
-This is built on 250,000+ words of research into why AI images fail at realism and how to fix it at the prompt level, the analysis level, and the remediation level.
+This is built on 250,000+ words of original research into why AI images fail at realism and how to fix it. That research has been distilled, categorized, and indexed into 1,229 optimized chunks across 7 categories (principles, syntax, packs, failures, tips, style, translation) totaling ~198K tokens — structured specifically for efficient RAG retrieval. A typical generation query loads 40-60 relevant chunks in under 50ms, not the full corpus.
 
 ### 2. Cross-Model Translation Matrix
 Every AI model speaks a different language. "Cinematic lighting" means something completely different to FLUX 2 (hex color values in JSON) vs. Midjourney (natural language with --style raw) vs. GPT Image (conversational description). The same creative intent produces wildly different results depending on how you phrase it for each model.
@@ -100,7 +100,7 @@ Unlike automated AI systems, ShotPilot puts you in control. AI recommends, you d
 ## The Technology Behind It (Non-Technical Explanation)
 
 ### Knowledge Base System
-Imagine a film school professor with encyclopedic knowledge who can instantly recall every technique for making skin look realistic, every method for achieving cinematic lighting, every trick for maintaining character consistency. That's our knowledge base—250,000+ words of cinematography expertise instantly searchable and contextually relevant.
+Imagine a film school professor with encyclopedic knowledge who can instantly recall every technique for making skin look realistic, every method for achieving cinematic lighting, every trick for maintaining character consistency. That's our knowledge base — 250,000+ words of original cinematography research, distilled and structured into 1,229 RAG-optimized chunks across 7 categories (principles, model syntax, technique packs, failure modes, tips, style guides, translation matrices). Each chunk is categorized and tagged so the system loads only what's relevant for a given shot — a close-up pulls skin texture and portrait lighting chunks, a wide shot pulls spatial composition and environmental depth. Query time is under 50ms. The research is deep; the retrieval is surgical.
 
 ### AI Agent Specialists
 Instead of one generic AI, ShotPilot employs a team of AI specialists:

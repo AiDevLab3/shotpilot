@@ -349,19 +349,7 @@ export const CreativeDirectorPage: React.FC = () => {
                 )}
             </div>
 
-            {/* Create New Project */}
-            <div style={{ ...styles.section, marginTop: '8px', paddingTop: '12px', borderTop: '1px solid #27272a' }}>
-                <NewProjectForm onSubmit={async (title) => {
-                    try {
-                        await createProject({ title: title || 'Untitled Project' });
-                        const projects = await getAllProjects();
-                        const newest = projects[0];
-                        if (newest) navigate(`/projects/${newest.id}`);
-                    } catch (error) {
-                        console.error('Create project error:', error);
-                    }
-                }} creating={false} />
-            </div>
+
 
             {/* Hidden file input */}
             <input ref={fileInputRef} type="file" accept=".txt,.fdx,.fountain,.md" onChange={handleScriptUpload} style={{ display: 'none' }} />

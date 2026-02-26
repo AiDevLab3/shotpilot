@@ -1,12 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { getAllProjects } from '../../services/api';
+import { getAllProjects, createProject } from '../../services/api';
 import { CreditBadge } from '../CreditBadge';
 import type { Project } from '../../types/schema';
 
 export const Header: React.FC = () => {
     const [projects, setProjects] = useState<Project[]>([]);
     const [currentProject, setCurrentProject] = useState<Project | null>(null);
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [newProjectName, setNewProjectName] = useState('');
+    const [creating, setCreating] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -18,6 +22,17 @@ export const Header: React.FC = () => {
     useEffect(() => {
         loadProjects();
     }, [projectIdFromUrl]);
+
+    // Close dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+                setDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const loadProjects = async () => {
         try {
@@ -36,13 +51,38 @@ export const Header: React.FC = () => {
         }
     };
 
+    const handleProjectSelect = (project: Project) => {
+        setCurrentProject(project);
+        setDropdownOpen(false);
+        navigate(`/projects/${project.id}`);
+    };
+
+    const handleCreateProject = async () => {
+        if (creating) return;
+        setCreating(true);
+        try {
+            await createProject({ title: newProjectName || 'Untitled Project' });
+            setNewProjectName('');
+            const projs = await getAllProjects();
+            setProjects(projs);
+            const newest = projs[projs.length - 1];
+            if (newest) {
+                setCurrentProject(newest);
+                setDropdownOpen(false);
+                navigate(`/projects/${newest.id}`);
+            }
+        } catch (err) {
+            console.error('Failed to create project:', err);
+        } finally {
+            setCreating(false);
+        }
+    };
+
     const handleProjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const newId = parseInt(e.target.value);
         const project = projects.find(p => p.id === newId);
         if (project) {
             setCurrentProject(project);
-            // Navigate to the same page but for the new project, or default to info
-            // Simple approach: Go to Project Info for the new project
             navigate(`/projects/${newId}`);
         }
     };
@@ -132,19 +172,102 @@ export const Header: React.FC = () => {
             <div style={styles.topBar}>
                 <div style={styles.brandSection}>
                     <div style={styles.logo}>SP</div>
-                    <div style={styles.projectMeta}>
+                    <div style={{ ...styles.projectMeta, position: 'relative' }} ref={dropdownRef}>
                         <span style={styles.projectLabel}>Current Project</span>
-                        <select
-                            style={styles.projectSelect}
-                            value={pid}
-                            onChange={handleProjectChange}
+                        <button
+                            onClick={() => setDropdownOpen(!dropdownOpen)}
+                            style={{
+                                ...styles.projectSelect,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                background: 'none',
+                            }}
                         >
-                            {projects.map(p => (
-                                <option key={p.id} value={p.id} style={styles.projectOption}>
-                                    {p.title}
-                                </option>
-                            ))}
-                        </select>
+                            {currentProject?.title || 'Select Project'}
+                            <span style={{ fontSize: '10px', color: '#6b7280' }}>▼</span>
+                        </button>
+                        {dropdownOpen && (
+                            <div style={{
+                                position: 'absolute',
+                                top: '100%',
+                                left: 0,
+                                marginTop: '4px',
+                                backgroundColor: '#1e1e24',
+                                border: '1px solid #3f3f46',
+                                borderRadius: '8px',
+                                minWidth: '280px',
+                                zIndex: 1000,
+                                boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                                overflow: 'hidden',
+                            }}>
+                                {/* Project list */}
+                                <div style={{ maxHeight: '240px', overflowY: 'auto' }}>
+                                    {projects.map(p => (
+                                        <button
+                                            key={p.id}
+                                            onClick={() => handleProjectSelect(p)}
+                                            style={{
+                                                display: 'block',
+                                                width: '100%',
+                                                padding: '10px 14px',
+                                                backgroundColor: p.id === pid ? '#2d2d3a' : 'transparent',
+                                                border: 'none',
+                                                color: p.id === pid ? '#8b5cf6' : '#e5e7eb',
+                                                fontSize: '13px',
+                                                fontWeight: p.id === pid ? 600 : 400,
+                                                textAlign: 'left',
+                                                cursor: 'pointer',
+                                            }}
+                                            onMouseEnter={e => { if (p.id !== pid) (e.target as HTMLElement).style.backgroundColor = '#27272a'; }}
+                                            onMouseLeave={e => { if (p.id !== pid) (e.target as HTMLElement).style.backgroundColor = 'transparent'; }}
+                                        >
+                                            {p.title}
+                                        </button>
+                                    ))}
+                                </div>
+                                {/* Divider + Create new */}
+                                <div style={{ borderTop: '1px solid #3f3f46', padding: '8px' }}>
+                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                        <input
+                                            value={newProjectName}
+                                            onChange={e => setNewProjectName(e.target.value)}
+                                            onKeyDown={e => { if (e.key === 'Enter') handleCreateProject(); }}
+                                            placeholder="New project..."
+                                            style={{
+                                                flex: 1,
+                                                padding: '6px 10px',
+                                                backgroundColor: '#27272a',
+                                                border: '1px solid #3f3f46',
+                                                borderRadius: '5px',
+                                                color: '#e5e7eb',
+                                                fontSize: '12px',
+                                                outline: 'none',
+                                            }}
+                                            autoFocus
+                                        />
+                                        <button
+                                            onClick={handleCreateProject}
+                                            disabled={creating}
+                                            style={{
+                                                padding: '6px 12px',
+                                                backgroundColor: '#8b5cf6',
+                                                border: 'none',
+                                                borderRadius: '5px',
+                                                color: 'white',
+                                                fontSize: '11px',
+                                                fontWeight: 600,
+                                                cursor: creating ? 'not-allowed' : 'pointer',
+                                                opacity: creating ? 0.6 : 1,
+                                                whiteSpace: 'nowrap',
+                                            }}
+                                        >
+                                            {creating ? '...' : '+ Create'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
