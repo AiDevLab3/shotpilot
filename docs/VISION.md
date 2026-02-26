@@ -106,7 +106,7 @@ Imagine a film school professor with encyclopedic knowledge who can instantly re
 
 ### AI Agent Specialists
 Instead of one generic AI, ShotPilot employs a team of AI specialists:
-- **Creative Director**: Interprets your vision and selects the right model
+- **Creative Director**: Interprets your vision and recommends the right model
 - **Quality Gate**: Analyzes results with professional-grade critique
 - **Strategy Picker**: Recommends specific improvements based on identified issues
 - **Continuity Tracker**: Ensures character and style consistency across shots
