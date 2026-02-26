@@ -216,8 +216,8 @@ overall = (realism × 0.20) + (intent × 0.20) + (composition × 0.15)
 | Overall Score | Decision | Action |
 |--------------|----------|--------|
 | ≥ 8.0 | **APPROVE** | Ship it. |
-| 6.0 – 7.9 | **ITERATE** | Provide specific guidance. Re-generate with adjustments. |
-| < 6.0 | **REJECT** | Fundamental problems. Start over or switch models. |
+| 5.0 – 7.9 | **ITERATE** | Provide specific guidance. Re-generate with adjustments. |
+| < 5.0 | **REJECT** | Fundamental problems. Start over or switch models. |
 
 **Hard fail override:** If ANY single dimension scores ≤ 3, force REJECT regardless of overall score. A beautifully composed shot with 6 fingers is still unusable.
 
